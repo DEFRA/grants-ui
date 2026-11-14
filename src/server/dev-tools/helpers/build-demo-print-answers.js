@@ -3,7 +3,8 @@
  * @param {object} definition - Parsed YAML form definition
  * @returns {Record<string, unknown>} Map of component name to demo answer value
  */
-import { COMPONENT_TYPES, DISPLAY_ONLY_TYPES } from '~/src/server/common/helpers/print-application-service/constants.js'
+import { COMPONENT_TYPES } from '~/src/server/common/helpers/print-application-service/constants.js'
+import { DISPLAY_ONLY_TYPES } from '~/src/server/common/helpers/answer-components.js'
 
 const ASSESS_MOORLAND_DESC = 'Assess moorland and produce a written record'
 

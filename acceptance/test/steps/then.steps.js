@@ -136,6 +136,11 @@ Then('(the user )should see the following answers', async function (dataTable) {
   expect(actualAnswers).toEqual(expectedAnswers)
 })
 
+Then('(the user )should not see an answer labelled {string}', async function (label) {
+  const labels = await this.page.locator('main .govuk-summary-list__key').allTextContents()
+  expect(labels.map((text) => text.trim())).not.toContain(label)
+})
+
 Then('(the user )should see the following summary cards', async function (dataTable) {
   const expectedCards = []
   for (const row of dataTable.hashes()) {

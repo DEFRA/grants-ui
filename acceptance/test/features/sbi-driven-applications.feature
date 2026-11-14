@@ -204,7 +204,6 @@ Feature: SBI-Driven Applications
             | Latitude and longitude         | Latitude: 51.51945      |
             |                                | Longitude: -0.127758    |
             | GeospatialField                | Added 1 location        |
-            | Hidden field                   | Not provided            |
             | Project name                   | Test project            |
             | Project description            | Project description     |
             | Project budget                 | 50000                   |

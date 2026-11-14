@@ -6,6 +6,7 @@ import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/vi
 import { CONFIRM_LAND_AND_ACTIONS_PATH } from '~/src/server/land-grants/utils/confirm-land-and-actions-navigation.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { applyRepeatAnswerCards, buildRepeatAnswerCards } from './repeat-answers.js'
+import { shouldDisplayAnswer } from '../common/helpers/answer-components.js'
 
 export default class CheckResponsesPageController extends SummaryPageController {
   /**
@@ -325,6 +326,58 @@ export default class CheckResponsesPageController extends SummaryPageController 
   }
 
   /**
+   * Capture row identities while engine details and rows are aligned. Preserve the
+   * underlying details and fields used by other summary transformations and submission.
+   * @param {{ details?: any[], checkAnswers?: any[] }} viewModel
+   * @returns {Set<object>}
+   */
+  #getExcludedAnswerRows(viewModel) {
+    const excludedRows = new Set()
+    viewModel.details?.forEach((detail, sectionIndex) => {
+      detail.items?.forEach((item, itemIndex) => {
+        const fields = item.field ? [item.field] : item.page?.collection?.fields
+        const row = viewModel.checkAnswers?.[sectionIndex]?.summaryList?.rows[itemIndex]
+        if (row && fields?.length && fields.every((field) => !shouldDisplayAnswer(field))) {
+          excludedRows.add(row)
+        }
+      })
+    })
+    return excludedRows
+  }
+
+  /**
+   * Filter presentation after parcel replacement and additional answers have been
+   * resolved, so hidden display fields can still drive those existing behaviours.
+   * @param {{ checkAnswers?: any[] }} viewModel
+   * @param {Set<object>} excludedRows
+   */
+  #excludeAnswerRows(viewModel, excludedRows) {
+    if (!excludedRows.size || !viewModel.checkAnswers) {
+      return
+    }
+
+    viewModel.checkAnswers = viewModel.checkAnswers.filter((section) => {
+      const rows = section.summaryList?.rows ?? []
+      if (!rows.some((row) => excludedRows.has(row))) {
+        return true
+      }
+
+      const keepRow = (row) => !excludedRows.has(row)
+      section.summaryList = { ...section.summaryList, rows: rows.filter(keepRow) }
+      if (section.answerGroups) {
+        section.answerGroups = section.answerGroups
+          .map((group) => ({ ...group, rows: group.rows.filter(keepRow) }))
+          .filter((group) => group.rows.length)
+      }
+
+      return (
+        (section.answerGroups ?? [section.summaryList]).some((group) => group.rows.length) ||
+        Boolean(section.landAndActionsSummary)
+      )
+    })
+  }
+
+  /**
    * Builds the view model for the page
    * @param {FormContextRequest} request
    * @param {FormContext} context
@@ -339,6 +392,7 @@ export default class CheckResponsesPageController extends SummaryPageController 
     const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
 
     this.#excludeCheckDetailsEntries(viewModel)
+    const excludedAnswerRows = this.#getExcludedAnswerRows(viewModel)
     const repeatCards = buildRepeatAnswerCards(viewModel, context, this.getHref(this.path))
     const state = /** @type {Record<string, any>} */ (/** @type {unknown} */ (context?.state ?? {}))
     const hasLandAndActionsSummary = this.#applyLandParcels(viewModel, state)
@@ -350,6 +404,7 @@ export default class CheckResponsesPageController extends SummaryPageController 
       hasLandAndActionsSummary ? new Set(['totalPayment']) : undefined
     )
     applyRepeatAnswerCards(viewModel, repeatCards)
+    this.#excludeAnswerRows(viewModel, excludedAnswerRows)
 
     // SummaryViewModel is a class with a private `summaryDetails` member and does not
     // permit extra properties (`sectionTitle`), so a structural spread cannot satisfy

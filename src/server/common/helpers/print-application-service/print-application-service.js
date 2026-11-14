@@ -1,5 +1,6 @@
 import { formatAnswer } from './utils/format-answer.js'
-import { COMPONENT_TYPES, DISPLAY_ONLY_TYPES } from './constants.js'
+import { COMPONENT_TYPES } from './constants.js'
+import { shouldDisplayAnswer } from '../answer-components.js'
 import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/view-models/confirm-land-and-actions.view-model.js'
 import { ComponentsRegistry } from '../../../confirmation/services/components.registry.js'
 import { findPageByPath, normalisePagePath, resolveAdditionalAnswerSections } from '../additional-answers.js'
@@ -44,7 +45,7 @@ export const COMPOSITE_FIELD_PARTS = {
  * @returns {boolean}
  */
 function isAnswerableComponent(component) {
-  return Boolean(component.name) && !DISPLAY_ONLY_TYPES.has(component.type) && !component.name.startsWith('$$')
+  return Boolean(component.name) && shouldDisplayAnswer(component) && !component.name.startsWith('$$')
 }
 
 /**
