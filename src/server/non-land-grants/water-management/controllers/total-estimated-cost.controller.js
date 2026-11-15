@@ -36,7 +36,7 @@ export default class TotalEstimatedCostController extends withDerivedState(Quest
    */
   getNextPath(context) {
     const minGrantReached = context.state.additionalAnswers.minGrantReached
-    return minGrantReached ? super.getNextPath(context) : '/exit-total-estimated-cost'
+    return minGrantReached ? super.getNextPath(context) : '/exit-project-details-total-estimated-grant'
   }
 
   /**
@@ -207,7 +207,7 @@ export function calculateEstimatedCosts(reservoirs, state, config) {
 
   const totalEstimatedCost = reservoirCost + waterDistributionNetworkCost + waterTanksCost
 
-  const estimatedMaxGrantBeforeReduction = totalEstimatedCost * config.grantMaxRate
+  const estimatedMaxGrantBeforeReduction = Number.parseFloat((totalEstimatedCost * config.grantMaxRate).toFixed(2))
 
   const minGrantThreshold = reservoirCost > 0 || waterDistributionNetworkCost > 0 ? MIN_GRANT : MIN_GRANT_TANKS_ONLY
 
