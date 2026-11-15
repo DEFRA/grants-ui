@@ -117,6 +117,36 @@ Feature: Multiple Applications
             | {SECOND REFERENCE NUMBER} | Draft     | Continue application |
             | {FIRST REFERENCE NUMBER}  | Submitted | View application     |
 
+        # first application is returned for amendments in GAS
+        Given the application status in GAS for reference number "{FIRST REFERENCE NUMBER}" is now "APPLICATION_AMEND"
+
+        # applications, the returned application shows as returned before it is opened
+        Given the user navigates to "/example-grant-with-multi-applications/applications"
+        Then the user should be at URL "applications"
+        And should see the following applications
+            | REFERENCE                 | STATUS                  | ACTION               |
+            | {THIRD REFERENCE NUMBER}  | Submitted               | View application     |
+            | {SECOND REFERENCE NUMBER} | Draft                   | Continue application |
+            | {FIRST REFERENCE NUMBER}  | Returned for amendments | Continue application |
+        When the user clicks "Continue application" for application "{FIRST REFERENCE NUMBER}"
+
+        # summary, opening the returned application reopens it under a new reference
+        Then the user should be at URL "summary"
+        And should not have application reference "{FIRST REFERENCE NUMBER}" in the URL
+        And should have an application reference in the URL
+        And should see the following answers
+            | QUESTION         | ANSWER        |
+            | Application name | Application 1 |
+
+        # applications, the reopened application keeps its place under its new reference
+        Given the user navigates to "/example-grant-with-multi-applications/applications"
+        Then the user should be at URL "applications"
+        And should see the following applications
+            | REFERENCE                 | STATUS                  | ACTION               |
+            | {THIRD REFERENCE NUMBER}  | Submitted               | View application     |
+            | {SECOND REFERENCE NUMBER} | Draft                   | Continue application |
+            | {FOURTH REFERENCE NUMBER} | Returned for amendments | Continue application |
+
         # unknown application reference, denied and audited
         Given the user navigates to "/example-grant-with-multi-applications?ref=INVALID-REFERENCE-NUMBER"
         Then the user should see heading "Page not found"
