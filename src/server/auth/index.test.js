@@ -236,7 +236,7 @@ describe('auth router - permissions cache clearing', () => {
 
         if (authenticated) {
           const freshPermissions = [{ id: 'group-1', level: 'VIEW' }]
-          vi.mocked(fetchBusinessPermissions).mockResolvedValue(freshPermissions)
+          vi.mocked(fetchBusinessPermissions).mockResolvedValue({ permissionGroups: freshPermissions })
           const response = await server.inject({
             url: '/test/permissions',
             headers: { cookie: result.cookie }

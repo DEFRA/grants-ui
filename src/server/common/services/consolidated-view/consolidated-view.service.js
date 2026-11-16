@@ -263,11 +263,7 @@ async function fetchFromConsolidatedView(request, { query, formatResponse, toler
  * Fetches permission groups for a customer/business relationship from DAL.
  *
  * @param {AnyFormRequest} request
- * @returns {Promise<Array<{
- *   id: string,
- *   level: string,
- *   functions: string[]
- * }>>}
+ * @returns {Promise<{ role?: string, permissionGroups: Array<{ id: string, level: string, functions: string[] }> }>}
  */
 export const fetchBusinessPermissions = async (request) => {
   const { credentials: { sbi, crn } = {} } = request.auth ?? {}
@@ -275,6 +271,7 @@ export const fetchBusinessPermissions = async (request) => {
     query GetBusinessPermissions {
       customer(crn: "${escapeGraphQLString(crn)}") {
         business(sbi: "${escapeGraphQLString(sbi)}") {
+          role
           permissionGroups {
             id
             level
@@ -284,7 +281,13 @@ export const fetchBusinessPermissions = async (request) => {
       }
     }
   `
-  const formatResponse = (/** @type {GraphQLResponse} */ r) => r.data?.customer?.business?.permissionGroups || []
+  const formatResponse = (/** @type {GraphQLResponse} */ r) => {
+    const business = r.data?.customer?.business
+    return {
+      role: typeof business?.role === 'string' ? business.role : undefined,
+      permissionGroups: business?.permissionGroups || []
+    }
+  }
   return fetchFromConsolidatedView(request, { query, formatResponse })
 }
 

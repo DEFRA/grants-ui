@@ -51,6 +51,7 @@ describe('Consolidated View Service - Permissions and query', () => {
             data: {
               customer: {
                 business: {
+                  role: 'Business Owner',
                   permissionGroups: mockPermissionGroups
                 }
               }
@@ -60,7 +61,7 @@ describe('Consolidated View Service - Permissions and query', () => {
 
       const result = await fetchBusinessPermissions(mockRequest)
 
-      expect(result).toEqual(mockPermissionGroups)
+      expect(result).toEqual({ role: 'Business Owner', permissionGroups: mockPermissionGroups })
 
       expect(mockFetchInstance).toHaveBeenCalledTimes(1)
 
@@ -74,6 +75,7 @@ describe('Consolidated View Service - Permissions and query', () => {
       expect(body.query).toContain(`business(sbi: "${mockSbi}")`)
       expect(body.query).toContain(`customer(crn: "${mockCrn}")`)
       expect(body.query).toContain('query GetBusinessPermissions')
+      expect(body.query).toContain('role')
       expect(body.query).toContain('permissionGroups')
       expect(body.query).toContain('id')
       expect(body.query).toContain('level')
@@ -91,10 +93,10 @@ describe('Consolidated View Service - Permissions and query', () => {
 
         const result = await fetchBusinessPermissions(mockRequest)
 
-        expect(result).toEqual(permissionGroups)
-        expect(can(result, 'view', 'businessDetails')).toBe(true)
-        expect(can(result, 'amend', 'businessDetails')).toBe(true)
-        expect(can(result, 'submit', 'businessDetails')).toBe(true)
+        expect(result).toEqual({ role: undefined, permissionGroups })
+        expect(can(result.permissionGroups, 'view', 'businessDetails')).toBe(true)
+        expect(can(result.permissionGroups, 'amend', 'businessDetails')).toBe(true)
+        expect(can(result.permissionGroups, 'submit', 'businessDetails')).toBe(true)
       }
     )
 
@@ -109,7 +111,7 @@ describe('Consolidated View Service - Permissions and query', () => {
 
       const result = await fetchBusinessPermissions(mockRequest)
 
-      expect(result).toEqual(mockPermissionGroups)
+      expect(result).toEqual({ role: undefined, permissionGroups: mockPermissionGroups })
       expect(getValidToken).not.toHaveBeenCalled()
 
       const [[url, calledOptions]] = mockFetchInstance.mock.calls
@@ -133,7 +135,7 @@ describe('Consolidated View Service - Permissions and query', () => {
 
       const result = await fetchBusinessPermissions(mockRequest)
 
-      expect(result).toEqual([])
+      expect(result).toEqual({ role: undefined, permissionGroups: [] })
     })
 
     it('should return empty array when permissionGroups are missing', async () => {
@@ -151,7 +153,7 @@ describe('Consolidated View Service - Permissions and query', () => {
 
       const result = await fetchBusinessPermissions(mockRequest)
 
-      expect(result).toEqual([])
+      expect(result).toEqual({ role: undefined, permissionGroups: [] })
     })
   })
 

@@ -176,6 +176,15 @@
 {% endblock %}
 
 {% block bodyEnd %}
+  {% if userRoleAnalytics and gaTrackingId %}
+    <div
+      id="user-role-analytics"
+      hidden
+      data-role="{{ userRoleAnalytics.role | escape }}"
+      data-context="{{ userRoleAnalytics.token | escape }}"
+      data-consent="{{ 'true' if cookiesPolicy.analytics else 'false' }}"
+    ></div>
+  {% endif %}
   {% if componentMapsEnabled %}
     <div
       id="component-map-settings"
