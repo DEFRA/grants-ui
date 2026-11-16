@@ -8,7 +8,7 @@ import { logHandledError } from '../../common/helpers/logging/handled-error.js'
  * within the major the backend pins it to, as when it is opened. The latest definition serves its own major and
  * any other major is read from the backend once. An application without a pinned major, or whose major has no
  * readable definition, answers to the latest definition's rules instead, as every row did before majors were
- * told apart, with `ownMajor` false so the caller treats the verdict as a hint.
+ * told apart, with `ownMajor` false so the caller knows they are not the rules the status redirect applies.
  *
  * @param {AnyRequest} request
  * @param {string} grantCode
@@ -92,7 +92,7 @@ async function readDefinitionWithinMajor(request, grantCode, major) {
 
 /**
  * The rules an application answers to, and whether they are its own major's; when not, they are the latest
- * definition's and only good for a label.
+ * definition's and give no verdict on the application.
  * @typedef {{ rules: RedirectRule[], ownMajor: boolean }} ApplicationRules
  * @import { DefinitionDocument } from '../../common/helpers/state/fetch-saved-state-helper.js'
  * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
