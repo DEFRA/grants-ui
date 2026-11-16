@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { readdirSync, readFileSync, existsSync } from 'node:fs'
 import { basename, resolve } from 'node:path'
 import { parse } from 'yaml'
-import { APPLICATIONS_PATH } from '../../common/constants/applications-path.js'
 
 /**
  * Drift guard: journey definitions are hand-written against a grant's form
@@ -46,9 +45,6 @@ const NO_FORM_DEFINITION = new Set(['methane'])
 // PMF remains deployable, but its dedicated external config repo is not wired
 // into local setup yet. Check its journey when an external config is available.
 const OPTIONAL_FORM_DEFINITION = new Set(['pigs-might-fly'])
-
-// Pages Grants UI serves for every grant outside the form definition.
-const GRANTS_UI_PAGES = new Set([APPLICATIONS_PATH.replace(/^\//, '')])
 
 /**
  * Map every grant slug that has a locally synced form definition to its YAML path.
@@ -119,7 +115,7 @@ describe.skipIf(!comparable.length)('journey definitions match their form defini
     const pageIndex = new Map(pages.map((page, index) => [page.path.replace(/^\//, ''), index]))
 
     it('has no step pointing at a page the form definition does not have', () => {
-      const unknown = steps.map(pageSlug).filter((slug) => !pageIndex.has(slug) && !GRANTS_UI_PAGES.has(slug))
+      const unknown = steps.map(pageSlug).filter((slug) => !pageIndex.has(slug))
       expect([...new Set(unknown)]).toEqual([])
     })
 
