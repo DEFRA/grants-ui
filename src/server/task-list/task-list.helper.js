@@ -2,7 +2,6 @@ import { TagClasses } from '../common/constants/tag-classes.js'
 /**
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  */
-
 /**
  * @typedef {object} TaskItem
  * @property {string} title - The task or task page title
@@ -11,17 +10,16 @@ import { TagClasses } from '../common/constants/tag-classes.js'
  * @property {string} [status.text] - Plain status text (e.g., "Completed", "Not started"), used when the status renders without a tag
  * @property {{ text: string, classes: string }} [status.tag] - Tag configuration (text and CSS classes) used when the status renders as a govuk-tag
  */
-
 /**
  * @typedef {object} Task
  * @property {string} title - The task title
  * @property {Array<TaskItem>} items - The task pages/questions for this task
  */
-
 import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
 import { hasAnyItemWithNonEmptyKey } from '~/src/server/common/utils/objects.js'
 
 const MAP_SELECT_PAGE_CONTROLLER = 'MapSelectPageController'
+const REPEAT_PAGE_CONTROLLER = 'RepeatPageController'
 const SELECT_ACTIONS_PAGE_CONTROLLERS = new Set(['SelectActionsPageController', 'SelectGroupedActionsPageController'])
 const CONFIRM_LAND_AND_ACTIONS_PAGE_CONTROLLER = 'ConfirmLandAndActionsPageController'
 
@@ -193,10 +191,49 @@ function allComponentsAnswered(componentNames, state) {
   })
 }
 
+/**
+ * Required repeat answers can include compound fields stored as separate keys.
+ * State schemas permit null, so check required fields and their children too.
+ * @param {object[]} fields - Resolved engine fields
+ * @returns {string[]}
+ */
+function getRequiredRepeatFieldNames(fields) {
+  return fields
+    .filter((field) => field.options?.required !== false)
+    .flatMap((field) => (field.collection ? getRequiredRepeatFieldNames(field.collection.fields) : [field.name]))
+}
+
+/**
+ * Checks repeat answers in their list, including limits and required fields.
+ * @param {object} pageDef - The repeat page definition
+ * @param {object} state - The current form state
+ * @param {object} formModel - The resolved form model
+ * @returns {boolean | null}
+ */
+function isRepeatPageCompleted(pageDef, state, formModel) {
+  if (!isPageConditionMet(pageDef, state, formModel)) {
+    return null
+  }
+
+  const { name } = pageDef.repeat.options
+  const page = formModel.pageMap.get(pageDef.path)
+  const componentNames = getRequiredRepeatFieldNames(page.collection.fields)
+  const { error } = page.collection.stateSchema.validate({ [name]: state[name] })
+  return (
+    !error &&
+    state[name].every((item) => allComponentsAnswered(componentNames, item)) &&
+    isCompletionRequirementMet(pageDef, state, formModel)
+  )
+}
+
 function isTaskPageCompleted(pageDef, state, formModel) {
   const parcelActionsTaskPages = findParcelActionsTaskPages(pageDef, formModel.def?.pages ?? [])
   if (pageDef.controller === MAP_SELECT_PAGE_CONTROLLER && parcelActionsTaskPages) {
     return isMapSelectPageCompleted(pageDef, state, formModel)
+  }
+
+  if (pageDef.controller === REPEAT_PAGE_CONTROLLER) {
+    return isRepeatPageCompleted(pageDef, state, formModel)
   }
 
   const componentNames = getPageComponentNames(pageDef, formModel)
@@ -793,24 +830,30 @@ export function withTaskContext(Base) {
      * Override proceed to apply task-list redirect logic after a POST.
      */
     proceed(request, h, nextPath) {
-      const { model, pageDef } = this
-      const { returnAfterSection = true } = model.def.metadata.tasklist ?? {}
-
-      if (pageDef.section && returnAfterSection) {
-        // Check if the default next page belongs to a different section.
-        // If so, the current section is complete — return to the task list.
-        // Ignore any query params on nextPath when matching against page paths.
-        const nextPagePath = nextPath?.split('?')[0]
-        const nextPage = nextPagePath && model.pages.find((p) => p.path === nextPagePath)
-
-        if (!nextPage || (nextPage.section && nextPage.section !== this.section)) {
-          return super.proceed(request, h, getTaskListPath(model) ?? nextPath)
-        }
-      }
-
-      return super.proceed(request, h, nextPath)
+      return super.proceed(request, h, getTaskPageNextPath(this, nextPath))
     }
   }
+}
+
+/**
+ * Applies task navigation to a controller's resolved next path.
+ * @param {object} page - The page controller
+ * @param {string} [nextPath] - The engine's next path
+ * @returns {string | undefined}
+ */
+export function getTaskPageNextPath(page, nextPath) {
+  const { model, pageDef } = page
+  const { returnAfterSection = true } = model.def.metadata.tasklist ?? {}
+
+  if (!pageDef.section || !returnAfterSection) {
+    return nextPath
+  }
+
+  const nextPagePath = nextPath?.split('?')[0]
+  const nextPage = model.pages.find((p) => p.path === nextPagePath)
+  const leavesSection = !nextPage || (nextPage.section && nextPage.section !== page.section)
+
+  return leavesSection ? (getTaskListPath(model) ?? nextPath) : nextPath
 }
 
 /**
@@ -819,7 +862,7 @@ export function withTaskContext(Base) {
  * @param {object} pageDef
  * @param {boolean} [hasReturnUrl=false] - Whether a returnUrl query parameter was provided
  */
-function applyTaskPageViewModel(viewModel, pageDef, hasReturnUrl = false) {
+export function applyTaskPageViewModel(viewModel, pageDef, hasReturnUrl = false) {
   const backLink = getTaskPageBackLink(viewModel, pageDef, hasReturnUrl)
   const { returnAfterSection = true } = viewModel.page.def.metadata.tasklist ?? {}
 

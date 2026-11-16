@@ -33,7 +33,7 @@ Feature: Task Lists Hiding Questions
         Then the user should be at URL "tasks"
         And should see heading "Example Task List"
         And the page is analyzed for accessibility
-        And should see the following task list without questions with 0 of 8 task pages completed
+        And should see the following task list without questions with 0 of 9 task pages completed
             | Example task one              | Not started      |
             | Example task two              | Cannot start yet |
             | Example check and submit task | Cannot start yet |
@@ -65,7 +65,7 @@ Feature: Task Lists Hiding Questions
         # tasks - task one in progress
         Then the user should be back at URL "tasks"
         And the page is analyzed for accessibility
-        And should see the following task list without questions with 1 of 8 task pages completed
+        And should see the following task list without questions with 1 of 9 task pages completed
             | Example task one              | In progress      |
             | Example task two              | Cannot start yet |
             | Example check and submit task | Cannot start yet |
@@ -85,10 +85,28 @@ Feature: Task Lists Hiding Questions
         When the user enters "cl-defra-gae-test-applicant-email@equalexperts.com" for label heading "Example single component"
         And continues
 
+        # repeat-page (item entry)
+        Then the user should be at URL "repeat-page"
+        And should see task title "Example task one: Repeat Item 1"
+        And should see heading "RepeatPage Example"
+        And the page is analyzed for accessibility
+        When the user enters the following
+            | FIELD  | VALUE               |
+            | Name   | Repeat item example |
+            | Amount | 12000               |
+        And continues
+
+        # repeat-page (list summary)
+        Then the user should be at URL "repeat-page/summary"
+        And should see task title "Example task one"
+        And should see heading "You have added 1 repeat item"
+        And the page is analyzed for accessibility
+        When the user continues
+
         # tasks
         Then the user should be back at URL "tasks"
         And the page is analyzed for accessibility
-        And should see the following task list without questions with 3 of 8 task pages completed
+        And should see the following task list without questions with 4 of 9 task pages completed
           | Example task one                 | Completed        |
           | Example task two                 | Not started      |
           | Example check and submit task    | Cannot start yet |
@@ -121,7 +139,7 @@ Feature: Task Lists Hiding Questions
         # tasks - task one completed, task two in progress, go into task one to change optional choice
         Then the user should be back at URL "tasks"
         And the page is analyzed for accessibility
-        And should see the following task list without questions with 4 of 8 task pages completed
+        And should see the following task list without questions with 5 of 9 task pages completed
           | Example task one              | Completed        |
           | Example task two              | In progress      |
           | Example check and submit task | Cannot start yet |
@@ -152,7 +170,7 @@ Feature: Task Lists Hiding Questions
         # tasks - task one in progress, task two on hold
         Then the user should be back at URL "tasks"
         And the page is analyzed for accessibility
-        And should see the following task list without questions with 4 of 9 task pages completed
+        And should see the following task list without questions with 5 of 10 task pages completed
           | Example task one              | In progress      |
           | Example task two              | On hold          |
           | Example check and submit task | Cannot start yet |
@@ -170,10 +188,15 @@ Feature: Task Lists Hiding Questions
         And should see label heading "Example single component"
         When the user continues
 
+        # repeat-page (list summary) - retain the existing item
+        Then the user should be at URL "repeat-page/summary"
+        And should see heading "You have added 1 repeat item"
+        When the user continues
+
         # tasks - task one completed again, task two back to in progress, complete task two
         Then the user should be back at URL "tasks"
         And the page is analyzed for accessibility
-        And should see the following task list without questions with 5 of 9 task pages completed
+        And should see the following task list without questions with 6 of 10 task pages completed
           | Example task one              | Completed        |
           | Example task two              | In progress      |
           | Example check and submit task | Cannot start yet |
@@ -197,7 +220,7 @@ Feature: Task Lists Hiding Questions
         # tasks
         Then the user should be back at URL "tasks"
         And the page is analyzed for accessibility
-        And should see the following task list without questions with 7 of 9 task pages completed
+        And should see the following task list without questions with 8 of 10 task pages completed
           | Example task one              | Completed   |
           | Example task two              | Completed   |
           | Example check and submit task | Not started |

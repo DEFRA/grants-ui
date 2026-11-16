@@ -63,6 +63,11 @@ export const LABEL_CLUSTER_RADIUS_PX = 85
 export const LABEL_CLUSTER_MAX_ZOOM = 10
 export const LABEL_CLUSTER_COLOR = COLOR_GOV_UK_BLUE
 export const LABEL_CLUSTER_RADIUS = 14
+export const LABEL_CLUSTER_MEDIUM_MIN_COUNT = 5
+export const LABEL_CLUSTER_MEDIUM_RADIUS = 20
+export const LABEL_CLUSTER_LARGE_MIN_COUNT = 20
+export const LABEL_CLUSTER_LARGE_RADIUS = 26
+export const PARCEL_DETAIL_ZOOM = LABEL_CLUSTER_MAX_ZOOM + 1
 export const LABEL_CLUSTER_TEXT_COLOR = '#ffffff'
 // Zoom ceiling when fitting to a clicked cluster's bounds — kept separate
 // from LABEL_CLUSTER_MAX_ZOOM, which is too low to double as this cap.
@@ -146,7 +151,7 @@ export const CLASS_TOOLTIP = 'parcel-map__tooltip'
 export const CLASS_TOOLTIP_TITLE = 'parcel-map__tooltip-title'
 export const CLASS_TOOLTIP_ROW = 'parcel-map__tooltip-row'
 export const CLASS_VISUALLY_HIDDEN = 'govuk-visually-hidden'
-export const SHOW_ALL_BUTTON_CLASS = 'map-reset-view-button'
+export const SHOW_ALL_BUTTON_ID = 'map-reset-view-button'
 
 export const SHOW_ALL_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" class="im-c-icon">' +

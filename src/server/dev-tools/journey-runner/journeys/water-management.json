@@ -1,28 +1,53 @@
 [
   {
-    "slug": "check-details",
-    "name": "Check details — yes",
+    "slug": "applications",
+    "name": "Applications page",
+    "type": "submitOnly"
+  },
+  {
+    "slug": "confirm-your-details",
+    "name": "Confirm your details — yes",
     "type": "yesNo",
     "fieldName": "businessDetailsUpToDate",
     "value": "true"
   },
   {
-    "section": "check-your-eligibility",
-    "slug": "tasks",
-    "name": "Task list — check-your-eligibility",
+    "slug": "grant-overview",
+    "name": "Grant overview — yes",
+    "type": "submitOnly"
+  },
+  {
+    "section": "your-legal-status",
+    "slug": "task-list",
+    "name": "Task list — your-legal-status",
     "type": "clickLink",
-    "linkSlug": "sectors-irrigated"
+    "linkSlug": "confirm-legal-status"
+  },
+  {
+    "section": "your-legal-status",
+    "slug": "confirm-legal-status",
+    "name": "Confirm legal status - the crown",
+    "type": "radios",
+    "fieldName": "yourLegalStatus",
+    "value": "THE_CROWN"
   },
   {
     "section": "check-your-eligibility",
-    "slug": "sectors-irrigated",
-    "name": "Sectors irrigated — first option selected",
+    "slug": "task-list",
+    "name": "Task list — check-your-eligibility",
+    "type": "clickLink",
+    "linkSlug": "eligibility-crops-irrigated"
+  },
+  {
+    "section": "check-your-eligibility",
+    "slug": "eligibility-crops-irrigated",
+    "name": "Eligibility crops irrigated — first option selected",
     "type": "checkboxes",
     "fieldName": "sectorsIrrigated"
   },
   {
     "section": "check-your-eligibility",
-    "slug": "where-project-located",
+    "slug": "eligibility-project-location",
     "name": "Where is project located — easting and northing",
     "type": "textFields",
     "fields": {
@@ -32,15 +57,15 @@
   },
   {
     "section": "check-your-eligibility",
-    "slug": "work-started-yet",
-    "name": "Work started yet — yes prep",
+    "slug": "eligibility-work-started",
+    "name": "Work started — yes prep",
     "type": "radios",
     "fieldName": "workStartedYet",
     "value": "YES_PREPARATORY_WORK"
   },
   {
     "section": "check-your-eligibility",
-    "slug": "eligible-organisation",
+    "slug": "eligibility-organisation",
     "name": "Eligible organisation - no",
     "type": "yesNo",
     "fieldName": "eligibleOrganisation",
@@ -48,7 +73,7 @@
   },
   {
     "section": "check-your-eligibility",
-    "slug": "organisation-type",
+    "slug": "eligibility-applicant-type",
     "name": "Organisation type - landlord",
     "type": "radios",
     "fieldName": "organisationType",
@@ -56,13 +81,13 @@
   },
   {
     "section": "check-your-eligibility",
-    "slug": "what-landlords-need-to-do",
+    "slug": "eligibility-landowner-landlord-requirements",
     "name": "What you need to do",
     "type": "submitOnly"
   },
   {
     "section": "check-your-eligibility",
-    "slug": "how-many-businesses-will-use-the-water",
+    "slug": "eligibility-other-businesses-use-water",
     "name": "How many businesses will use the water - Five or more",
     "type": "radios",
     "fieldName": "businessesUsingWater",
@@ -70,7 +95,7 @@
   },
   {
     "section": "check-your-eligibility",
-    "slug": "where-water-will-come-from",
+    "slug": "eligibility-water-source",
     "name": "Where water will come from - selects all options",
     "type": "checkboxes",
     "fieldName": "whereWaterWillComeFrom",
@@ -78,7 +103,7 @@
   },
   {
     "section": "check-your-eligibility",
-    "slug": "have-planning-permission",
+    "slug": "eligibility-planning-permission",
     "name": "Have planning permission — yes",
     "type": "radios",
     "fieldName": "havePlanningPermission",
@@ -86,7 +111,7 @@
   },
   {
     "section": "check-your-eligibility",
-    "slug": "planning-permission-reference-number",
+    "slug": "eligibility-planning-permission-reference-number",
     "name": "Planning permission reference number - abc123",
     "type": "textFields",
     "fields": {
@@ -95,7 +120,7 @@
   },
   {
     "section": "check-your-eligibility",
-    "slug": "need-abstraction-licence",
+    "slug": "eligibility-abstraction-licence",
     "name": "Need abstraction licence — yes",
     "type": "radios",
     "fieldName": "haveAbstractionLicence",
@@ -103,7 +128,7 @@
   },
   {
     "section": "check-your-eligibility",
-    "slug": "abstraction-licence-consent-number",
+    "slug": "eligibility-abstraction-licence-number",
     "name": "Abstraction licence consent number - def456",
     "type": "textFields",
     "fields": {
@@ -112,27 +137,27 @@
   },
   {
     "section": "check-your-eligibility",
-    "slug": "score-results",
+    "slug": "eligibility-score-results",
     "name": "Score results",
     "type": "submitOnly"
   },
   {
     "section": "project-details-estimated-costs",
-    "slug": "tasks",
+    "slug": "task-list",
     "name": "Task list — project-details-estimated-costs",
     "type": "clickLink",
-    "linkSlug": "expected-project-start-date"
+    "linkSlug": "project-details-expected-start-date"
   },
   {
     "section": "project-details-estimated-costs",
-    "slug": "expected-project-start-date",
+    "slug": "project-details-expected-start-date",
     "name": "Expected project start date - current month year",
     "type": "monthYear",
     "fieldName": "expectedProjectStartDate"
   },
   {
     "section": "project-details-estimated-costs",
-    "slug": "items-planning-to-install",
+    "slug": "project-building-or-installation-details",
     "name": "Items planning to install - selects first option",
     "type": "checkboxes",
     "fieldName": "itemsPlanningToInstall",
@@ -140,7 +165,23 @@
   },
   {
     "section": "project-details-estimated-costs",
-    "slug": "reservoir-storage-capacity",
+    "slug": "project-details-how-many-reservoirs",
+    "name": "Multiple reservoirs — no",
+    "type": "yesNo",
+    "fieldName": "moreThanOneReservoir",
+    "value": "false"
+  },
+  {
+    "section": "project-details-estimated-costs",
+    "slug": "project-details-type-of-reservoir",
+    "name": "What type of reservoir — clay",
+    "type": "radios",
+    "fieldName": "whatTypeOfReservoir",
+    "value": "clay"
+  },
+  {
+    "section": "project-details-estimated-costs",
+    "slug": "how-much-water-reservoir",
     "name": "Reservoir storage capacity - 25,000m³",
     "type": "numberField",
     "fieldName": "howMuchWater",
@@ -148,7 +189,7 @@
   },
   {
     "section": "project-details-estimated-costs",
-    "slug": "water-distribution-length",
+    "slug": "project-details-water-distribution-length",
     "name": "Water distribution length - 10,000m",
     "type": "numberField",
     "fieldName": "waterDistributionLength",
@@ -156,7 +197,7 @@
   },
   {
     "section": "project-details-estimated-costs",
-    "slug": "water-storage-capacity",
+    "slug": "project-details-water-storage-volume",
     "name": "Water storage capacity - 1000m³",
     "type": "numberField",
     "fieldName": "waterStorageCapacity",
@@ -164,32 +205,26 @@
   },
   {
     "section": "project-details-estimated-costs",
-    "slug": "total-estimated-cost",
+    "slug": "project-details-total-estimated-grant",
     "name": "Total estimated cost",
     "type": "submitOnly"
   },
   {
     "section": "check-and-submit-your-application",
-    "slug": "tasks",
+    "slug": "task-list",
     "name": "Task list — check-and-submit-your-application",
     "type": "clickLink",
-    "linkSlug": "summary"
+    "linkSlug": "check-your-answers"
   },
   {
     "section": "check-and-submit-your-application",
-    "slug": "summary",
+    "slug": "check-your-answers",
     "name": "Check your answers",
     "type": "submitOnly"
   },
   {
     "section": "check-and-submit-your-application",
-    "slug": "potential-funding",
-    "name": "Potential grant funding",
-    "type": "submitOnly"
-  },
-  {
-    "section": "check-and-submit-your-application",
-    "slug": "declaration",
+    "slug": "application-declaration",
     "name": "Submit your application",
     "type": "submitOnly"
   }

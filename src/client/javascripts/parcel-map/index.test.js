@@ -68,6 +68,7 @@ function stubInteractiveMap({ mode = 'ready', ml, capture, once = false } = {}) 
     })
     this.destroy = vi.fn()
     this.toggleButtonState = vi.fn()
+    this.addButton = vi.fn()
     this._emit = (event, payload) => {
       ;(this._handlers[event] ?? []).forEach((fn) => fn(payload))
     }

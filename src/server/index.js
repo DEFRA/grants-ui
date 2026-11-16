@@ -1,4 +1,5 @@
 import { primeApplicationContext } from './common/request-pipeline/prime-application-context.js'
+import { captureLocationHints, renderLocationHints } from './common/map/location-hints.js'
 import plugin from '@defra/forms-engine-plugin'
 import Bell from '@hapi/bell'
 import Cookie from '@hapi/cookie'
@@ -294,6 +295,8 @@ export async function createServer() {
   })
 
   server.ext('onPostAuth', primeApplicationContext)
+  server.ext('onPreHandler', captureLocationHints)
+  server.ext('onPreResponse', renderLocationHints)
 
   server.ext('onPreHandler', (request, h) => {
     /** @type {string[]} */

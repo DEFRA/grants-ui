@@ -1,0 +1,94 @@
+{
+  "code": "example-grant-with-multi-applications",
+  "metadata": {
+    "description": "Example grant with multiple applications",
+    "startDate": {
+      "$date": "2026-03-16T00:00:00.000Z"
+    }
+  },
+  "actions": [],
+  "phases": [
+    {
+      "code": "PRE_AWARD",
+      "name": "Pre-award",
+      "description": "Pre-award phase",
+      "questions": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "ExampleGrantWithMultiApplicationsApplicationPayload",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["referenceNumber", "applicationName"],
+        "properties": {
+          "referenceNumber": {
+            "type": "string"
+          },
+          "applicationName": {
+            "type": "string",
+            "maxLength": 100
+          }
+        }
+      },
+      "stages": [
+        {
+          "code": "REVIEW_APPLICATION",
+          "name": "Review Application",
+          "description": "Review the application for eligibility",
+          "statuses": [
+            {
+              "code": "APPLICATION_RECEIVED",
+              "validFrom": []
+            },
+            {
+              "code": "IN_REVIEW",
+              "validFrom": [{ "code": "APPLICATION_RECEIVED", "processes": [] }]
+            },
+            {
+              "code": "APPLICATION_AMEND",
+              "validFrom": [
+                { "code": "APPLICATION_RECEIVED", "processes": [] },
+                { "code": "IN_REVIEW", "processes": [] }
+              ]
+            },
+            {
+              "code": "APPLICATION_WITHDRAWN",
+              "validFrom": [
+                { "code": "APPLICATION_RECEIVED", "processes": [] },
+                { "code": "IN_REVIEW", "processes": [] }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "externalStatusMap": {
+    "phases": [
+      {
+        "code": "PRE_AWARD",
+        "stages": [
+          {
+            "code": "REVIEW_APPLICATION",
+            "statuses": [
+              {
+                "code": "PRE_AWARD:REVIEW_APPLICATION:IN_REVIEW",
+                "source": "CW",
+                "mappedTo": "PRE_AWARD:REVIEW_APPLICATION:IN_REVIEW"
+              },
+              {
+                "code": "PRE_AWARD:REVIEW_APPLICATION:APPLICATION_AMEND",
+                "source": "CW",
+                "mappedTo": "PRE_AWARD:REVIEW_APPLICATION:APPLICATION_AMEND"
+              },
+              {
+                "code": "PRE_AWARD:REVIEW_APPLICATION:APPLICATION_WITHDRAWN",
+                "source": "CW",
+                "mappedTo": "PRE_AWARD:REVIEW_APPLICATION:APPLICATION_WITHDRAWN"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "amendablePositions": ["PRE_AWARD:REVIEW_APPLICATION:APPLICATION_AMEND"]
+}

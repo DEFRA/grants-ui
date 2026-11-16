@@ -4,7 +4,7 @@ import { boundsCentre } from './bounds.js'
 import {
   MSG_SHOW_ALL_PARCELS,
   MSG_SHOW_ALL_PARCELS_AVAILABLE,
-  SHOW_ALL_BUTTON_CLASS,
+  SHOW_ALL_BUTTON_ID,
   SHOW_ALL_ICON_SVG,
   SHOW_ALL_MOVE_THRESHOLD_PX,
   ZOOM_DRIFT_TOLERANCE
@@ -36,22 +36,16 @@ function hasMovedFromInitialView(ml, initialCenter, initialZoom) {
 
 /**
  * Adds the "View all land parcels" button.
- * @param {Pick<MapContext, 'ml' | 'store' | 'mapEl' | 'cleanups'>} context
- * @returns {HTMLButtonElement | undefined}
+ * @param {Pick<MapContext, 'mapInstance' | 'ml' | 'store' | 'mapEl' | 'cleanups'>} context
  */
-export function attachResetButton({ ml, store, mapEl, cleanups }) {
+export function attachResetButton({ mapInstance, ml, store, mapEl, cleanups }) {
   const wrapper = mapEl?.parentElement
   const { bbox } = store
   if (!wrapper || !bbox) {
-    return undefined
+    return
   }
 
-  const button = /** @type {HTMLButtonElement} */ (document.createElement('button'))
-  button.type = 'button'
-  button.className = SHOW_ALL_BUTTON_CLASS
-  button.hidden = true
-  button.innerHTML = `${SHOW_ALL_ICON_SVG}<span>${MSG_SHOW_ALL_PARCELS}</span>`
-  wrapper.appendChild(button)
+  let hidden = true
 
   const announcer = createAnnouncer(wrapper)
 
@@ -61,14 +55,16 @@ export function attachResetButton({ ml, store, mapEl, cleanups }) {
   let initialZoom = ml.getZoom()
 
   const showButton = () => {
-    if (!button.hidden) {
+    if (!hidden) {
       return
     }
-    button.hidden = false
+    hidden = false
+    mapInstance.toggleButtonState(SHOW_ALL_BUTTON_ID, 'hidden', false)
     announcer.announce(MSG_SHOW_ALL_PARCELS_AVAILABLE)
   }
   const hideButton = () => {
-    button.hidden = true
+    hidden = true
+    mapInstance.toggleButtonState(SHOW_ALL_BUTTON_ID, 'hidden', true)
     announcer.clear()
   }
 
@@ -100,10 +96,16 @@ export function attachResetButton({ ml, store, mapEl, cleanups }) {
   cleanups.push(() => ml.off('idle', onIdle))
   ml.on('moveend', onMoveEnd)
   cleanups.push(() => ml.off('moveend', onMoveEnd))
-  button.addEventListener('click', onClick)
-  cleanups.push(() => button.removeEventListener('click', onClick))
-
-  return button
+  const bottomLeft = 'bottom-left'
+  mapInstance.addButton(SHOW_ALL_BUTTON_ID, {
+    label: MSG_SHOW_ALL_PARCELS,
+    iconSvgContent: SHOW_ALL_ICON_SVG,
+    isHidden: true,
+    onClick,
+    mobile: { slot: bottomLeft },
+    tablet: { slot: bottomLeft },
+    desktop: { slot: bottomLeft }
+  })
 }
 
 /**

@@ -230,6 +230,48 @@ pages:
           regex: ^\w+([.-]\w+)*@[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$
         shortDescription: Single component
 
+  - title: RepeatPage Example
+    id: 27bb945e-460f-4315-8286-4f03648dbfe5
+    path: /repeat-page
+    section: 52757632-60cb-437f-a648-cfbc6acdacd0
+    controller: RepeatPageController
+    repeat:
+      options:
+        name: repeatItems
+        title: Repeat Item
+      schema:
+        min: 1
+        max: 10
+    components:
+      - name: repeatItemName
+        id: 243a1fa9-3d60-4938-8660-cc88e1611092
+        title: Name
+        type: TextField
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter a name for this item
+        schema:
+          max: 100
+        shortDescription: Item name
+      - name: repeatItemAmount
+        id: 0f7e80e1-6c94-4904-8f94-d47c8dbd1633
+        title: Amount
+        type: NumberField
+        options:
+          prefix: £
+          required: true
+          classes: govuk-!-width-one-third
+          customValidationMessages:
+            any.required: Enter an amount
+            number.min: Enter a value of £1 or more
+            number.max: Enter a value less than £1 million
+        schema:
+          min: 1
+          max: 999999
+          precision: 0
+        shortDescription: Amount
+
   # Task pages - Example task two
   - title: Example compound component
     id: 8cbdbf5e-7622-48fe-a722-14d271cb05ef

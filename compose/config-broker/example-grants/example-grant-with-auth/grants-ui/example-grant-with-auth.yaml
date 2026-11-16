@@ -694,6 +694,7 @@ pages:
         type: EastingNorthingField
         options:
           required: true
+          showApproximateLocation: true
         shortDescription: Easting and northing
         id: 9e3b7d5a-4c4f-4d7e-9f2a-ab8c9d5e6f70
         schema: {}
@@ -703,6 +704,8 @@ pages:
         type: OsGridRefField
         options:
           required: true
+          showApproximateLocation: true
+          approximateLocationPrefix: 'Point selected area:'
           customValidationMessages:
             string.empty: Enter an OS grid reference
         shortDescription: OS grid reference

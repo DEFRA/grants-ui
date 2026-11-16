@@ -164,8 +164,11 @@ Feature: Application Amendment
             | Project name                   | Test project            |
             | Project description            | Project description     |
             | Project budget                 | 50000                   |
-            | Item                           | You have added 1 answer |
             | Select land parcels            | SD6351-8781             |
+        And should see the following summary cards
+            | CARD   | QUESTION  | ANSWER              |
+            | Item 1 | Item name | Repeat item example |
+            |        | Amount    | 12000               |
         When the user continues
 
         # declaration
@@ -268,8 +271,11 @@ Feature: Application Amendment
             | Project name                   | Test project            |
             | Project description            | Project description     |
             | Project budget                 | 50000                   |
-            | Item                           | You have added 1 answer |
             | Select land parcels            | SD6351-8781             |
+        And should see the following summary cards
+            | CARD   | QUESTION  | ANSWER              |
+            | Item 1 | Item name | Repeat item example |
+            |        | Amount    | 12000               |
         When the user continues
 
         # declaration
@@ -364,8 +370,11 @@ Feature: Application Amendment
             | Project name                   | Test project            |
             | Project description            | Project description     |
             | Project budget                 | 50000                   |
-            | Item                           | You have added 1 answer |
             | Select land parcels            | SD6351-8781             |
+        And should see the following summary cards
+            | CARD   | QUESTION  | ANSWER              |
+            | Item 1 | Item name | Repeat item example |
+            |        | Amount    | 12000               |
         When the user continues
 
         # declaration

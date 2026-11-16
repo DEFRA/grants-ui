@@ -35,5 +35,12 @@ export function transformStepArgument(value) {
     return referenceNumbers.third
   }
 
+  if (value === '{FOURTH REFERENCE NUMBER}') {
+    if (!referenceNumbers.fourth) {
+      throw new Error('No reference numbers stored by earlier step')
+    }
+    return referenceNumbers.fourth
+  }
+
   return value
 }

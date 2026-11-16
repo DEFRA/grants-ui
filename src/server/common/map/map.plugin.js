@@ -1,6 +1,7 @@
 import { config } from '~/src/config/config.js'
 import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { ROUTES } from './map-routes.js'
+import { approximateLocationRoute } from './approximate-location.js'
 import { osTileParams, parcelTileParams } from './tile-params.js'
 import { parcelsQuery, parcelSearchQuery, parcelBboxParams } from './parcels-query.js'
 import {
@@ -16,7 +17,7 @@ const sessionAuth = { auth: { mode: 'required', strategy: 'session' } }
 
 /**
  * Map routes: parcels metadata, parcel search and bounding boxes, per-user
- * vector tiles, and the OS raster basemap (style + key-injecting tile proxy).
+ * vector tiles, the OS raster basemap, and approximate labels for form locations.
  */
 export const mapPlugin = {
   plugin: {
@@ -63,6 +64,7 @@ export const mapPlugin = {
         options: { ...sessionAuth, validate: osTileParams },
         handler: osTileProxyHandler
       })
+      server.route(approximateLocationRoute)
     }
   }
 }

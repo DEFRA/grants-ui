@@ -1,11 +1,11 @@
 import { formatParcelReference } from '../../../shared/format-parcel.js'
-import { boundsCentre, boundsOfPolygon, boundsOfPositions, unionBounds } from './bounds.js'
-import { fitToParcels } from './helpers.js'
+import { boundsCentre, boundsOfPositions, unionBounds } from './bounds.js'
+import { fitToParcels, showSingleParcelGroup } from './helpers.js'
 import {
   CLUSTER_EXPAND_MAX_ZOOM,
+  PARCEL_DETAIL_ZOOM,
   LAYER_ID_LABEL_CLUSTER,
   LAYER_ID_LABEL_CLUSTER_COUNT,
-  PARCEL_ID_PROPERTY,
   SOURCE_ID_PARCEL_LABELS,
   SOURCE_ID_PARCELS
 } from './config.js'
@@ -17,32 +17,40 @@ import {
  */
 
 /**
- * Keeps the label GeoJSON source (see buildParcelLabelLayer in helpers.js)
- * in sync with the parcel vector tiles: one Point feature per parcel id, at
- * the combined bounding-box centre of every rendered fragment of that parcel
- * — a parcel split across tiles has one fragment per tile, so this is what
- * keeps it labelled exactly once regardless of tiling. Also wires up
- * click-to-zoom on the cluster badges the source's clustering produces when
- * parcels are too close together to label individually.
- * @param {Pick<MapContext, 'ml' | 'cleanups'>} context
+ * Builds one stable label point per holding parcel from its full bounds.
+ * Polygon tiles can omit small parcels when zoomed out, so they must not
+ * determine which parcels contribute to badge counts.
+ * @param {Pick<MapContext, 'ml' | 'cleanups'> & Partial<Pick<MapContext, 'store'>>} context
  */
-export function attachParcelLabels({ ml, cleanups }) {
-  // setData() re-renders, which can re-fire 'idle' — only call it when the
-  // features actually changed, to avoid a needless idle -> setData loop.
-  /** @type {string | null} */
-  let lastFingerprint = null
-
+export function attachParcelLabels({ ml, cleanups, store }) {
+  let initialViewPending = Boolean(store?.parcelIds.length)
+  let labelsAdded = false
   const recompute = () => {
     const source = /** @type {GeoJSONSource | undefined} */ (ml.getSource(SOURCE_ID_PARCEL_LABELS))
-    if (!source || !ml.getSource(SOURCE_ID_PARCELS) || !ml.isSourceLoaded(SOURCE_ID_PARCELS)) {
+    if (!source) {
       return
     }
-    const { features, fingerprint } = buildLabelFeatures(ml)
-    if (fingerprint === lastFingerprint) {
+    if (!labelsAdded) {
+      source.setData(buildLabelFeatures(store))
+      labelsAdded = true
       return
     }
-    lastFingerprint = fingerprint
-    source.setData(features)
+    if (!initialViewPending || !ml.isSourceLoaded(SOURCE_ID_PARCEL_LABELS)) {
+      return
+    }
+    const groups = new Map(
+      ml
+        .querySourceFeatures(SOURCE_ID_PARCEL_LABELS)
+        .map((feature) => [feature.properties?.cluster_id ?? feature.properties?.id, feature])
+    )
+    const count = [...groups.values()].reduce((total, feature) => total + (feature.properties?.point_count ?? 1), 0)
+    if (count !== store?.parcelIds.length) {
+      return
+    }
+    initialViewPending = false
+    if (groups.size === 1) {
+      showSingleParcelGroup(ml, store?.bbox ?? null)
+    }
   }
 
   ml.on('idle', recompute)
@@ -70,15 +78,17 @@ function attachClusters(ml, cleanups) {
     const clusterId = cluster?.properties?.cluster_id
     const pointCount = cluster?.properties?.point_count
     const source = /** @type {GeoJSONSource | undefined} */ (ml.getSource(SOURCE_ID_PARCEL_LABELS))
-    if (!cluster || clusterId == null || typeof pointCount !== 'number' || !source) {
+    if (!cluster || (clusterId != null && typeof pointCount !== 'number')) {
       return
     }
-    source
-      .getClusterLeaves(clusterId, pointCount, 0)
-      .then((leaves) => {
-        // Capped so a tight bbox (e.g. a 2-3 parcel cluster) doesn't zoom
-        // in further than useful to split it apart.
-        fitToParcels(ml, boundsOfPoints(leaves), { animate: true, maxZoom: CLUSTER_EXPAND_MAX_ZOOM })
+    const leaves = clusterId == null ? Promise.resolve([cluster]) : source?.getClusterLeaves(clusterId, pointCount, 0)
+    leaves
+      ?.then((points) => {
+        fitToParcels(ml, boundsOfPoints(points), {
+          animate: true,
+          maxZoom: CLUSTER_EXPAND_MAX_ZOOM,
+          minZoom: PARCEL_DETAIL_ZOOM
+        })
       })
       .catch(Boolean) // ignore: e.g. the cluster no longer exists after a concurrent setData
   }
@@ -113,7 +123,9 @@ function attachClusters(ml, cleanups) {
     if (!ml.getLayer(LAYER_ID_LABEL_CLUSTER) || !ml.getLayer(LAYER_ID_LABEL_CLUSTER_COUNT)) {
       return
     }
-    const order = ml.getStyle()?.layers?.map((layer) => layer.id) ?? []
+    const layers = ml.getStyle()?.layers ?? []
+    syncHighlightZoom(ml, layers)
+    const order = layers.map((layer) => layer.id)
     const CLUSTER_LAYER_COUNT = 2
     const lastTwo = order.slice(-CLUSTER_LAYER_COUNT)
     if (lastTwo[0] === LAYER_ID_LABEL_CLUSTER && lastTwo[1] === LAYER_ID_LABEL_CLUSTER_COUNT) {
@@ -127,63 +139,58 @@ function attachClusters(ml, cleanups) {
   cleanups.push(() => ml.off('styledata', reassertOnTop))
 }
 
+/** @param {MLMap} ml @param {import('maplibre-gl').LayerSpecification[]} layers */
+function syncHighlightZoom(ml, layers) {
+  // The vendor's selection and keyboard highlights do not inherit minzoom.
+  for (const layer of layers) {
+    if (
+      'source' in layer &&
+      layer.source === SOURCE_ID_PARCELS &&
+      /^(selected|active)-highlight/.test(layer.id) &&
+      layer.minzoom !== PARCEL_DETAIL_ZOOM
+    ) {
+      ml.setLayerZoomRange(layer.id, PARCEL_DETAIL_ZOOM, layer.maxzoom ?? 24)
+    }
+  }
+}
+
 /**
- * The bounding box of a set of Point features, as returned by
- * getClusterLeaves — the ungrouped parcel label points a cluster badge
- * stands in for.
+ * Union of the parcel bounds carried by cluster leaves (or a singleton).
+ * Use point coordinates when parcel bounds are unavailable.
  * @param {GeoJSON.Feature[]} points
  * @returns {BBox | null}
  */
 function boundsOfPoints(points) {
-  return boundsOfPositions(points.map((point) => /** @type {GeoJSON.Point} */ (point.geometry).coordinates))
+  return points.reduce((bounds, point) => {
+    const properties = point.properties ?? {}
+    const { minLng, minLat, maxLng, maxLat } = properties
+    const box = [minLng, minLat, maxLng, maxLat].every(Number.isFinite)
+      ? { minLng, minLat, maxLng, maxLat }
+      : boundsOfPositions([/** @type {GeoJSON.Point} */ (point.geometry).coordinates])
+    if (!box) {
+      return bounds
+    }
+    return bounds ? unionBounds(bounds, box) : box
+  }, /** @type {BBox | null} */ (null))
 }
 
-// Bounds are floating-point lng/lat, so two computations of an otherwise-
-// unchanged parcel can differ in the last few decimal places — round before
-// fingerprinting so that isn't mistaken for a real change.
-const FINGERPRINT_DECIMAL_PLACES = 6
-
 /**
- * @param {MLMap} ml
- * @returns {{ features: GeoJSON.FeatureCollection, fingerprint: string }}
+ * @param {MapContext['store'] | undefined} store
+ * @returns {GeoJSON.FeatureCollection<GeoJSON.Point>}
  */
-function buildLabelFeatures(ml) {
-  const fragments = ml.querySourceFeatures(SOURCE_ID_PARCELS, { sourceLayer: SOURCE_ID_PARCELS })
-
-  /** @type {Map<string, BBox>} */
-  const boundsById = new Map()
-  for (const fragment of fragments) {
-    const id = fragment.properties?.[PARCEL_ID_PROPERTY]
-    const hasId = typeof id === 'string' || typeof id === 'number'
-    const fragmentBounds = hasId
-      ? boundsOfPolygon(/** @type {GeoJSON.Polygon | GeoJSON.MultiPolygon} */ (fragment.geometry))
-      : null
-    if (!fragmentBounds) {
-      continue
+function buildLabelFeatures(store) {
+  const features = (store?.parcelIds ?? []).flatMap((id) => {
+    const bounds = store?.metaIndex[id]?.bounds
+    if (!bounds) {
+      return []
     }
-    const seen = boundsById.get(String(id))
-    boundsById.set(String(id), seen ? unionBounds(seen, fragmentBounds) : fragmentBounds)
-  }
-
-  // Sorted by id so the fingerprint doesn't depend on fragment/iteration
-  // order, only on which parcels are present and where.
-  const entries = [...boundsById].sort(([a], [b]) => a.localeCompare(b))
-
-  const features = entries.map(([id, bounds]) => ({
-    type: /** @type {const} */ ('Feature'),
-    geometry: {
-      type: /** @type {const} */ ('Point'),
-      coordinates: boundsCentre(bounds)
-    },
-    properties: { id, label: formatParcelReference(id) }
-  }))
-
-  const fingerprint = entries
-    .map(([id, bounds]) => {
-      const [lng, lat] = boundsCentre(bounds)
-      return `${id}:${lng.toFixed(FINGERPRINT_DECIMAL_PLACES)},${lat.toFixed(FINGERPRINT_DECIMAL_PLACES)}`
-    })
-    .join('|')
-
-  return { features: { type: 'FeatureCollection', features }, fingerprint }
+    return [
+      {
+        type: /** @type {const} */ ('Feature'),
+        geometry: { type: /** @type {const} */ ('Point'), coordinates: boundsCentre(bounds) },
+        properties: { id, label: formatParcelReference(id), ...bounds }
+      }
+    ]
+  })
+  return { type: 'FeatureCollection', features }
 }

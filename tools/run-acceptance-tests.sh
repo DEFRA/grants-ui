@@ -5,6 +5,9 @@ set -e
 #   Run all acceptance tests:
 #     ./tools/run-acceptance-tests.sh
 #
+#   Dump service logs and diagnostics on failure (disabled by default):
+#     ACCEPTANCE_DIAGNOSTICS=true ./tools/run-acceptance-tests.sh
+#
 #   Run a specific feature file:
 #     ./tools/run-acceptance-tests.sh ./acceptance/test/features/allowlist.feature
 

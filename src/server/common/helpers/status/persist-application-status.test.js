@@ -5,7 +5,7 @@ import { persistStatus } from './persist-application-status.js'
 import { setupRedirectTest } from '../../request-pipeline/redirects/forms-status-redirect.test-helpers.js'
 import { getCacheKey } from '../state/get-cache-key-helper.js'
 import { generateUniqueReference } from '@defra/forms-engine-plugin/engine/referenceNumbers.js'
-import { isStoredByReference } from '../state/state-with-definition-context.js'
+import { getStateWithDefinition, isStoredByReference } from '../state/state-with-definition-context.js'
 import { mintLockToken } from '../lock/lock-token.js'
 
 vi.mock('../../helpers/logging/log.js', async () => {
@@ -32,7 +32,8 @@ vi.mock('@defra/forms-engine-plugin/engine/referenceNumbers.js', () => ({
   generateUniqueReference: vi.fn((prefix) => `${prefix}-NEW-REF`)
 }))
 vi.mock('../state/state-with-definition-context.js', () => ({
-  isStoredByReference: vi.fn()
+  isStoredByReference: vi.fn(),
+  getStateWithDefinition: vi.fn()
 }))
 
 const SUBMITTED = ApplicationStatus.SUBMITTED
@@ -114,6 +115,7 @@ describe('persistStatus', () => {
   describe('application keyed by reference', () => {
     beforeEach(() => {
       isStoredByReference.mockResolvedValue(true)
+      getStateWithDefinition.mockResolvedValue({ state: { createdAt: '2026-01-02T00:00:00.000Z' } })
       request.query = { ref: 'GLD-OLD-REF' }
       getCacheKey.mockImplementation((req) => ({
         sbi: '12345',
@@ -153,12 +155,32 @@ describe('persistStatus', () => {
       await persistStatus(request, REOPENED, SUBMITTED, existingState())
 
       expect(generateUniqueReference).toHaveBeenCalledWith('GLD')
-      expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
-        answer: 'x',
-        $$__referenceNumber: 'GLD-NEW-REF',
-        previousReferenceNumber: 'GLD-OLD-REF',
-        applicationStatus: REOPENED
+      expect(mockCacheService.setState).toHaveBeenCalledWith(
+        request,
+        {
+          answer: 'x',
+          $$__referenceNumber: 'GLD-NEW-REF',
+          previousReferenceNumber: 'GLD-OLD-REF',
+          applicationStatus: REOPENED
+        },
+        expect.anything()
+      )
+    })
+
+    it("REOPENED gives the replacement the superseded document's start date, so the application keeps its date started", async () => {
+      await persistStatus(request, REOPENED, SUBMITTED, existingState())
+
+      expect(mockCacheService.setState).toHaveBeenCalledWith(request, expect.anything(), {
+        createdAt: '2026-01-02T00:00:00.000Z'
       })
+    })
+
+    it('REOPENED records no start date when the superseded document has none to copy', async () => {
+      getStateWithDefinition.mockResolvedValue({ state: null })
+
+      await persistStatus(request, REOPENED, SUBMITTED, existingState())
+
+      expect(mockCacheService.setState).toHaveBeenCalledWith(request, expect.anything(), { createdAt: undefined })
     })
 
     it('REOPENED refuses to proceed when neither the stored state nor the request carries a reference', async () => {

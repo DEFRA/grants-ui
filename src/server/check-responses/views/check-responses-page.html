@@ -24,7 +24,21 @@
           {% endif %}
 
           {% if section.summaryList.rows | length %}
-            <div class="check-answers-summary">{{ govukSummaryList(section.summaryList) }}</div>
+            {% for answers in section.answerGroups or [section.summaryList] %}
+              {% if answers.card %}
+                {% set headingLevel = 3 if page.model.sections | length > 1 and section.title.text else 2 %}
+                {%
+                  set answers = {
+                    rows: answers.rows,
+                    card: {
+                      title: { text: answers.card.title.text, headingLevel: headingLevel },
+                      actions: answers.card.actions
+                    }
+                  }
+                %}
+              {% endif %}
+              <div class="check-answers-summary">{{ govukSummaryList(answers) }}</div>
+            {% endfor %}
           {% endif %}
 
           {% if section.landAndActionsSummary %}

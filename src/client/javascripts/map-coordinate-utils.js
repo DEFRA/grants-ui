@@ -1,5 +1,5 @@
-const MAX_EASTING = 700000
-const MAX_NORTHING = 1300000
+export const MAX_EASTING = 700000
+export const MAX_NORTHING = 1300000
 
 export function isValidEastingNorthing({ easting, northing }) {
   return (

@@ -1,5 +1,6 @@
 /** Every map route path in one place, so the plugin and its handlers agree. */
 export const ROUTES = {
+  approximateLocation: '/api/map/approximate-location',
   parcels: '/api/map/parcels',
   parcelSearch: '/api/map/parcels/search',
   parcelBbox: '/api/map/parcels/{parcelId}/bbox',

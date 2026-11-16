@@ -185,7 +185,7 @@ export async function clearSavedStateFromApi(key, request, { lockToken, grantVer
  * `allowlist.client.js`) and rejects a caller-supplied `sbi` with a 400.
  *
  * @param {{ crn: string, sbi: string, grantCode: string }} params
- * @returns {Promise<{ applicationRef: string, grantVersion: string, createdAt: string, updatedAt: string, applicationStatus: string | null, submittedAt: string | null }[]>}
+ * @returns {Promise<{ applicationRef: string, grantVersion: string, createdAt: string, updatedAt: string, applicationStatus: string | null, submittedAt: string | null, previousReferenceNumber: string | null, pinnedMajor?: number | null }[]>}
  *   An empty array when the backend is unconfigured or returns no applications.
  */
 export async function listApplicationsFromApi({ crn, sbi, grantCode }) {
@@ -211,7 +211,7 @@ export async function listApplicationsFromApi({ crn, sbi, grantCode }) {
   }
 
   const json = await response.json()
-  return /** @type {{ applications: { applicationRef: string, grantVersion: string, createdAt: string, updatedAt: string, applicationStatus: string | null, submittedAt: string | null }[] }} */ (
+  return /** @type {{ applications: { applicationRef: string, grantVersion: string, createdAt: string, updatedAt: string, applicationStatus: string | null, submittedAt: string | null, previousReferenceNumber: string | null, pinnedMajor?: number | null }[] }} */ (
     json
   ).applications
 }
@@ -268,6 +268,7 @@ export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVer
  * @property {string} [grantCode]
  * @property {string} [grantVersion] - The grant version this state belongs to
  * @property {string} [applicationRef] - The application's reference (stamped on every document)
+ * @property {string} [createdAt] - When the document was created: the application's start date
  * @property {boolean} [allowMultipleApplications] - Whether the backend keys this document by `applicationRef` rather than version
  * @property {Record<string, unknown>} [state] - The actual saved form state
  */
@@ -309,15 +310,20 @@ export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVer
  */
 
 /**
- * Read the latest active definition without application state or a lock-owner token.
+ * Read the latest active definition without application state or a lock-owner token:
+ * the grant's latest overall, or the latest within `major` when given.
  * @param {string} grantCode
+ * @param {{ major?: number }} [options]
  * @returns {Promise<StateWithDefinitionEnvelope['definition']|null>}
  */
-export async function fetchLatestDefinitionFromApi(grantCode) {
+export async function fetchLatestDefinitionFromApi(grantCode, { major } = {}) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     return null
   }
   const url = new URL(`/definitions/${encodeURIComponent(grantCode)}`, GRANTS_UI_BACKEND_ENDPOINT)
+  if (major !== undefined) {
+    url.searchParams.set('major', String(major))
+  }
   const response = await fetch(url.href, { method: 'GET', headers: await createApiHeadersForGrantsUiBackend({}) })
   if (response.status === statusCodes.notFound) {
     return null

@@ -170,7 +170,7 @@ Feature: User Permissions
 
         # repeat-page (list summary)
         Then the user should be at URL "repeat-page"
-        And should see heading "You have added 1 answer"
+        And should see heading "You have added 1 item"
         When the user continues
 
         # select-land-parcel

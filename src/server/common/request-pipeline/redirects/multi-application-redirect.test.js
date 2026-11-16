@@ -45,6 +45,7 @@ describe('multiApplicationRedirect', () => {
     vi.clearAllMocks()
     tryRoutingDefinition.mockImplementation(() => getStateWithDefinition())
     getGrantCode.mockReturnValue('test-grant')
+    listApplicationsFromApi.mockResolvedValue([])
   })
 
   const makeRequest = ({ query = {}, routePath = ROOT, path = '/test-grant', method = 'get', app = {} } = {}) => ({
@@ -149,7 +150,47 @@ describe('multiApplicationRedirect', () => {
       const request = makeRequest({ query: { ref: 'REF-BOGUS' } })
 
       await expect(multiApplicationRedirect(request, h)).rejects.toMatchObject({ output: { statusCode: 404 } })
-      expect(listApplicationsFromApi).not.toHaveBeenCalled()
+    })
+
+    describe('previous reference of a reopened application', () => {
+      beforeEach(() => {
+        getStateWithDefinition.mockResolvedValue(multiGrant(null))
+        listApplicationsFromApi.mockResolvedValue([
+          { applicationRef: 'REF-OTHER', previousReferenceNumber: null },
+          { applicationRef: 'REF-NEW', previousReferenceNumber: 'REF-OLD' }
+        ])
+      })
+
+      it('redirects a GET to the same URL with the current reference, without auditing', async () => {
+        const request = makeRequest({
+          query: { ref: 'REF-OLD', foo: '1' },
+          routePath: SUB_PAGE,
+          path: '/test-grant/summary'
+        })
+
+        const result = await multiApplicationRedirect(request, h)
+
+        expect(h.redirect).toHaveBeenCalledWith('/test-grant/summary?foo=1&ref=REF-NEW')
+        expect(result).toBe(takeover)
+        expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
+      })
+
+      it('scopes a POST to the current application and continues, so its payload is processed', async () => {
+        const request = makeRequest({ query: { ref: 'REF-OLD' }, routePath: SUB_PAGE, method: 'post' })
+
+        const result = await multiApplicationRedirect(request, h)
+
+        expect(result).toBe(h.continue)
+        expect(request.app.referenceNumber).toBe('REF-NEW')
+        expect(h.redirect).not.toHaveBeenCalled()
+      })
+
+      it('still 404s and audits a reference no live application supersedes', async () => {
+        const request = makeRequest({ query: { ref: 'REF-OLDER' } })
+
+        await expect(multiApplicationRedirect(request, h)).rejects.toMatchObject({ output: { statusCode: 404 } })
+        expect(request.sendAuditEventInBackground).toHaveBeenCalledExactlyOnceWith(unknownReferenceAudit('REF-OLDER'))
+      })
     })
   })
 
