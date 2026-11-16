@@ -70,12 +70,12 @@ describe('LocationValidateController', () => {
     it('should return exit page when locationFound is false', () => {
       mockContext.state.additionalAnswers.locationFound = false
       const result = controller.getNextPath(mockContext)
-      expect(result).toBe('/exit-where-project-located')
+      expect(result).toBe('/exit-eligibility-project-location')
     })
 
     it('should return exit page when locationFound is missing', () => {
       const result = controller.getNextPath(mockContext)
-      expect(result).toBe('/exit-where-project-located')
+      expect(result).toBe('/exit-eligibility-project-location')
     })
   })
   describe('makePostRouteHandler', () => {
