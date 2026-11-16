@@ -151,10 +151,15 @@ async function parseConsolidatedViewResponse(response, sbi) {
  * @param {string} query - GraphQL query
  * @param {object} [options] - Options
  * @param {string[]} [options.toleratedPaths] - GraphQL paths tolerated as partial failures
+ * @param {(response: GraphQLResponse | undefined) => boolean} [options.hasUsablePartialData] - Required data for partial success
  * @returns {Promise<GraphQLResponse>} API response JSON
  * @throws {ConsolidatedViewError} - If the API request fails
  */
-async function makeConsolidatedViewRequest(request, query, { toleratedPaths } = {}) {
+async function makeConsolidatedViewRequest(
+  request,
+  query,
+  { toleratedPaths, hasUsablePartialData = hasUsableData } = {}
+) {
   const sbi = request.auth.credentials.sbi
   const CV_API_ENDPOINT = config.get('consolidatedView.apiEndpoint')
 
@@ -165,7 +170,7 @@ async function makeConsolidatedViewRequest(request, query, { toleratedPaths } = 
     // DAL query failures can arrive with either HTTP 200 or a legacy error status.
     // Inspect the GraphQL envelope before deciding whether the request succeeded.
     if (Array.isArray(parsed?.errors) && parsed.errors.length) {
-      if (hasUsableData(parsed) && hasOnlyToleratedFailures(parsed.errors, toleratedPaths)) {
+      if (hasUsablePartialData(parsed) && hasOnlyToleratedFailures(parsed.errors, toleratedPaths)) {
         const failedPaths = parsed.errors.map((/** @type {GraphQLError} */ e) => e.path?.join('.')).join(', ')
         log(
           LogCodes.SYSTEM.CONSOLIDATED_VIEW_PARTIAL_SUCCESS,
@@ -229,14 +234,15 @@ async function makeConsolidatedViewRequest(request, query, { toleratedPaths } = 
  * @param {string} params.query - GraphQL query
  * @param {Function} params.formatResponse - Function to format the response
  * @param {string[]} [params.toleratedPaths] - GraphQL paths tolerated as partial failures
+ * @param {(response: GraphQLResponse | undefined) => boolean} [params.hasUsablePartialData] - Required data for partial success
  * @returns {Promise<any>} Formatted response data
  * @throws {ConsolidatedViewError} - If the API request fails
  */
-async function fetchFromConsolidatedView(request, { query, formatResponse, toleratedPaths }) {
+async function fetchFromConsolidatedView(request, { query, formatResponse, toleratedPaths, hasUsablePartialData }) {
   const { credentials: { sbi } = {} } = request.auth ?? {}
 
   try {
-    const responseJson = await makeConsolidatedViewRequest(request, query, { toleratedPaths })
+    const responseJson = await makeConsolidatedViewRequest(request, query, { toleratedPaths, hasUsablePartialData })
 
     if (!responseJson.errors?.length) {
       log(LogCodes.SYSTEM.CONSOLIDATED_VIEW_SUCCESS, { sbi }, request)
@@ -284,11 +290,16 @@ export const fetchBusinessPermissions = async (request) => {
   const formatResponse = (/** @type {GraphQLResponse} */ r) => {
     const business = r.data?.customer?.business
     return {
-      role: typeof business?.role === 'string' ? business.role : undefined,
+      role: !r.errors?.length && typeof business?.role === 'string' ? business.role : undefined,
       permissionGroups: business?.permissionGroups || []
     }
   }
-  return fetchFromConsolidatedView(request, { query, formatResponse })
+  return fetchFromConsolidatedView(request, {
+    query,
+    formatResponse,
+    toleratedPaths: ['role'],
+    hasUsablePartialData: (response) => Array.isArray(response?.data?.customer?.business?.permissionGroups)
+  })
 }
 
 /**

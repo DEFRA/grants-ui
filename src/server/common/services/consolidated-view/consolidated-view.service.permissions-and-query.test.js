@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
 import { mockFetch } from '~/src/__mocks__'
 import { fetchBusinessPermissions, executeConfigDrivenQuery } from './consolidated-view.service.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { can } from '~/src/server/common/helpers/permissions/can.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import {
@@ -81,6 +82,55 @@ describe('Consolidated View Service - Permissions and query', () => {
       expect(body.query).toContain('level')
       expect(body.query).toContain('functions')
     })
+
+    it.each([200, 502])('preserves permissions when only role fails with HTTP %s', async (status) => {
+      mockFetchInstance.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: { customer: { business: { role: null, permissionGroups: mockPermissionGroups } } },
+            errors: [{ message: 'Role unavailable', path: ['customer', 'business', 'role'] }]
+          }),
+          { status }
+        )
+      )
+
+      await expect(fetchBusinessPermissions(mockRequest)).resolves.toEqual({
+        role: undefined,
+        permissionGroups: mockPermissionGroups
+      })
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        LogCodes.SYSTEM.CONSOLIDATED_VIEW_PARTIAL_SUCCESS,
+        { sbi: mockSbi, failedPaths: 'customer.business.role', statusCode: status },
+        mockRequest
+      )
+    })
+
+    it.each([
+      { business: null, errors: [{ message: 'Role unavailable', path: ['customer', 'business', 'role'] }] },
+      { business: { role: null }, errors: [{ message: 'Role unavailable', path: ['customer', 'business', 'role'] }] },
+      {
+        business: { permissionGroups: mockPermissionGroups },
+        errors: [
+          { message: 'Role unavailable', path: ['customer', 'business', 'role'] },
+          { message: 'Permissions unavailable', path: ['customer', 'business', 'permissionGroups'] }
+        ]
+      }
+    ])(
+      'rejects partial data without usable permissions or with permission errors: %j',
+      async ({ business, errors }) => {
+        mockFetchInstance.mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              data: { customer: { business } },
+              errors
+            }),
+            { status: 200 }
+          )
+        )
+        await expect(fetchBusinessPermissions(mockRequest)).rejects.toMatchObject({ details: { status: 502 } })
+        expect(log).not.toHaveBeenCalled()
+      }
+    )
 
     it.each(['MAKE_LEGAL_CHANGES', 'FULL_PERMISSION'])(
       'uses BUSINESS_DETAILS level %s from DAL to allow all actions',
