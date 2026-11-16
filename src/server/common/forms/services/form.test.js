@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
-import { configureFormDefinition, formsService } from './form.js'
+import { configureFormDefinition, formsService, loadSharedRedirectRules, mergeGrantRedirectRules } from './form.js'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
 import {
   currentRequest,
@@ -344,6 +344,31 @@ describe('form', () => {
       const second = await service.getFormMetadata('backend-slug')
       expect(second.title).toBe('New Title')
       expect(second.metadata).toMatchObject({ supportEmail: 'new@example.com' })
+    })
+  })
+
+  describe('redirect rules', () => {
+    test('loadSharedRedirectRules reads the shared YAML once and resolves the agreements placeholder', async () => {
+      const [first, second] = await Promise.all([loadSharedRedirectRules(), loadSharedRedirectRules()])
+
+      expect(first).toBe(second)
+      expect(first.preSubmission).toEqual([{ toPath: '/summary' }])
+      expect(first.postSubmission.length).toBeGreaterThan(0)
+      expect(first.postSubmission.some((rule) => rule.toPath === '__AGREEMENTS_BASE_URL__')).toBe(false)
+    })
+
+    test('mergeGrantRedirectRules layers a grant override over the shared rules, section by section', () => {
+      const shared = { preSubmission: [{ toPath: '/summary' }], postSubmission: [{ toPath: '/confirmation' }] }
+
+      expect(mergeGrantRedirectRules(null, shared)).toEqual(shared)
+      expect(mergeGrantRedirectRules(undefined, shared)).toEqual(shared)
+      expect(
+        mergeGrantRedirectRules({ preSubmission: [{ toPath: '/tasks' }], excludedPaths: ['print'] }, shared)
+      ).toEqual({
+        preSubmission: [{ toPath: '/tasks' }],
+        postSubmission: [{ toPath: '/confirmation' }],
+        excludedPaths: ['print']
+      })
     })
   })
 

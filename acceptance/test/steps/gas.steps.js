@@ -5,6 +5,7 @@ import Ajv from 'ajv/dist/2020.js'
 import Gas from '../utils/gas.js'
 import referenceNumbers from '../utils/reference-number-store.js'
 import expectationIds from '../utils/expectation-id-store.js'
+import { transformStepArgument } from '../utils/step-argument-transformation.js'
 
 const require = createRequire(import.meta.url)
 
@@ -43,7 +44,8 @@ Given('the application status in GAS is now {string}', async function (gasStatus
 Given(
   'the application status in GAS for reference number {string} is now {string}',
   async function (referenceNumber, gasStatus) {
-    await Gas.setStatusQueryResponse(referenceNumber, gasStatus)
+    const expectationId = await Gas.setStatusQueryResponse(transformStepArgument(referenceNumber).trim(), gasStatus)
+    expectationIds.push(expectationId)
   }
 )
 
