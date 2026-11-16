@@ -93,7 +93,8 @@ function saveInputs(context, inputs, repeatName, itemId) {
       $$__repeatNumberFieldInputs: { ...repeats, [repeatName]: items }
     }
   } else {
-    const { $$__numberFieldInputs: saved, ...state } = context.state
+    const state = { ...context.state }
+    delete state.$$__numberFieldInputs
     context.state = Object.keys(inputs).length ? { ...state, $$__numberFieldInputs: inputs } : state
   }
 }
@@ -127,12 +128,13 @@ export function persistFormatting(request, context) {
     }
     return
   }
-  const repeatName = page instanceof RepeatPageController ? page.repeat.options.name : undefined
+  let repeatName
   const itemId = page.getItemId(request)
-  const state =
-    page instanceof RepeatPageController
-      ? page.getItemFromList(page.getListFromState(context.state), itemId)
-      : context.state
+  let state = /** @type {Record<string, unknown> | undefined} */ (context.state)
+  if (page instanceof RepeatPageController) {
+    repeatName = page.repeat.options.name
+    state = page.getItemFromList(page.getListFromState(context.state), itemId)
+  }
   if (!state) {
     return
   }

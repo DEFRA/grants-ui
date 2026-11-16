@@ -97,10 +97,7 @@ function buildQuestion(component, answer, answers, includeUnanswered, numberInpu
   const locationHint = getSavedLocationHint(component, answers)
   const numberFormatter =
     component.type === COMPONENT_TYPES.NumberField ? getNumberFormatter(component.options?.format) : undefined
-  const displayValue =
-    numberFormatter && component.type === COMPONENT_TYPES.NumberField
-      ? getNumberDisplayValue(answer, numberInputs?.[component.name])
-      : answer
+  const displayValue = numberFormatter ? getNumberDisplayValue(answer, numberInputs?.[component.name]) : answer
 
   return {
     label:
@@ -129,11 +126,9 @@ function extractQuestions(components, answers, includeUnanswered, numberInputs) 
     }
 
     const answer = resolveAnswer(component, answers)
-    if (!includeUnanswered && (answer === undefined || answer === null)) {
-      continue
+    if (includeUnanswered || (answer !== undefined && answer !== null)) {
+      questions.push(buildQuestion(component, answer, answers, includeUnanswered, numberInputs))
     }
-
-    questions.push(buildQuestion(component, answer, answers, includeUnanswered, numberInputs))
   }
 
   return questions

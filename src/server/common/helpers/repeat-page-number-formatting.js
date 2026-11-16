@@ -19,14 +19,15 @@ export function enableRepeatNumberFormatting(formRequest) {
     return
   }
 
+  // The engine uses the first field as the item's label on the repeat list.
+  const field = page.collection.fields[0]
+  if (!field) {
+    return
+  }
+
   const { getListSummaryViewModel } = page
   page.getListSummaryViewModel = function (request, context, list) {
     const viewModel = getListSummaryViewModel.call(this, request, context, list)
-    // The engine uses the first field as the item's label on the repeat list.
-    const field = this.collection.fields[0]
-    if (!field) {
-      return viewModel
-    }
     const component = /** @type {{ type: string, options?: { format?: string } } | undefined} */ (
       context.componentDefMap.get(field.name)
     )
