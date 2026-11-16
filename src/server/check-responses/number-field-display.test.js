@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { randomUUID } from 'node:crypto'
+import { load } from 'cheerio'
 import { FormModel } from '@defra/forms-engine-plugin/engine/models/FormModel.js'
 import { redirectOrMakeHandler } from '@defra/forms-engine-plugin/engine/routes/index.js'
 import CheckResponsesPageController from './check-responses.controller.js'
@@ -16,6 +17,10 @@ vi.unmock('@defra/forms-model')
 vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
   vi.importActual('@defra/forms-engine-plugin/engine/pageControllers/SummaryPageController.js')
 )
+
+function getRowText({ value }) {
+  return value.text ?? load(value.html).text()
+}
 
 function createJourney(format, { controller = 'CheckResponsesPageController', view, repeat = false, components } = {}) {
   const model = new FormModel(
@@ -197,11 +202,7 @@ describe('number display formatting', () => {
 
     const summary = await journey.dispatch('summary')
 
-    expect(
-      summary.viewModel.checkAnswers[0].summaryList.rows.map(
-        ({ value }) => value.text ?? value.html.replace(/<[^>]*>/g, '')
-      )
-    ).toEqual(['125,000.5', '125000'])
+    expect(summary.viewModel.checkAnswers[0].summaryList.rows.map(getRowText)).toEqual(['125,000.5', '125000'])
     expect(journey.print().sections[0].questions.map((question) => question.answer)).toEqual(['125,000.5', '125000'])
     expect(summary.viewModel.context.relevantState).toEqual({ capacity: 125000.5, sbi: 125000 })
   })
@@ -305,11 +306,7 @@ describe('repeated number display formatting', () => {
     expect(list.viewModel.checkAnswers[0].summaryList.rows[0].value.text).toBe('Reservoir')
     const summary = await journey.dispatch('summary')
     const expected = ['Reservoir', '125,000.50', '£125,000.50', '12.3400', '125000']
-    expect(
-      summary.viewModel.checkAnswers[0].answerGroups[0].rows.map(
-        ({ value }) => value.text ?? value.html.replace(/<[^>]*>/g, '')
-      )
-    ).toEqual(expected)
+    expect(summary.viewModel.checkAnswers[0].answerGroups[0].rows.map(getRowText)).toEqual(expected)
     expect(journey.print().sections[0].questions[0].repeatItems[0].questions.map(({ answer }) => answer)).toEqual(
       expected
     )
@@ -345,16 +342,12 @@ describe('repeated number display formatting', () => {
 
     const list = await journey.dispatch('amount/summary')
     const summary = await journey.dispatch('summary')
-    expect(
-      list.viewModel.checkAnswers[0].summaryList.rows.map(
-        ({ value }) => value.text ?? value.html.replace(/<[^>]*>/g, '')
-      )
-    ).toEqual(['125000'])
-    expect(
-      summary.viewModel.checkAnswers[0].answerGroups[0].rows.map(
-        ({ value }) => value.text ?? value.html.replace(/<[^>]*>/g, '')
-      )
-    ).toEqual(['125000', '125,000.5', '125000'])
+    expect(list.viewModel.checkAnswers[0].summaryList.rows.map(getRowText)).toEqual(['125000'])
+    expect(summary.viewModel.checkAnswers[0].answerGroups[0].rows.map(getRowText)).toEqual([
+      '125000',
+      '125,000.5',
+      '125000'
+    ])
     expect(journey.print().sections[0].questions[0].repeatItems[0].questions.map(({ answer }) => answer)).toEqual([
       '125000',
       '125,000.5',
@@ -371,20 +364,18 @@ describe('repeated number display formatting', () => {
       sbi: '125000.000'
     }
     const blankSummary = await journey.dispatch('summary')
-    expect(
-      blankSummary.viewModel.checkAnswers[0].answerGroups[0].rows.map(
-        ({ value }) => value.text ?? value.html.replace(/<[^>]*>/g, '')
-      )
-    ).toEqual(['125000', 'Not provided', '125000'])
+    expect(blankSummary.viewModel.checkAnswers[0].answerGroups[0].rows.map(getRowText)).toEqual([
+      '125000',
+      'Not provided',
+      '125000'
+    ])
     expect(journey.print().sections[0].questions[0].repeatItems[0].questions.map(({ answer }) => answer)).toEqual([
       '125000',
       'Not provided',
       '125000'
     ])
     expect(
-      (await journey.dispatch('amount/summary')).viewModel.checkAnswers[0].summaryList.rows.map(
-        ({ value }) => value.text ?? value.html.replace(/<[^>]*>/g, '')
-      )
+      (await journey.dispatch('amount/summary')).viewModel.checkAnswers[0].summaryList.rows.map(getRowText)
     ).toEqual(['125000'])
     expect(blankSummary.viewModel.context.relevantState).toEqual({
       amounts: [{ itemId, name: '125000', capacity: null, sbi: 125000 }]
