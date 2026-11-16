@@ -38,7 +38,9 @@ function validateComponents(components) {
  */
 function requiresComponentValidation(component) {
   return (
-    component.format !== undefined || component.schema?.format !== undefined || component.options?.format !== undefined
+    component.format !== undefined ||
+    component.schema?.format !== undefined ||
+    (component.type !== 'TelephoneNumberField' && component.options?.format !== undefined)
   )
 }
 

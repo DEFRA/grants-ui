@@ -195,6 +195,28 @@ describe('number display formatting', () => {
     const summary = await journey.dispatch('summary')
     expect(summary.viewModel.checkAnswers[0].summaryList.rows[0].value.text).toBe('£125,000.5000')
   })
+
+  it.each([
+    ['uk', '020 7946 0000', '+1 202 555 0123'],
+    ['international', '+1 202 555 0123', '020 7946 0000']
+  ])('preserves native %s telephone validation alongside number formatting', async (format, phone, invalidPhone) => {
+    const journey = createJourney(undefined, {
+      components: [
+        { type: 'NumberField', name: 'capacity', title: 'Capacity', options: { format: 'thousands' } },
+        { type: 'TelephoneNumberField', name: 'phone', title: 'Telephone number', options: { format } }
+      ]
+    })
+    const payload = { action: 'validate', capacity: '125000.50', phone }
+    const invalid = await journey.dispatch('amount', { ...payload, phone: invalidPhone })
+    expect(invalid.viewModel.errors.map(({ name }) => name)).toEqual(['phone'])
+
+    await journey.dispatch('amount', payload)
+    const summary = await journey.dispatch('summary')
+    expect(summary.viewModel.checkAnswers[0].summaryList.rows.map(getRowText)).toEqual(['125,000.50', phone])
+    expect(summary.viewModel.context.relevantState).toEqual({ capacity: 125000.5, phone })
+    expect(journey.print().sections[0].questions.map(({ answer }) => answer)).toEqual(['125,000.50', phone])
+  })
+
   it('ignores stale and malformed retained input for the saved answer', async () => {
     const journey = createJourney('thousands')
     await journey.dispatch('amount', { action: 'validate', capacity: '125000.50', sbi: '125000' })
