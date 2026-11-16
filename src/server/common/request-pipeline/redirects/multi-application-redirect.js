@@ -5,6 +5,7 @@ import { getReferenceNumber, setReferenceNumber } from '../../helpers/state/get-
 import { getStateWithDefinition } from '../../helpers/state/state-with-definition-context.js'
 import { tryRoutingDefinition, isUnscopedGrantRoot } from '../../helpers/definition/routing-definition.js'
 import { listApplicationsFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
+import { applicationsSelectorPath } from '../../constants/applications-path.js'
 
 const UNKNOWN_REFERENCE = 'Unknown application reference'
 
@@ -20,7 +21,7 @@ const UNKNOWN_REFERENCE = 'Unknown application reference'
  * @returns {Promise<symbol | import('@hapi/hapi').ResponseObject>}
  */
 export async function multiApplicationRedirect(request, h) {
-  if (request.path === applicationsSelectorPath(request)) {
+  if (request.path === applicationsSelectorPath(request.params.slug)) {
     return h.continue
   }
 
@@ -140,7 +141,7 @@ async function resolveWithoutRef(request, h, envelope) {
   const applications = await listApplications(request)
 
   if (applications.length > 1) {
-    return h.redirect(applicationsSelectorPath(request)).takeover()
+    return h.redirect(applicationsSelectorPath(request.params.slug)).takeover()
   }
 
   // Documents are keyed by reference, so even the sole application must be named on every request.
@@ -167,14 +168,6 @@ function scopeToApplication(request, h, applicationRef) {
   setReferenceNumber(request, applicationRef)
 
   return request.method === 'get' ? h.redirect(currentUrl(request, applicationRef)).takeover() : h.continue
-}
-
-/**
- * @param {AnyRequest} request
- * @returns {string}
- */
-function applicationsSelectorPath(request) {
-  return `/${request.params.slug}/applications`
 }
 
 /**

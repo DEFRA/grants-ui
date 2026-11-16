@@ -1,7 +1,7 @@
 import { TagClasses } from '../common/constants/tag-classes.js'
 import { ApplicationStatus } from '../common/constants/application-status.js'
 import { isApplicationWindowOpen } from '../common/helpers/application-window.js'
-import { findRedirectRule } from '../common/request-pipeline/redirects/forms-status-redirect.js'
+import { findRedirectRule, isWithdrawal } from '../common/request-pipeline/redirects/forms-status-redirect.js'
 import agreements from '~/src/config/agreements.js'
 import { buildFeedbackSurveyUrl } from '../common/helpers/feedback-survey.js'
 
@@ -19,6 +19,12 @@ const RETURNED_ROW = {
   showsSubmittedAt: false
 }
 const DRAFT_ROW = { ...RETURNED_ROW, statusText: 'Draft', statusClasses: TagClasses.BLUE }
+const WITHDRAWN_ROW = {
+  statusText: 'Withdrawn',
+  statusClasses: TagClasses.GREY,
+  actionText: null,
+  showsSubmittedAt: true
+}
 
 /** How a row reads for each application status; any other status is a draft. */
 const ROW_BY_STATUS = {
@@ -34,7 +40,7 @@ const ROW_BY_STATUS = {
  * @param {any[]} applications
  * @param {{ gasStatuses?: Map<string, string>, postSubmissionRules?: Map<string, ApplicationRules> }} [gas] - GAS
  *   status and the post-submission rules each application answers to, both by reference, so a submitted application
- *   GAS has returned for amendments shows as returned
+ *   GAS has returned for amendments shows as returned and one GAS has withdrawn shows as withdrawn
  */
 export function buildApplicationsViewModel(
   request,
@@ -58,13 +64,10 @@ export function buildApplicationsViewModel(
       )
       .map((application) => {
         const { rules, ownMajor = false } = postSubmissionRules.get(application.applicationRef) ?? {}
-        const gasRule = matchedGasPostSubmissionRule(application, gasStatuses, rules)
-        // GAS has the last word on a submitted application: returned for amendments shows as returned.
-        const status =
-          gasRule?.toGrantsStatus === ApplicationStatus.REOPENED
-            ? ApplicationStatus.REOPENED
-            : application.applicationStatus
-        const row = ROW_BY_STATUS[status] ?? DRAFT_ROW
+        // Only the application's own major's rules, the ones the status redirect applies when it is opened, give a
+        // verdict here. A fallback to another major's rules reads like an unread GAS status: the redirect decides.
+        const gasRule = ownMajor ? matchedGasPostSubmissionRule(application, gasStatuses, rules) : undefined
+        const row = rowFor(application, gasRule)
         return {
           ...application,
           referenceNumber: application.applicationRef,
@@ -72,20 +75,32 @@ export function buildApplicationsViewModel(
           statusText: row.statusText,
           statusClasses: row.statusClasses,
           actionText: row.actionText,
-          href: applicationHref(
-            request.params.slug,
-            application.applicationRef,
-            ownMajor && staysSubmittedInJourney(gasRule)
-          )
+          href: row.actionText
+            ? applicationHref(request.params.slug, application.applicationRef, staysSubmittedInJourney(gasRule))
+            : null
         }
       })
   }
 }
 
 /**
- * Row link. Only an application GAS confirms is still simply submitted, under its own major's rules, opens as its
- * print view (a page the grant excludes from the status redirect); every other row goes to the grant root and the
- * status redirect decides.
+ * How an application reads. GAS has the last word on a submitted one: a rule clearing it shows it as withdrawn,
+ * a rule reopening it as returned for amendments.
+ * @param {any} application @param {RedirectRule | undefined} gasRule
+ */
+function rowFor(application, gasRule) {
+  if (isWithdrawal(application.applicationStatus, gasRule)) {
+    return WITHDRAWN_ROW
+  }
+  if (gasRule?.toGrantsStatus === ApplicationStatus.REOPENED) {
+    return RETURNED_ROW
+  }
+  return ROW_BY_STATUS[application.applicationStatus] ?? DRAFT_ROW
+}
+
+/**
+ * Row link. Only an application GAS confirms is still simply submitted opens as its print view (a page the grant
+ * excludes from the status redirect); every other row goes to the grant root and the status redirect decides.
  * @param {string} slug @param {string} applicationRef @param {boolean} viewsPrintPage
  */
 function applicationHref(slug, applicationRef, viewsPrintPage) {
