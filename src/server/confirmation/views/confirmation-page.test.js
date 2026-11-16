@@ -7,7 +7,7 @@ const render = createPageRenderer(import.meta.url, 'confirmation-page.html', {
 
 describe('confirmation page manage applications link', () => {
   it('shows a link and bulleted list instead of the start button', () => {
-    const $ = render({ startAnotherApplicationUrl: '/test-grant/applications' })
+    const $ = render({ manageApplicationsUrl: '/test-grant/applications' })
 
     expect($('main button').length).toBe(0)
     expect($('main').text()).not.toContain('Start a new application')
@@ -24,8 +24,8 @@ describe('confirmation page manage applications link', () => {
     ).toEqual(['view this and other applications', 'start a new application', 'continue working on draft applications'])
   })
 
-  it('shows neither the link nor the button without a start URL', () => {
-    const $ = render({ startAnotherApplicationUrl: undefined })
+  it('shows neither the link nor the button without a manage applications URL', () => {
+    const $ = render({ manageApplicationsUrl: undefined })
 
     expect($('main a:contains("manage your applications")').length).toBe(0)
     expect($('main button').length).toBe(0)
