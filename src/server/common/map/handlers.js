@@ -5,7 +5,7 @@ import { attempt } from '~/src/server/common/helpers/attempt.js'
 import { readUpstreamStatus } from '~/src/server/common/helpers/errors.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { logHandledError } from '~/src/server/common/helpers/logging/handled-error.js'
-import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/services/land-grants.service.js'
+import { fetchParcels } from '~/src/server/land-grants/services/land-grants.service.js'
 import {
   fetchParcelTile,
   locateParcelTiles,
@@ -76,11 +76,34 @@ export async function parcelsHandler(request, h) {
   }
 
   const parcelData = toParcelData(loaded.parcels, enableActionCount ? enabledLandActions : undefined)
-  const features = toGeoJsonFeatures(parcelData)
-  const bbox = await fetchParcelTileLocation(
-    parcelData.map((p) => p.id),
-    loaded.userContext
+  if (!parcelData.length) {
+    return h.response({ features: [], bbox: null }).code(statusCodes.ok).header(CACHE_CONTROL_HEADER, 'no-store')
+  }
+  const located = await attempt(() =>
+    locateParcelTiles(
+      parcelData.map((p) => p.id),
+      LAND_GRANTS_API_URL,
+      loaded.userContext
+    )
   )
+  if (!located.ok) {
+    const status = readUpstreamStatus(/** @type {Error & { code?: unknown, status?: unknown }} */ (located.error))
+    return h.response({ error: PARCELS_ERROR_MESSAGE }).code(status ?? statusCodes.serviceUnavailable)
+  }
+  const { bbox, parcels = [] } = located.value
+  const boundsById = new Map(parcels.map((parcel) => [parcel.id, parcel.bounds]))
+  // Incomplete locations would silently undercount the holding's badges.
+  if (parcelData.some((parcel) => !boundsById.has(parcel.id))) {
+    logHandledError(new Error('Incomplete parcel locations'), request, {
+      fallbackCode: LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+      fallbackDetails: { endpoint: ROUTES.parcels, service: SERVICE_LAND_GRANTS, upstreamStatus: null }
+    })
+    return h.response({ error: PARCELS_ERROR_MESSAGE }).code(statusCodes.serviceUnavailable)
+  }
+  const features = toGeoJsonFeatures(parcelData).map((feature) => ({
+    ...feature,
+    properties: { ...feature.properties, bounds: boundsById.get(feature.id) }
+  }))
 
   // User-specific: never let the browser replay this for a different signed-in
   // user against the same URL after a logout/login.
