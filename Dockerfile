@@ -6,7 +6,7 @@ FROM defradigital/node-development:${PARENT_VERSION} AS development
 
 ENV TZ="Europe/London"
 
-ARG PARENT_VERSION=latest-24
+ARG PARENT_VERSION=latest-26
 LABEL uk.gov.defra.ffc.parent-image=defradigital/node-development:${PARENT_VERSION}
 
 ARG PORT
