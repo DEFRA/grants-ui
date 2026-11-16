@@ -31,6 +31,37 @@ async function getBusinessPermissions(request) {
   return businessPermissions
 }
 
+/**
+ * @param {AnyRequest} request
+ * @param {{ sessionId: string, crn: string, sbi: string }} context
+ */
+function getAnalyticsBusinessContext(request, { sessionId, crn, sbi }) {
+  const previous = /** @type {{ sessionId: string, crn: string, sbi: string, token: string } | undefined} */ (
+    request.yar?.get('analyticsBusinessContext')
+  )
+  const current =
+    previous?.sessionId === sessionId && previous?.crn === crn && previous?.sbi === sbi
+      ? previous
+      : { sessionId, crn, sbi, token: randomUUID() }
+  request.yar?.set('analyticsBusinessContext', current)
+  return current
+}
+
+/**
+ * @param {AnyRequest} request
+ * @param {unknown} role
+ */
+function setUserRoleAnalytics(request, role) {
+  const { sessionId, crn, sbi } = /** @type {{ sessionId?: string, crn?: string, sbi?: string }} */ (
+    request.auth.credentials
+  )
+  if (typeof role === 'string' && role && sessionId && crn && sbi) {
+    const current = getAnalyticsBusinessContext(request, { sessionId, crn, sbi })
+    const app = /** @type {{ userRoleAnalytics?: { role: string, token: string } }} */ (request.app)
+    app.userRoleAnalytics = { role, token: current.token }
+  }
+}
+
 export default {
   plugin: {
     name: 'permissions',
@@ -69,21 +100,7 @@ export default {
             /** @type {unknown} */ (request)
           )
           pipelineRequest.auth.credentials.permissions = permissionGroups
-          const { sessionId, crn, sbi } = /** @type {{ sessionId?: string, crn?: string, sbi?: string }} */ (
-            request.auth.credentials
-          )
-          if (typeof role === 'string' && role && sessionId && crn && sbi) {
-            const previous = /** @type {{ sessionId: string, crn: string, sbi: string, token: string } | undefined} */ (
-              request.yar?.get('analyticsBusinessContext')
-            )
-            const current =
-              previous?.sessionId === sessionId && previous?.crn === crn && previous?.sbi === sbi
-                ? previous
-                : { sessionId, crn, sbi, token: randomUUID() }
-            request.yar?.set('analyticsBusinessContext', current)
-            const app = /** @type {{ userRoleAnalytics?: { role: string, token: string } }} */ (request.app)
-            app.userRoleAnalytics = { role, token: current.token }
-          }
+          setUserRoleAnalytics(request, role)
           pipelineRequest.can = (action, resource) => {
             return can(
               /** @type {Array<{ id: string, level: PermissionLevel }>} */ (
