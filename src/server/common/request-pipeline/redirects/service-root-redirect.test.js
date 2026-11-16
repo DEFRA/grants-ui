@@ -191,8 +191,38 @@ describe('serviceRootRedirect', () => {
     expect(h.redirect).not.toHaveBeenCalled()
   })
 
-  it.each(['SUBMITTED', 'REOPENED', 'PURGED'])('continues for a %s application', async (applicationStatus) => {
+  it.each(['SUBMITTED', 'PURGED'])('continues for a %s application', async (applicationStatus) => {
     getState.mockResolvedValue({ applicationStatus, businessDetailsUpToDate: true })
+
+    const result = await serviceRootRedirect(request, h)
+
+    expect(result).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
+  })
+
+  it('sends a reopened multi-application where a draft goes, so every entry at the grant root lands on the same page', async () => {
+    request.app.model.def.metadata.allowMultipleApplications = true
+    request.query = { ref: 'REF-NEW' }
+    getState.mockResolvedValue({ applicationStatus: 'REOPENED', businessDetailsUpToDate: true })
+
+    const result = await serviceRootRedirect(request, h)
+
+    expect(h.redirect).toHaveBeenCalledWith('/woodland/tasks?ref=REF-NEW')
+    expect(result).not.toBe(h.continue)
+  })
+
+  it("leaves a reopened single-application grant to its own reopened routing (for example woodland's returned-to-customer page)", async () => {
+    getState.mockResolvedValue({ applicationStatus: 'REOPENED', businessDetailsUpToDate: true })
+
+    const result = await serviceRootRedirect(request, h)
+
+    expect(result).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
+  })
+
+  it('leaves a reopened multi-application with no answers on the start page, as it would a draft', async () => {
+    request.app.model.def.metadata.allowMultipleApplications = true
+    getState.mockResolvedValue({ applicationStatus: 'REOPENED' })
 
     const result = await serviceRootRedirect(request, h)
 

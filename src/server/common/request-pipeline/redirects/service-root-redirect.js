@@ -1,5 +1,6 @@
 import { getFormsCacheService } from '../../helpers/forms-cache/forms-cache.js'
 import { isApplicationWindowOpen } from '../../helpers/application-window.js'
+import { ApplicationStatus } from '../../constants/application-status.js'
 import { withReferenceNumber } from '../../helpers/state/get-cache-key-helper.js'
 import {
   buildRedirectUrl,
@@ -34,7 +35,7 @@ function isDispatchRedirect(response) {
 /**
  * Resolves whether this request is a candidate for the pre-submission.
  * @param {import('@hapi/hapi').Request} request
- * @returns {{ slug: string, preSubmissionRule: any } | null}
+ * @returns {{ slug: string, preSubmissionRule: any, allowMultipleApplications: boolean } | null}
  */
 function resolvePreSubmissionCandidate(request) {
   const slug = request.params?.slug
@@ -61,7 +62,7 @@ function resolvePreSubmissionCandidate(request) {
     return null
   }
 
-  return { slug, preSubmissionRule }
+  return { slug, preSubmissionRule, allowMultipleApplications: def.metadata?.allowMultipleApplications === true }
 }
 
 /**
@@ -78,15 +79,20 @@ export async function serviceRootRedirect(request, h) {
       return h.continue
     }
 
-    const { slug, preSubmissionRule } = candidate
+    const { slug, preSubmissionRule, allowMultipleApplications } = candidate
 
     if (!isApplicationWindowOpen(request)) {
       return h.continue
     }
 
     const state = await getFormsCacheService(request.server).getState(request)
+    const { applicationStatus } = /** @type {{ applicationStatus?: string }} */ (state)
 
-    if (!shouldHandlePreSubmission(/** @type {{ applicationStatus?: string }} */ (state).applicationStatus)) {
+    // Multi-application only: a reopened application entering the grant root goes where a draft goes, so
+    // every entry (selector row, superseded or typed reference) lands on the same page. Other grants keep
+    // their own reopened routing.
+    const reopenedMultiApplication = allowMultipleApplications && applicationStatus === ApplicationStatus.REOPENED
+    if (!shouldHandlePreSubmission(applicationStatus) && !reopenedMultiApplication) {
       return h.continue
     }
 

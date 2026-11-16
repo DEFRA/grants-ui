@@ -300,12 +300,13 @@ export async function submitClaim(code, payload, request) {
  * @param {string} code - Grant code
  * @param {string} clientRef - Application client reference
  * @param {AnyRequest | undefined} request - Request object
+ * @param {Record<string, unknown>} [retryConfig] - Overrides for the retry mechanism (attempts, timeout)
  * @returns {Promise<Response>} - Status response from GAS
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
-export async function getApplicationStatus(code, clientRef, request) {
+export async function getApplicationStatus(code, clientRef, request, retryConfig) {
   const url = `${GAS_API_ENDPOINT}/grants/${mapFarmPaymentsGrantCode(code)}/applications/${clientRef}/status`
-  return makeGasApiRequest(url, code, request, { method: 'GET' })
+  return makeGasApiRequest(url, code, request, { method: 'GET', ...(retryConfig && { retryConfig }) })
 }
 
 /**

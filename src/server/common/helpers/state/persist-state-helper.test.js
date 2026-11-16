@@ -176,6 +176,16 @@ describe('persistStateToApi', () => {
       )
     })
 
+    it('records the creation date in the body only when one is given', async () => {
+      fetch.mockResolvedValue(createMockFetchResponse())
+
+      await persistStateToApi(testState, key, { createdAt: '2026-01-02T00:00:00.000Z' })
+      await persistStateToApi(testState, key)
+
+      expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({ createdAt: '2026-01-02T00:00:00.000Z' })
+      expect(JSON.parse(fetch.mock.calls[1][1].body)).not.toHaveProperty('createdAt')
+    })
+
     it('passes the lockToken to createApiHeadersForGrantsUiBackend', async () => {
       const lockToken = 'LOCK-TOKEN-123'
       fetch.mockResolvedValue({ ok: true, status: 200 })
