@@ -103,11 +103,10 @@ Then('(the user )should see the following applications', async function (dataTab
   const actual = await rows.evaluateAll((trs) =>
     trs.map((tr) => {
       const reference = tr.querySelector('th').textContent.trim()
-      return {
-        reference: reference.toUpperCase(),
-        status: tr.querySelector('.govuk-tag').textContent.trim(),
-        action: tr.querySelector('a').textContent.replace(reference, '').trim()
-      }
+      const status = tr.querySelector('.govuk-tag').textContent.trim()
+      // Only a withdrawn application offers no action; every other row must link.
+      const action = status === 'Withdrawn' ? '' : tr.querySelector('a').textContent.replace(reference, '').trim()
+      return { reference: reference.toUpperCase(), status, action }
     })
   )
   expect(actual).toEqual(expected)

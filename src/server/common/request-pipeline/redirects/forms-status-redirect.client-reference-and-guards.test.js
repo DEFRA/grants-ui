@@ -6,6 +6,7 @@ import { YarKeys } from '../../constants/session-keys.js'
 import { findRedirectRule, formsStatusRedirect, resolveClientReference } from './forms-status-redirect.js'
 import { log, LogCodes } from '../../helpers/logging/log.js'
 import { setupRedirectTest, mockGasStatus } from './forms-status-redirect.test-helpers.js'
+import { getReferenceNumber } from '../../helpers/state/get-cache-key-helper.js'
 
 vi.mock('../../../common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__')
@@ -413,6 +414,112 @@ describe('formsStatusRedirect', () => {
     it('returns undefined when no rule matches', () => {
       expect(findRedirectRule('REOPENED', 'RECEIVED', rules)).toBeUndefined()
       expect(findRedirectRule('SUBMITTED', 'RECEIVED')).toBeUndefined()
+    })
+  })
+})
+
+describe('withdrawal on a grant allowing multiple applications', () => {
+  let request
+  let h
+  let context
+  let mockCacheService
+
+  beforeEach(() => {
+    ;({ request, h, context, mockCacheService } = setupRedirectTest())
+    request.app.model.def.metadata.allowMultipleApplications = true
+    mockGasStatus('APPLICATION_WITHDRAWN')
+  })
+
+  it('sends a withdrawn submitted application to the selector, with the ref dropped, and persists nothing', async () => {
+    request.query = { ref: 'REF-001' }
+
+    await formsStatusRedirect(request, h, context)
+
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/applications')
+    expect(getReferenceNumber(request)).toBeUndefined()
+    expect(mockCacheService.setState).not.toHaveBeenCalled()
+    expect(updateApplicationStatus).not.toHaveBeenCalled()
+    expect(request.yar.set).not.toHaveBeenCalled()
+  })
+
+  it('still clears the application when the grant does not allow multiple applications', async () => {
+    request.app.model.def.metadata.allowMultipleApplications = false
+    request.path = '/grant-a/confirmation'
+
+    await formsStatusRedirect(request, h, context)
+
+    expect(mockCacheService.setState).toHaveBeenCalledWith(request, { applicationStatus: ApplicationStatus.CLEARED })
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/start')
+  })
+
+  it('still clears a reopened application whose previous reference GAS reports withdrawn', async () => {
+    context.state = { applicationStatus: ApplicationStatus.REOPENED, previousReferenceNumber: 'OLD-REF' }
+    request.path = '/grant-a/confirmation'
+
+    await formsStatusRedirect(request, h, context)
+
+    expect(getApplicationStatus).toHaveBeenCalledWith('grant-a', 'old-ref', request)
+    expect(mockCacheService.setState).toHaveBeenCalledWith(request, { applicationStatus: ApplicationStatus.CLEARED })
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/start')
+  })
+
+  describe('on a page excluded from the redirect, such as the print view', () => {
+    beforeEach(() => {
+      request.app.model.def.metadata.grantRedirectRules.excludedPaths = ['print-submitted-application']
+      request.path = '/grant-a/print-submitted-application'
+      request.params.path = 'print-submitted-application'
+    })
+
+    it('still sends a withdrawn application to the selector, persisting nothing', async () => {
+      await formsStatusRedirect(request, h, context)
+
+      expect(getApplicationStatus).toHaveBeenCalledWith('grant-a', 'ref-001', request, undefined)
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/applications')
+      expect(getReferenceNumber(request)).toBeUndefined()
+      expect(mockCacheService.setState).not.toHaveBeenCalled()
+      expect(updateApplicationStatus).not.toHaveBeenCalled()
+      expect(request.yar.set).not.toHaveBeenCalled()
+    })
+
+    it('shows the page when GAS keeps the application submitted', async () => {
+      mockGasStatus('RECEIVED')
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(result).toBe(h.continue)
+      expect(h.redirect).not.toHaveBeenCalled()
+      expect(mockCacheService.setState).not.toHaveBeenCalled()
+    })
+
+    it('shows the page when GAS cannot be read', async () => {
+      getApplicationStatus.mockRejectedValue(new Error('GAS unavailable'))
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(result).toBe(h.continue)
+      expect(h.redirect).not.toHaveBeenCalled()
+    })
+
+    it('does not consult GAS when the grant does not allow multiple applications', async () => {
+      request.app.model.def.metadata.allowMultipleApplications = false
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(result).toBe(h.continue)
+      expect(getApplicationStatus).not.toHaveBeenCalled()
+    })
+
+    it('does not consult GAS for an application that is not submitted', async () => {
+      // An excluded page the protected-page guard does not cover: the print view would be forbidden first.
+      request.app.model.def.metadata.grantRedirectRules.excludedPaths = ['excluded-path']
+      request.path = '/grant-a/excluded-path'
+      request.params.path = 'excluded-path'
+      context.state = { applicationStatus: ApplicationStatus.REOPENED }
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(result).toBe(h.continue)
+      expect(getApplicationStatus).not.toHaveBeenCalled()
     })
   })
 })
