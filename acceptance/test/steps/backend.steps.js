@@ -72,6 +72,19 @@ Then(
   }
 )
 
+Then(
+  'the grants-ui application statuses for SBI {string} and grant {string} should be',
+  async function (sbi, grantCode, dataTable) {
+    const statuses = await Mongo.getApplicationStatusesByReference(sbi, grantCode)
+    for (const row of dataTable.hashes()) {
+      const reference = transformStepArgument(row.REFERENCE).trim().toUpperCase()
+      expect(statuses.has(reference), `No application state found for reference ${reference}`).toBe(true)
+      // An empty STATUS is an application with no status yet: a draft.
+      expect(statuses.get(reference), `Application status for reference ${reference}`).toEqual(row.STATUS ?? '')
+    }
+  }
+)
+
 Given(
   'the application status in the backend for CRN {string} and SBI {string} and grant {string} is now {string}',
   async function (crn, sbi, grantCode, applicationStatus) {
