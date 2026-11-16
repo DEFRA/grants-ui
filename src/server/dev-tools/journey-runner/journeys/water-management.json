@@ -181,7 +181,7 @@
   },
   {
     "section": "project-details-estimated-costs",
-    "slug": "how-much-water-reservoir",
+    "slug": "project-details-reservoir-water-volume",
     "name": "Reservoir storage capacity - 25,000m³",
     "type": "numberField",
     "fieldName": "howMuchWater",
