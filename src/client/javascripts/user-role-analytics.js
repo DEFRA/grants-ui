@@ -5,7 +5,7 @@ let publishedContext
 // Storage contains an opaque context token, never a CRN, SBI or authentication token.
 export function publishUserRole() {
   const element = document.getElementById('user-role-analytics')
-  if (!(element instanceof HTMLElement)) {
+  if (!element) {
     return
   }
   const { role, context } = element.dataset
