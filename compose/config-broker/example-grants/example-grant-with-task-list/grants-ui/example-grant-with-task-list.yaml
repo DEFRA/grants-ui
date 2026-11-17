@@ -292,6 +292,7 @@ pages:
         title: Example number field
         options:
           required: true
+          format: thousands
         shortDescription: Number with guidance
 
   # Task pages - Example check and submit task
