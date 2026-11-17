@@ -78,9 +78,9 @@ Feature: Multiple Applications
 
         # summary, third application
         Then the user should be at URL "summary"
+        When the user clicks "Manage your applications" in the service information bar
 
         # applications
-        Given the user navigates to "/example-grant-with-multi-applications/applications"
         Then the user should be at URL "applications"
         And should see the following applications
             | REFERENCE                 | STATUS    | ACTION               |

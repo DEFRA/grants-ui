@@ -61,6 +61,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Pattern matching for various phone formats
   - Autocomplete support
   - Custom validation messages
+  - Native `options.format` validation: `uk` for UK numbers or `international` for non-UK numbers
 - **Example**: [Example Grant – Multi Field Form (/multi-field-form)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – mobile number with regex pattern validation
 
 ### Selection Components
@@ -125,6 +126,16 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Currency prefix support
   - Custom validation messages
 - **Example**: [Example Grant – Number field page (/number-field)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – project cost entry with £ prefix and range validation
+
+Set `options.format` on a `NumberField` to format answers on Check answers and print pages.
+
+| `options.format` | Input      | Display         |
+| ---------------- | ---------- | --------------- |
+| `thousands`      | `125000.5` | `125,000.5`     |
+| `decimal`        | `125000.5` | `125,000.50`    |
+| `decimal:4`      | `125000.5` | `125,000.5000`  |
+| `currency:gbp`   | `125000.5` | `£125,000.50`   |
+| `currency:gbp,4` | `125000.5` | `£125,000.5000` |
 
 ### Date Components
 
