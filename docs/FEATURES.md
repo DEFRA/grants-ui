@@ -211,12 +211,25 @@ form state. These values can come from custom pages or integrations; they do not
         items:
           - title: Score
             stateValue: additionalAnswers.scoreResults
+      - page: /total-estimated-cost
+        items:
+          - title: Total estimated cost (£)
+            stateValue: additionalAnswers.totalEstimatedCost
+            format: thousands
 ```
 
 The form-definition loader exposes the page's `config:` block as `metadata.pageConfig[path]` at runtime.
 
 - `items[].title` labels the row; `items[].stateValue` is a dot-separated path into form state. Missing or null values
   display as `Not provided`; zero values are preserved. Rows do not add Change links.
+- Optional `items[].format` formats numeric values on both Check answers and print pages, using the same formats as
+  `NumberField.options.format`: `thousands`, `decimal`, `decimal:4`, `currency:gbp`, or `currency:gbp,4` (see the
+  [number formatting table](#numberfield)). For example, `format: thousands` displays `100000` as `100,000`;
+  `format: currency:gbp` displays it as `£100,000.00`. Omit `format` to preserve the existing display. Numeric strings
+  are supported, while empty strings, booleans and non-numeric text retain their existing values. Missing or null values
+  still display as `Not provided`. Formatting changes only the display; saved values used for calculations and submission
+  remain unchanged. Unsupported formats are rejected when the form definition is loaded. Configure this property in the
+  form definitions served by Grants UI Backend.
 - `title` creates a separate summary section. Without a title, supply `page` to append rows to that page's owning section,
   creating the section in form-section order if needed. Unknown pages or section references are ignored in this case.
 - `page` optionally ties visibility to a page in the engine's `context.relevantPages`. Rows for excluded pages are omitted,

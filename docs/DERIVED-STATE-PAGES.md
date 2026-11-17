@@ -147,6 +147,7 @@ The Check answers page's `config:` block lists pages that have derived state:
         items:
           - title: Total Estimated Cost (£)
             stateValue: additionalAnswers.totalEstimatedCost
+            format: thousands
 ```
 
 The form-definition loader hoists the `config:` block to `metadata.pageConfig` at runtime. Use slash-prefixed page paths
@@ -157,6 +158,7 @@ are skipped, and summary rows tied to excluded pages are omitted. Existing contr
 `derivedState` options retain the result-page visit behaviour.
 
 `additionalSections` controls display independently of derived-state freshness and can also display other saved values.
+The optional item `format` applies to both Check answers and print pages, leaving the saved numeric result unchanged.
 See [Additional Check answers sections](FEATURES.md#additional-check-answers-sections) for its general configuration.
 
 New local-calculation pages must be added to the appropriate `derivedStatePages` configuration in Grants UI Backend to
