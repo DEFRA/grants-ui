@@ -2,7 +2,7 @@ import { RepeatPageController } from '@defra/forms-engine-plugin/controllers/Rep
 import { ItemField } from '@defra/forms-engine-plugin/engine/models/SummaryViewModel.js'
 import { evaluateTemplate, redirectPath } from '@defra/forms-engine-plugin/engine/helpers.js'
 import { getAnswerMarkdown, markdown } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
-import escapeHtml from 'lodash/escape.js'
+import { escapeText } from 'entities'
 import { formatNumberAnswer, getNumberFormatter } from '../common/helpers/number-formatter.js'
 import { getNumberDisplayValue } from '../common/helpers/number-display-value.js'
 import { getNumberFieldInputs } from '../common/helpers/state/persist-formatting.js'
@@ -69,7 +69,7 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
                 formatted === undefined
                   ? {
                       html:
-                        markdown.parse(escapeHtml(getAnswerMarkdown(field, itemState)), { async: false }).trim() ||
+                        markdown.parse(escapeText(getAnswerMarkdown(field, itemState)), { async: false }).trim() ||
                         NOT_PROVIDED
                     }
                   : { text: formatted || NOT_PROVIDED }

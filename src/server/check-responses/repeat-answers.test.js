@@ -4,6 +4,7 @@ import CheckResponsesPageController from './check-responses.controller.js'
 import { createPageRenderer } from '../common/test-helpers/component-helpers.js'
 import { validateNumberFormats } from '../common/forms/validate-number-formats.js'
 import { buildPrintViewModel } from '../common/helpers/print-application-service/print-application-service.js'
+import { HTML_INJECTION } from '~/src/__mocks__/escape-mocks.js'
 
 vi.unmock('@defra/forms-model')
 vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
@@ -145,24 +146,29 @@ function createSummary({ sections = true, force = false, format } = {}) {
   }
 }
 
+/** Renders a journey's Check answers page and its print page. */
+const renderBoth = (journey) => [
+  journey.view(),
+  renderPrint(
+    buildPrintViewModel({
+      definition: journey.model.def,
+      form: journey.model.def,
+      answers: journey.context.relevantState,
+      savedState: journey.state,
+      slug: 'grant',
+      sessionData: {},
+      submittedAt: '2026-11-12T10:00:00.000Z'
+    })
+  )
+]
+
 describe('repeat answers on Check answers with the forms engine', () => {
   it('formats each repeated currency answer on Check answers and print without changing saved numbers', () => {
     const journey = createSummary({ format: 'currency:gbp' })
     journey.state.reservoirs[1].capacity = 200000.5
     const savedState = structuredClone(journey.state)
-    const printed = renderPrint(
-      buildPrintViewModel({
-        definition: journey.model.def,
-        form: journey.model.def,
-        answers: journey.context.relevantState,
-        savedState: journey.state,
-        slug: 'grant',
-        sessionData: {},
-        submittedAt: '2026-11-12T10:00:00.000Z'
-      })
-    )
 
-    for (const $ of [journey.view(), printed]) {
+    for (const $ of renderBoth(journey)) {
       const amounts = $('.govuk-summary-list__row')
         .filter((_, row) => $(row).find('dt').text().trim() === 'Storage capacity')
         .map((_, row) => $(row).find('dd').text().trim())
@@ -282,5 +288,39 @@ describe('repeat answers on Check answers with the forms engine', () => {
     expect(card.text()).toContain('<img src=x onerror=alert(1)>')
     expect(card.text()).toContain('<script>alert(1)</script>')
     expect(card.text()).toContain('A & B')
+  })
+
+  it('displays apostrophes in repeat answers on Check answers and print', () => {
+    const journey = createSummary()
+    journey.state.reservoirs[0].name = "Garry's pond"
+    journey.state.reservoirs[1].name = "Gary's pond <script>alert('hi')</script>"
+    journey.state.reservoirs[1].notes = "Garry's lake\nIt's deep"
+
+    for (const $ of renderBoth(journey)) {
+      const cards = $('.govuk-summary-card')
+      expect(cards.find('script')).toHaveLength(0)
+      expect(cards.first().text()).toContain("Garry's pond")
+      expect(cards.eq(1).text()).toContain("Gary's pond <script>alert('hi')</script>")
+      expect(cards.eq(1).text()).toContain("Garry's lake")
+      expect(cards.eq(1).text()).toContain("It's deep")
+      expect(cards.text()).not.toContain('&#39;')
+    }
+  })
+
+  it('escapes injected markup in repeat answers on Check answers and print', () => {
+    const journey = createSummary()
+    journey.state.reservoirs[0].name = HTML_INJECTION
+    journey.state.reservoirs[0].notes = `'><svg onload=alert(1)>`
+
+    for (const $ of renderBoth(journey)) {
+      const card = $('.govuk-summary-card').first()
+      expect(card.find('script, svg, [onload]')).toHaveLength(0)
+      const values = card
+        .find('.govuk-summary-list__row')
+        .filter((_, row) => /^(Reservoir name|Notes)/.test($(row).find('dt').text().trim()))
+        .map((_, row) => $(row).find('dd').text().trim())
+        .get()
+      expect(values).toEqual([HTML_INJECTION, `'><svg onload=alert(1)>`])
+    }
   })
 })
