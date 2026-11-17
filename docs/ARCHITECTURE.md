@@ -16,6 +16,7 @@
   - [Grant Schema Updates](#grant-schema-updates)
 - [Config-Driven Confirmation Pages](#config-driven-confirmation-pages)
 - [Print Submitted Application](#print-submitted-application)
+- [Multiple Applications](#multiple-applications)
 
 ## DXT Forms Engine Plugin
 
@@ -557,6 +558,8 @@ The application provides a print/download view for submitted grant applications.
 
 This route is only accessible when the application has been submitted (i.e. `applicationStatus === SUBMITTED` in the session state). If the application has not been submitted, a `403 Forbidden` response is returned.
 
+For a grant that allows multiple applications, this is also where a submitted application opens from the applications selector; see [Multiple Applications](#multiple-applications).
+
 ### What It Displays
 
 The print view includes:
@@ -577,3 +580,21 @@ The feature is implemented across:
 
 - `src/server/print-submitted-application/` - Controller and Nunjucks view
 - `src/server/common/helpers/print-application-service/` - Shared service for building the print view model, answer formatting, and constants
+
+## Multiple Applications
+
+A grant whose definition sets `metadata.allowMultipleApplications: true` lets a business hold several applications at once. Each is identified by the `?ref=` on the URL and stored by Grants UI Backend under its own reference. Opening the grant with no reference lists the business's applications on `/{slug}/applications` (the applications selector), or scopes straight to the only one.
+
+### Applications selector
+
+The selector lists what Grants UI Backend holds (`GET /applications`) and, for the submitted rows, reads the live GAS status in parallel (`src/server/applications/services/gas-status.service.js`). A submitted application whose GAS status the grant's post-submission rules map to `REOPENED` (`APPLICATION_AMEND` in the shared rules) is shown as "Returned for amendments" with a "Continue application" link and no submitted date. Reopened rows are not queried: their stored status already says so. Each application is read under the rules of its own grant major, the major it is pinned to and will be opened under, which the backend lists as `pinnedMajor` (`src/server/applications/services/post-submission-rules.service.js`): the selector's own definition serves the latest major, and any other major among the submitted rows is read from the backend once (`GET /definitions/{grantCode}?major=N`). An application the backend lists without a pinned major, or whose major has no readable definition, gets no verdict from the selector, as when GAS cannot be read: it is shown by its stored status and links to the grant root, where the status redirect decides.
+
+The selector writes nothing. A submitted application links straight to its print page, `/{slug}/print-submitted-application?ref=REF` (a page multi-application grants exclude from the status redirect), only when GAS confirms it is still simply submitted: its GAS status matches a post-submission rule that keeps it `SUBMITTED` inside the journey. Every other row, including a submitted one whose GAS status is unknown, returned or with the agreements service, links to the grant root, `/{slug}?ref=REF`, and the status redirect decides where the application opens when the row is clicked: it reopens the application when GAS has returned it, sends an offer to the agreements service, and so on, through `grantRedirectRules` as for any other visit.
+
+### Withdrawn applications
+
+A submitted application whose GAS status the grant's post-submission rules map to `CLEARED` (its withdrawal codes, `APPLICATION_WITHDRAWN` in the shared rules) is shown as "Withdrawn" with no action and stays listed; the selector persists nothing. The selector and the status redirect decide a withdrawal through one check, `isWithdrawal` in `forms-status-redirect.js`: a submitted application whose matched rule clears it. The selector applies it only under the application's own major's rules, the rules the redirect applies when the application is opened, so the two never disagree. A withdrawn application is never opened: when the redirect resolves that outcome for a submitted application of a grant allowing multiple applications, it persists nothing and sends the business to the selector, whether the application was reached through the grant root, a `?ref=` link, a journey page or a page the grant excludes from the redirect such as the print view, where GAS is read for the withdrawal check alone. For routing, a withdrawn application counts as one of the business's applications: a business whose only application is withdrawn is scoped to it by `multiApplicationRedirect` as usual and lands on the selector through the status redirect; with more than one application the selector is shown anyway. Clearing the document on a withdrawal remains the behaviour of single-application grants, and of a reopened application whose previous reference GAS reports withdrawn.
+
+### Reopened applications
+
+Returning an application for amendments gives it a new reference: the answers are saved under the new reference and the superseded document is deleted (`persistReopened`). The new document keeps the original start date, which Grants UI sends as `createdAt` on that save and the backend records only when the save creates the document. A link carrying the previous reference, `/{slug}?ref=OLD`, redirects to the current one (`multi-application-redirect.js`, using the `previousReferenceNumber` the backend lists). Only the immediately previous reference is resolved: an application returned twice is not reachable through its oldest reference. Entering the grant root for a reopened application, whether from a selector row, the previous reference or a typed `/{slug}?ref=NEW`, goes where a draft goes: the grant-root redirect (`service-root-redirect.js`) sends it to the pre-submission destination, so the first click, which reopens the application through the rules, and every later one land on the same page.

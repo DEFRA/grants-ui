@@ -3,13 +3,19 @@ import { ApplicationStatus } from '../../constants/application-status.js'
 import { statusCodes } from '../../constants/status-codes.js'
 import { getApplicationStatus } from '../../services/grant-application/grant-application.service.js'
 import { log, LogCodes } from '../../helpers/logging/log.js'
-import { getReferenceNumber, getCacheKey, withReferenceNumber } from '../../helpers/state/get-cache-key-helper.js'
+import {
+  getReferenceNumber,
+  getCacheKey,
+  setReferenceNumber,
+  withReferenceNumber
+} from '../../helpers/state/get-cache-key-helper.js'
 import agreements from '~/src/config/agreements.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
 import { getGrantVersion } from '../../helpers/grant-version.js'
 import { YarKeys } from '../../constants/session-keys.js'
 import { persistStatus } from '../../helpers/status/persist-application-status.js'
 import { hasAnyItemWithNonEmptyKey } from '../../utils/objects.js'
+import { applicationsSelectorPath } from '../../constants/applications-path.js'
 
 const APPLICATION_NOT_SUBMITTED_MESSAGE = 'Application not submitted'
 
@@ -42,31 +48,44 @@ const POST_SUBMISSION_PAGE_STATE_GUARDS = [
  */
 
 /**
- * Finds the first redirect rule that matches the given Grants UI status
- * and GAS (Grant Administration System) status.
+ * Whether a rule's status field covers a status. The field lists one or more statuses,
+ * comma-separated; 'default', or no value, covers every status.
  *
- * If a rule uses 'default', it matches any status for that field.
+ * @param {string | undefined} ruleStatuses
+ * @param {string} status
+ * @returns {boolean}
+ */
+function ruleCovers(ruleStatuses, status) {
+  const statuses = new Set((ruleStatuses || 'default').split(',').map((value) => value.trim()))
+  return statuses.has(status) || statuses.has('default')
+}
+
+/**
+ * Finds the first redirect rule matching a Grants UI status and a GAS status.
  *
- * @param {string} fromGrantsStatus - Current status in the Grants UI (previous state)
+ * @param {string} fromGrantsStatus - Current Grants UI status (previous state)
  * @param {string} gasStatus - Current status returned from GAS
- * @param {RedirectRule[]} redirectRules - Array of redirect rule objects to match against
- * @returns {RedirectRule} The first matching redirect rule
- * @throws {Error} If no matching rule is found
+ * @param {RedirectRule[]} redirectRules - Rules to match against, in order
+ * @returns {RedirectRule | undefined} `undefined` when no rule matches
+ */
+export function findRedirectRule(fromGrantsStatus, gasStatus, redirectRules = []) {
+  return redirectRules.find(
+    (rule) => ruleCovers(rule.fromGrantsStatus, fromGrantsStatus) && ruleCovers(rule.gasStatus, gasStatus)
+  )
+}
+
+/**
+ * As {@link findRedirectRule}, for the pipeline, where a status pair no rule covers is a
+ * configuration error.
  *
- * @example
- * const rule = mapStatusToUrl('SUBMITTED', 'APPLICATION_AMEND', redirectRules);
- * console.log(rule.toPath); // e.g., '/summary'
+ * @param {string} fromGrantsStatus
+ * @param {string} gasStatus
+ * @param {RedirectRule[]} redirectRules
+ * @returns {RedirectRule}
+ * @throws {Error} If no matching rule is found
  */
 function mapStatusToUrl(fromGrantsStatus, gasStatus, redirectRules = []) {
-  const match = redirectRules.find((rule) => {
-    const fromStatuses = new Set((rule.fromGrantsStatus || 'default').split(',').map((s) => s.trim()))
-    const gasStatuses = new Set((rule.gasStatus || 'default').split(',').map((s) => s.trim()))
-
-    const fromMatch = fromStatuses.has(fromGrantsStatus) || fromStatuses.has('default')
-    const gasMatch = gasStatuses.has(gasStatus) || gasStatuses.has('default')
-
-    return fromMatch && gasMatch
-  })
+  const match = findRedirectRule(fromGrantsStatus, gasStatus, redirectRules)
 
   if (!match) {
     throw new Error(`No redirect rule found for fromGrantsStatus=${fromGrantsStatus} gasStatus=${gasStatus}`)
@@ -417,6 +436,85 @@ function buildGrantApplicationContext(request, grantCode, grantVersion, clientRe
 }
 
 /**
+ * Whether GAS has withdrawn a submitted application: the rule its GAS status matches clears it. The applications
+ * selector and the status redirect both decide a withdrawal through this, so they agree on every application.
+ *
+ * @param {string | undefined} applicationStatus - The application's Grants UI status
+ * @param {{ toGrantsStatus: string } | undefined} rule - The post-submission rule matched for its GAS status
+ * @returns {boolean}
+ */
+export function isWithdrawal(applicationStatus, rule) {
+  return applicationStatus === ApplicationStatus.SUBMITTED && rule?.toGrantsStatus === ApplicationStatus.CLEARED
+}
+
+/**
+ * Sends the business to its applications. A withdrawn application of a grant allowing multiple applications is
+ * kept and listed as withdrawn, never opened: nothing is persisted and the ref is dropped from the URL.
+ *
+ * @param {AnyFormRequest} request
+ * @param {ResponseToolkit} h
+ * @param {string} grantId
+ * @returns {import('@hapi/hapi').ResponseObject}
+ */
+function redirectToApplications(request, h, grantId) {
+  setReferenceNumber(request, undefined)
+  return h.redirect(applicationsSelectorPath(grantId)).takeover()
+}
+
+/**
+ * A page the redirect leaves alone, such as the print view, still never opens a withdrawn application of a
+ * grant allowing multiple applications: GAS is read for that alone. Any other outcome, or a GAS that cannot
+ * be read, shows the page.
+ *
+ * @param {AnyFormRequest} request
+ * @param {ResponseToolkit} h
+ * @param {FormContext} context
+ * @param {FormsStatusRedirectContext} redirectContext
+ * @returns {Promise<import('@hapi/hapi').ResponseObject | symbol>}
+ */
+async function excludedPageWithdrawalRedirect(request, h, context, redirectContext) {
+  const { grantId, grantCode, grantRedirectRules, previousStatus, allowMultipleApplications } = redirectContext
+  if (!allowMultipleApplications || previousStatus !== ApplicationStatus.SUBMITTED) {
+    return h.continue
+  }
+
+  const clientRef = resolveClientReference(previousStatus, context)
+  const gasStatus = await readGasApplicationStatus(request, grantCode, clientRef)
+  const rule =
+    gasStatus === undefined
+      ? undefined
+      : findRedirectRule(previousStatus, gasStatus, grantRedirectRules?.postSubmission)
+
+  return isWithdrawal(previousStatus, rule) ? redirectToApplications(request, h, grantId) : h.continue
+}
+
+/**
+ * @typedef {{ clientRef: string, rule: { toGrantsStatus: string, toPath: string } }} ResolvedPostSubmissionRule
+ */
+
+/**
+ * Reads the application's GAS status and matches it against the post-submission rules.
+ * A failure here (GAS unreachable or unexpected, no matching rule) is a routing problem that
+ * the caller answers with the fallback rule; nothing has been changed yet.
+ *
+ * @param {AnyFormRequest} request
+ * @param {FormContext} context
+ * @param {string} previousStatus
+ * @param {string} grantCode
+ * @param {GrantRedirectRules} [grantRedirectRules]
+ * @returns {Promise<ResolvedPostSubmissionRule>}
+ * @throws {Error} If GAS returns an unexpected response or no redirect rule matches.
+ */
+async function resolvePostSubmissionRule(request, context, previousStatus, grantCode, grantRedirectRules) {
+  const clientRef = resolveClientReference(previousStatus, context)
+  const response = await getApplicationStatus(grantCode, clientRef.toLowerCase(), request)
+  const { status: gasStatus } = await response.json()
+  const postSubmissionRules = grantRedirectRules?.postSubmission ?? []
+
+  return { clientRef, rule: mapStatusToUrl(previousStatus, gasStatus, postSubmissionRules) }
+}
+
+/**
  * Handles post-submission redirects and status updates after a form has been submitted.
  *
  * ARCHITECTURAL NOTE
@@ -454,23 +552,18 @@ function buildGrantApplicationContext(request, grantCode, grantVersion, clientRe
  * @param {AnyFormRequest} request - The Hapi forms request object.
  * @param {ResponseToolkit} h - The Hapi response toolkit.
  * @param {FormContext} context - The request context containing state and reference data.
- * @param {string} previousStatus - The previous application status (e.g. "SUBMITTED").
- * @param {string} grantCode - The grant code used to fetch status from GAS.
- * @param {GrantRedirectRules} [grantRedirectRules] - The redirect rules configuration from metadata.
+ * @param {FormsStatusRedirectContext & { previousStatus: string }} redirectContext - Redirect context with a submitted or reopened status.
+ * @param {ResolvedPostSubmissionRule} resolved - The GAS client reference used and the rule matched for it.
  * @returns {Promise<import('@hapi/hapi').ResponseObject | symbol>} A redirect or `h.continue`.
- *
- * @throws {Error} If GAS returns an unexpected response or no redirect rule matches.
  */
-async function handlePostSubmission(request, h, context, previousStatus, grantCode, grantRedirectRules) {
-  const grantId = request.params?.slug
-  const clientRef = resolveClientReference(previousStatus, context)
+async function handlePostSubmission(request, h, context, redirectContext, { clientRef, rule }) {
+  const { grantId, grantCode, previousStatus, allowMultipleApplications } = redirectContext
 
-  const response = await getApplicationStatus(grantCode, clientRef.toLowerCase(), request)
-
-  const { status: gasStatus } = await response.json()
-
-  const postSubmissionRules = grantRedirectRules?.postSubmission ?? []
-  const rule = mapStatusToUrl(previousStatus, gasStatus, postSubmissionRules)
+  // A withdrawn application the business keeps seeing listed is sent to its applications instead of the
+  // rule's destination, and nothing is persisted.
+  if (allowMultipleApplications && isWithdrawal(previousStatus, rule)) {
+    return redirectToApplications(request, h, grantId)
+  }
 
   const refBefore = getReferenceNumber(request)
   await persistStatus(request, rule.toGrantsStatus, previousStatus, context.state)
@@ -509,8 +602,8 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
 }
 
 /**
- * Handles errors that occur during post-submission redirect processing.
- * Falls back to a default redirect rule if available.
+ * Handles a failure to resolve the post-submission rule (GAS unreachable or unexpected, no
+ * matching rule): a GAS 404 continues, anything else falls back to the default redirect rule.
  *
  * @param {Error & { status?: number }} err - The error thrown during post-submission handling.
  * @param {AnyRequest} request - The Hapi request object.
@@ -555,15 +648,17 @@ function getFormsStatusRedirectContext(request, context) {
     return undefined
   }
 
-  const metadata = /** @type {{ grantRedirectRules?: GrantRedirectRules } | undefined} */ (
-    request.app.model?.def?.metadata
-  )
+  const metadata =
+    /** @type {{ grantRedirectRules?: GrantRedirectRules, allowMultipleApplications?: boolean } | undefined} */ (
+      request.app.model?.def?.metadata
+    )
 
   return {
     grantId,
     grantCode: getGrantCode(request),
     previousStatus: /** @type {string | undefined} */ (context.state.applicationStatus),
-    grantRedirectRules: metadata?.grantRedirectRules
+    grantRedirectRules: metadata?.grantRedirectRules,
+    allowMultipleApplications: metadata?.allowMultipleApplications === true
   }
 }
 
@@ -595,26 +690,25 @@ function checkProtectedPageGuard(request, h, context) {
  * @returns {Promise<import('@hapi/hapi').ResponseObject | symbol>} A redirect or `h.continue`.
  */
 async function handlePostSubmissionWithFallback(request, h, context, redirectContext) {
+  const { previousStatus, grantCode, grantRedirectRules, grantId } = redirectContext
+  let resolved
   try {
-    return await handlePostSubmission(
-      request,
-      h,
-      context,
-      redirectContext.previousStatus,
-      redirectContext.grantCode,
-      redirectContext.grantRedirectRules
-    )
+    resolved = await resolvePostSubmissionRule(request, context, previousStatus, grantCode, grantRedirectRules)
   } catch (err) {
     return handlePostSubmissionError(
       /** @type {Error & { status?: number }} */ (err),
       request,
       h,
       context,
-      redirectContext.grantId,
-      redirectContext.grantCode,
-      redirectContext.grantRedirectRules
+      grantId,
+      grantCode,
+      grantRedirectRules
     )
   }
+
+  // Persisting the transition is outside the fallback: a save that fails (for example a reopen the
+  // backend rejects) must reach the error page, not send the user on as if the status had changed.
+  return handlePostSubmission(request, h, context, redirectContext, resolved)
 }
 
 /**
@@ -682,21 +776,22 @@ function isAtOrAfterJourneyStartPage(request, grantId, startPath) {
 }
 
 /**
- * Reads the current GAS status for a submitted claim.
+ * Reads the current GAS status of a submitted application or claim.
  *
- * This is the single point in the claim journey that consults GAS. Any failure
- * (GAS unavailable, application not found, malformed response) is swallowed and
- * reported as `undefined` so the caller can fall back to deterministic claim
- * navigation instead of guessing a transition.
+ * Any failure (GAS unavailable, application not found, malformed response) is
+ * swallowed and reported as `undefined`, so the caller falls back to deterministic
+ * navigation (claim journey) or leaves the stored state alone (applications
+ * selector) instead of guessing a transition.
  *
- * @param {AnyFormRequest} request - The Hapi forms request object.
+ * @param {AnyRequest} request - The Hapi request object.
  * @param {string} grantCode - The grant code used to fetch status from GAS.
  * @param {string} clientRef - The client reference number used in the GAS lookup.
+ * @param {Record<string, unknown>} [retryConfig] - Overrides for the GAS client's retry mechanism.
  * @returns {Promise<string | undefined>} The GAS status, or `undefined` when it could not be resolved.
  */
-async function readGasClaimStatus(request, grantCode, clientRef) {
+export async function readGasApplicationStatus(request, grantCode, clientRef, retryConfig) {
   try {
-    const response = await getApplicationStatus(grantCode, clientRef.toLowerCase(), request)
+    const response = await getApplicationStatus(grantCode, clientRef.toLowerCase(), request, retryConfig)
     const { status } = await response.json()
     return status
   } catch {
@@ -731,7 +826,7 @@ async function handleReturningClaimWindow(request, h, context, redirectContext) 
   const postSubmissionRules = grantRedirectRules?.postSubmission ?? []
 
   const clientRef = resolveClientReference(ApplicationStatus.CLAIM_SUBMITTED, context)
-  const gasStatus = await readGasClaimStatus(request, grantCode, clientRef)
+  const gasStatus = await readGasApplicationStatus(request, grantCode, clientRef)
   if (gasStatus === undefined) {
     return undefined
   }
@@ -895,9 +990,10 @@ async function handleFormsStatusRedirect(request, h, context, redirectContext) {
    * the excludedPaths configuration to work as intended for most users.
    * isWithinGrantPages is intentionally NOT applied when the application is already submitted: there is no
    * in-progress journey to protect from redirect loops, so the post-submission redirect must always run.
+   * A grant allowing multiple applications still never opens a withdrawn application on these pages.
    */
   if (shouldSkipFormsStatusRedirect(request, context, grantRedirectRules)) {
-    return h.continue
+    return excludedPageWithdrawalRedirect(request, h, context, redirectContext)
   }
 
   if (shouldHandlePreSubmission(previousStatus)) {
@@ -967,7 +1063,7 @@ export function resolveClientReference(previousStatus, context) {
 
 /**
  * @typedef {object} GrantRedirectRules
- * @property {string[]} [excludedPaths] - Paths excluded from redirect handling.
+ * @property {string[]} [excludedPaths] - Paths excluded from redirect handling, apart from the withdrawal check of a grant allowing multiple applications.
  * @property {RedirectRule[]} [preSubmission] - Redirect rules applied before submission.
  * @property {RedirectRule[]} [postSubmission] - Redirect rules applied after submission.
  * @property {StateGuard[]} [stateGuards] - State guard rules enforced before redirects.
@@ -979,6 +1075,7 @@ export function resolveClientReference(previousStatus, context) {
  * @property {string} grantCode - The grant code used in GAS lookups.
  * @property {string | undefined} previousStatus - The previous application status stored in state.
  * @property {GrantRedirectRules | undefined} grantRedirectRules - Redirect rules from the form metadata.
+ * @property {boolean} allowMultipleApplications - Whether the grant lets a business hold several applications.
  */
 
 /**

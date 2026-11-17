@@ -37,7 +37,8 @@ vi.mock('@defra/forms-engine-plugin/engine/referenceNumbers.js', () => ({
   generateUniqueReference: vi.fn((prefix) => `${prefix}-NEW-REF`)
 }))
 vi.mock('../../helpers/state/state-with-definition-context.js', () => ({
-  isStoredByReference: vi.fn().mockResolvedValue(false)
+  isStoredByReference: vi.fn().mockResolvedValue(false),
+  getStateWithDefinition: vi.fn()
 }))
 
 describe('formsStatusRedirect', () => {
@@ -204,7 +205,7 @@ describe('formsStatusRedirect', () => {
 
       await formsStatusRedirect(request, h, context)
 
-      expect(getApplicationStatus).toHaveBeenCalledWith('grant-a', 'ref-001', request)
+      expect(getApplicationStatus).toHaveBeenCalledWith('grant-a', 'ref-001', request, undefined)
       expect(updateApplicationStatus).toHaveBeenCalledWith(
         ApplicationStatus.CLAIM_STARTED,
         '12345:grant-a',
@@ -426,14 +427,15 @@ describe('formsStatusRedirect', () => {
         expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary?ref=GLD-NEW-REF')
       })
 
-      it('REOPENED falls back to the default rule when the replacement was not saved, staying on the old application', async () => {
+      it('REOPENED surfaces the failure when the replacement was not saved, keeping the old application', async () => {
         mockCacheService.setState.mockImplementation(async () => undefined)
         mockGasStatus('APPLICATION_AMEND')
 
-        await formsStatusRedirect(request, h, context)
+        await expect(formsStatusRedirect(request, h, context)).rejects.toThrow('Reopened application was not saved')
 
         expect(mockCacheService.clearApplicationState).not.toHaveBeenCalled()
         expect(request.app.referenceNumber).toBe('GLD-OLD-REF')
+        expect(h.redirect).not.toHaveBeenCalled()
       })
     })
   })

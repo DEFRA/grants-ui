@@ -1,8 +1,8 @@
 # Example grant configs
 
 These are the development and acceptance-test grant configs for Grants UI.
-They were copied from the local `grants-config-example-grants` repository's
-`main` branch at `77f8338` (package version `3.27.1`).
+The original examples were copied from the local `grants-config-example-grants`
+repository's `main` branch at `77f8338` (package version `3.27.1`).
 
 The auth example's questions schema also accepts the `referenceNumber` emitted
 by Grants UI. Acceptance now validates against that nested questions schema,
@@ -54,8 +54,8 @@ The acceptance submission schema is extracted from the GAS `PRE_AWARD.questions`
 schema into ignored `acceptance/schemas/`; do not maintain a second schema copy.
 
 Example allowlists contain only `local` settings, directly in each bundle.
-Five use `allowAll: true`; `example-whitelist` retains a restricted SBI list
-to exercise both allowed and denied access in acceptance tests.
+All examples except `example-whitelist` use `allowAll: true`; that example retains a
+restricted SBI list to exercise both allowed and denied access in acceptance tests.
 The allowlists in `../local-allowlists/` are now only for externally managed configs.
 Developer-local overrides in `../local-form-definitions/` remain optional.
 An old sibling `grants-config-example-grants` checkout is no longer discovered

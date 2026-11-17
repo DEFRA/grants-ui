@@ -228,7 +228,7 @@ export async function validate(request, baseUrl, userContext) {
  * @param {string[]} parcelIds
  * @param {string} baseUrl
  * @param {LandGrantsUserContext} userContext
- * @returns {Promise<{ bbox: { minLng: number, minLat: number, maxLng: number, maxLat: number } }>}
+ * @returns {Promise<{ bbox: { minLng: number, minLat: number, maxLng: number, maxLat: number }, parcels: { id: string, bounds: { minLng: number, minLat: number, maxLng: number, maxLat: number } }[] }>}
  * @throws {Error}
  */
 export async function locateParcelTiles(parcelIds, baseUrl, userContext) {

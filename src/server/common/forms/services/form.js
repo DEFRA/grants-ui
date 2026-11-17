@@ -11,11 +11,38 @@ import {
   getStateWithDefinition,
   resolveVersion
 } from '~/src/server/common/helpers/state/state-with-definition-context.js'
+import { validateNumberFormats } from '../validate-number-formats.js'
+
+/** @type {Promise<SharedRedirectRules> | null} */
+let sharedRedirectRules = null
+
+/**
+ * The shared redirect rules, read from YAML once per process.
+ * @returns {Promise<SharedRedirectRules>}
+ */
+export function loadSharedRedirectRules() {
+  sharedRedirectRules ??= readSharedRedirectRules().catch((error) => {
+    // A failed read is not kept: the next call tries the file again.
+    sharedRedirectRules = null
+    throw error
+  })
+  return sharedRedirectRules
+}
+
+/**
+ * A grant's own `grantRedirectRules` (`null`, or a partial override) layered over the shared rules.
+ * @param {object | null | undefined} grantRedirectRules
+ * @param {SharedRedirectRules} sharedRules
+ * @returns {SharedRedirectRules}
+ */
+export function mergeGrantRedirectRules(grantRedirectRules, sharedRules) {
+  return { ...sharedRules, ...grantRedirectRules }
+}
 
 /**
  * @returns {Promise<SharedRedirectRules>}
  */
-async function loadSharedRedirectRules() {
+async function readSharedRedirectRules() {
   const filePath = path.resolve(process.cwd(), 'src/server/common/forms/shared-redirect-rules.yaml')
   const raw = await readFile(filePath, 'utf8')
   const parsed = parseYaml(raw)
@@ -36,9 +63,14 @@ async function loadSharedRedirectRules() {
  * @returns {FormDefinition}
  */
 export function configureFormDefinition(definition) {
+  validateNumberFormats(definition)
   const environment = config.get('cdpEnvironment')
 
   for (const page of definition.pages ?? []) {
+    // Engine built-ins take precedence over the custom controller registry.
+    if (page.controller === 'SummaryPageController') {
+      ;/** @type {{ controller: string }} */ (page).controller = 'GrantsSummaryPageController'
+    }
     const url = page.events?.onLoad?.options?.url
     if (url) {
       if (environment !== 'local') {
@@ -120,10 +152,10 @@ async function resolveBackendDefinition(slug, sharedRules) {
   configureFormDefinition(definition)
 
   const meta = /** @type {Record<string, unknown>} */ (definition.metadata ??= {})
-  meta.grantRedirectRules = {
-    ...sharedRules,
-    .../** @type {Record<string, unknown> | undefined} */ (meta.grantRedirectRules)
-  }
+  meta.grantRedirectRules = mergeGrantRedirectRules(
+    /** @type {object | null | undefined} */ (meta.grantRedirectRules),
+    sharedRules
+  )
 
   return definition
 }
