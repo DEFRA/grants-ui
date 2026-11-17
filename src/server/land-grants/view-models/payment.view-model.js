@@ -1,6 +1,7 @@
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 import { escapeHtml } from '@hapi/hoek'
 import { formatPrice } from '~/src/server/common/utils/payment.js'
+import { formatActionQuantity } from '~/src/shared/format-number.js'
 import {
   changeActionsHref,
   landParcelReference,
@@ -46,7 +47,7 @@ export function createParcelItemRow(data) {
 
   return [
     { text: landActionWithCode(data.description, data.code) },
-    { text: data.quantity, format: 'numeric' },
+    { text: formatActionQuantity(data.quantity), format: 'numeric' },
     { text: formatPrice(data.annualPaymentPence), format: 'numeric' },
     linksCell
   ]
@@ -155,7 +156,7 @@ export function mapAdditionalYearlyPayments(paymentInfo) {
  * @property {string} parcelId - Parcel ID
  * @property {string} code - Action code
  * @property {string} description - Action description
- * @property {string} quantity - Quantity (e.g., "10 hectares")
+ * @property {number | string} quantity - Quantity (e.g., "10 hectares")
  * @property {number} annualPaymentPence - Annual payment in pence
  */
 

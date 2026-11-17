@@ -16,7 +16,7 @@ describe('payment-view-model.mapper', () => {
         parcelId: '5678',
         code: 'SAM1',
         description: 'Test Action',
-        quantity: '10 hectares',
+        quantity: '12500.50 hectares',
         annualPaymentPence: 10050
       }
 
@@ -24,10 +24,22 @@ describe('payment-view-model.mapper', () => {
 
       expect(result).toHaveLength(4)
       expect(result[0].text).toBe('Test Action: SAM1')
-      expect(result[1].text).toBe('10 hectares')
+      expect(result[1].text).toBe('12,500.50 hectares')
       expect(result[2].text).toBe('£100.50')
       expect(result[3].html).toContain(escapeHtml('select-actions-for-land-parcel?parcelId=AB1234-5678'))
       expect(result[3].html).toContain(escapeHtml('remove-action?parcelId=AB1234-5678&action=SAM1'))
+    })
+
+    it('groups a numeric action quantity', () => {
+      const result = createParcelItemRow({
+        sheetId: 'AB1234',
+        parcelId: '5678',
+        code: 'SAM1',
+        description: 'Test Action',
+        quantity: 12500.5,
+        annualPaymentPence: 10050
+      })
+      expect(result[1].text).toBe('12,500.5')
     })
 
     it('should escape the action code written into the links HTML', () => {

@@ -1,3 +1,4 @@
+import { formatActionQuantity } from '~/src/shared/format-number.js'
 import { formatPrice } from '~/src/server/common/utils/payment.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 import { formatArea, unitAlternativeLabel } from '~/src/shared/unit-format.js'
@@ -237,7 +238,7 @@ function addPricedParcelActions(parcels, payment, landParcels) {
 
     parcel.actions.push({
       action: formatActionLabel(description, code),
-      area: formatArea(quantity, unit, getQuantityDisplayUnit(quantity, actionState, unit)),
+      area: formatActionQuantity(formatArea(quantity, unit, getQuantityDisplayUnit(quantity, actionState, unit))),
       yearlyPayment: formatPrice(annualPaymentPence),
       changeHref: withConfirmLandAndActionsOrigin(changeActionsHref(sheetId, parcelId), {
         changeActions: true
