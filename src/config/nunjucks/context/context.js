@@ -102,7 +102,6 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
   return {
     assetPath: `${assetPath}/assets/rebrand`,
     defraAssetPath: `${assetPath}/assets/defra`,
-    ...buildServiceBranding(request),
     serviceName,
     serviceUrl: '/',
     cdpEnvironment: config.get('cdpEnvironment'),
@@ -141,9 +140,10 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
  * @param {string} serviceName
  * @param {string} cookiePolicyUrl
  * @param {number} cookieConsentExpiryDays
+ * @param {FormMetadata | undefined} metadata
  * @returns {Record<string, unknown>} Complete context object for successful authentication
  */
-const buildSuccessContext = (auth, request, serviceName, cookiePolicyUrl, cookieConsentExpiryDays) => {
+const buildSuccessContext = (auth, request, serviceName, cookiePolicyUrl, cookieConsentExpiryDays, metadata) => {
   // A page-level `config.submitButtonText` overrides the grant-level
   // `options.submitButtonText`; fall back to the grant-level value otherwise.
   const submitButtonText =
@@ -152,7 +152,7 @@ const buildSuccessContext = (auth, request, serviceName, cookiePolicyUrl, cookie
   return {
     ...buildCommonConfig(serviceName, cookiePolicyUrl, cookieConsentExpiryDays, request),
     auth,
-    navigation: buildNavigation(request),
+    navigation: buildNavigation(request, metadata),
     getAssetPath: createAssetPathGetter,
     ...(submitButtonText ? { submitButtonText } : {})
   }
@@ -186,12 +186,28 @@ const buildFallbackContext = (serviceName, cookiePolicyUrl, cookieConsentExpiryD
  */
 export async function context(request) {
   const { serviceName, cookiePolicyUrl, cookieConsentExpiryDays } = extractCookieConsentConfig(request)
+  let formMetadata = request?.app?.model?.def?.metadata
+  let serviceBranding = buildServiceBranding(request)
 
   try {
+    // Standalone grant pages have no forms-engine model. Reuse their already
+    // loaded definition without opening an application or fetching another copy.
+    if (!request?.app?.model?.def) {
+      const definitionPromise = request?.app?.stateWithDefinition ?? request?.app?.routingDefinition
+      // Definition failures are handled by the original loader/global handler;
+      // rendering its error page must not log the same failure again.
+      const envelope = await definitionPromise?.catch(() => undefined)
+      formMetadata = envelope?.definition?.definition?.metadata
+      serviceBranding = buildServiceBranding(request, formMetadata)
+    }
+
     loadWebpackManifest(request)
     const auth = usersDetails(request)
 
-    return buildSuccessContext(auth, request, serviceName, cookiePolicyUrl, cookieConsentExpiryDays)
+    return {
+      ...buildSuccessContext(auth, request, serviceName, cookiePolicyUrl, cookieConsentExpiryDays, formMetadata),
+      ...serviceBranding
+    }
   } catch (error) {
     debug(
       LogCodes.SYSTEM.SERVER_ERROR,
@@ -200,7 +216,10 @@ export async function context(request) {
       },
       request
     )
-    return buildFallbackContext(serviceName, cookiePolicyUrl, cookieConsentExpiryDays)
+    return {
+      ...buildFallbackContext(serviceName, cookiePolicyUrl, cookieConsentExpiryDays),
+      ...serviceBranding
+    }
   }
 }
 
@@ -215,10 +234,16 @@ export async function context(request) {
  * @property {Record<string, Record<string, unknown>>} [pageConfig]
  * @property {import('~/src/config/nunjucks/context/build-notification-banner-config.js').NotificationBannerMetadata} [notificationBanner]
  * @property {string} [phase]
+ * @property {boolean} [allowMultipleApplications]
  */
 
 /**
- * @typedef {Request & { app: { model?: { def?: { metadata?: FormMetadata } }, cspNonce?: string } }} ExtendedRequest
+ * @typedef {object} DefinitionEnvelope
+ * @property {{definition?: {metadata?: FormMetadata}}} [definition]
+ */
+
+/**
+ * @typedef {Request & { app: { model?: { def?: { metadata?: FormMetadata } }, stateWithDefinition?: Promise<DefinitionEnvelope | null>, routingDefinition?: Promise<DefinitionEnvelope | null>, cspNonce?: string } }} ExtendedRequest
  */
 
 /**

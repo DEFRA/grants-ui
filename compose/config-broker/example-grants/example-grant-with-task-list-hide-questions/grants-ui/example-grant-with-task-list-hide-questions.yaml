@@ -5,7 +5,7 @@ metadata:
   surveyLabel: Example grant with task list hide questions
   enabledInProd: false
   referenceNumberPrefix: EGWTHQ
-  supportEmail: support@defra.gov.uk
+  supportEmail: ruralpayments@defra.gov.uk
   cookieConsent:
     enabled: true
     serviceName: Farm and Land Service

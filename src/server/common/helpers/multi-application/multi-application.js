@@ -68,13 +68,18 @@ const hideReferenceNumberFromFormsEngine = (request, h) => {
 }
 
 /**
- * Relative and inside this grant (`//` would be protocol-relative).
+ * Relative and inside this grant (`//` would be protocol-relative), excluding
+ * the applications list, which is not scoped to an individual application.
  *
  * @param {string} slug
  * @param {string} location
  * @returns {boolean}
  */
-const staysInJourney = (slug, location) => location.startsWith(`/${slug}/`) || location === `/${slug}`
+const staysInJourney = (slug, location) => {
+  const path = location.split(/[?#]/, 1)[0]
+
+  return path !== `/${slug}/applications` && (location.startsWith(`/${slug}/`) || location === `/${slug}`)
+}
 
 /**
  * Puts `?ref=` back on every same-grant redirect, the plugin's own included.

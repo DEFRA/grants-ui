@@ -4,6 +4,7 @@ import { isApplicationWindowOpen } from '../common/helpers/application-window.js
 import { findRedirectRule, isWithdrawal } from '../common/request-pipeline/redirects/forms-status-redirect.js'
 import agreements from '~/src/config/agreements.js'
 import { buildFeedbackSurveyUrl } from '../common/helpers/feedback-survey.js'
+import { buildNavigation } from '~/src/config/nunjucks/context/build-navigation.js'
 
 const SUBMITTED_ROW = {
   statusText: 'Submitted',
@@ -54,6 +55,7 @@ export function buildApplicationsViewModel(
     schemeName,
     serviceName: schemeName,
     serviceUrl: `/${request.params.slug}`,
+    navigation: buildNavigation(request, definition.metadata),
     supportEmail: definition.metadata?.supportEmail ?? 'ruralpayments@defra.gov.uk',
     feedbackSurveyUrl: buildFeedbackSurveyUrl(request, definition.metadata),
     slug: request.params.slug,

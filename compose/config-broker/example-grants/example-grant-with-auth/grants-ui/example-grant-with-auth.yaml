@@ -6,7 +6,7 @@ metadata:
   enabledInProd: false
   phase: public-beta
   referenceNumberPrefix: EGWA
-  supportEmail: support@defra.gov.uk
+  supportEmail: ruralpayments@defra.gov.uk
   applicationWindow:
     closesAt: '2030-12-31T23:59:59Z'
   notificationBanner:
@@ -329,7 +329,7 @@ pages:
             Monday to Friday, 8:30am to 5pm (except bank holidays)
           </p>
           <p class="govuk-body"><a href="https://www.gov.uk/call-charges" class="govuk-link" rel="noreferrer noopener" target="_blank">Find out about call charges (opens in a new tab)</a></p>
-          <p class="govuk-body">Email: <a class="govuk-link" href="mailto:support@defra.gov.uk">support@defra.gov.uk</a></p>
+          <p class="govuk-body">Email: <a class="govuk-link" href="mailto:ruralpayments@defra.gov.uk">ruralpayments@defra.gov.uk</a></p>
           <p class="govuk-body">The RPA responds to email queries within 10 working days.</p>
 
   - title: YesNoField Example
