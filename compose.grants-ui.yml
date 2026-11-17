@@ -19,6 +19,10 @@ services:
       PORT: 3000
       NODE_ENV: ${NODE_ENV:-development}
       ENVIRONMENT: local
+      # Print EMF metrics to stdout instead of sending them to CloudWatch (local only).
+      AWS_EMF_ENVIRONMENT: Local
+      ENABLE_METRICS: ${ENABLE_METRICS:-true}
+      METRICS_DEBUG_LOG_FILE: logs/outbound-metrics.log
       REDIS_HOST: redis
       USE_SINGLE_INSTANCE_CACHE: true
       SESSION_CACHE_ENGINE: redis
@@ -92,6 +96,7 @@ services:
       GA_TRACKING_ID: ${GA_TRACKING_ID:-GTM-WJ5C78H}
     volumes:
       - ./src:/home/node/src
+      - ./logs:/home/node/logs
       - /home/node/node_modules
     networks:
       - grants-ui-net

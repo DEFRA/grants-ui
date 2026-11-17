@@ -24,6 +24,7 @@ const oneWeekMs = 604800000
 const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
 const isDevelopment = process.env.NODE_ENV === 'development'
+const isLocalMetricsEnvironment = process.env.AWS_EMF_ENVIRONMENT === 'Local'
 
 const convictConfig = {
   serviceVersion: {
@@ -232,10 +233,16 @@ const convictConfig = {
     env: 'ENABLE_SECURE_CONTEXT'
   },
   isMetricsEnabled: {
-    doc: 'Enable metrics reporting',
+    doc: 'Enable metrics reporting. On by default in production, and locally when AWS_EMF_ENVIRONMENT=Local.',
     format: Boolean,
-    default: isProduction,
+    default: isProduction || isLocalMetricsEnvironment,
     env: 'ENABLE_METRICS'
+  },
+  metricsDebugLogFile: {
+    doc: 'Local testing only: when set, every metric data point is also appended to this file as a JSON line. Leave empty in deployed environments.',
+    format: String,
+    default: '',
+    env: 'METRICS_DEBUG_LOG_FILE'
   },
   sessionTimeout: {
     format: Number,

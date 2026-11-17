@@ -93,6 +93,7 @@
   "dependencies": {
     "@aws-sdk/client-sns": "3.1159.0",
     "@babel/runtime": "8.0.8",
+    "@defra/cdp-metrics": "0.6.1",
     "@defra/fcp-audit-publisher": "1.0.13",
     "@defra/forms-engine-plugin": "4.23.1",
     "@defra/hapi-auth-oidc": "0.6.0",
