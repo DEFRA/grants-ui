@@ -383,12 +383,15 @@
     textFields(step) {
       Object.keys(step.fields).forEach((name) => {
         const input = document.querySelector(`input[name="${name}"], textarea[name="${name}"]`)
+        if (!input) {
+          return
+        }
         // A checkbox (e.g. a declaration beside the fields) is ticked, not retyped.
-        if (input?.type === 'checkbox') {
+        if (input.type === 'checkbox') {
           if (!input.checked) {
             input.click()
           }
-        } else if (input) {
+        } else {
           setInputValue(input, step.fields[name])
         }
       })
