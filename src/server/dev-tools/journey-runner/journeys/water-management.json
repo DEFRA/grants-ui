@@ -48,11 +48,12 @@
   {
     "section": "check-your-eligibility",
     "slug": "eligibility-project-location",
-    "name": "Where is project located — easting and northing",
+    "name": "Where is project located — easting and northing, location confirmed",
     "type": "textFields",
     "fields": {
       "projectLocated__easting": "530000",
-      "projectLocated__northing": "180000"
+      "projectLocated__northing": "180000",
+      "confirmCorrectLocationSelected": "true"
     }
   },
   {
@@ -66,10 +67,10 @@
   {
     "section": "check-your-eligibility",
     "slug": "eligibility-organisation",
-    "name": "Eligible organisation - no",
-    "type": "yesNo",
+    "name": "Eligible organisation - yes, can apply",
+    "type": "radios",
     "fieldName": "eligibleOrganisation",
-    "value": "false"
+    "value": "Y"
   },
   {
     "section": "check-your-eligibility",
@@ -82,8 +83,9 @@
   {
     "section": "check-your-eligibility",
     "slug": "eligibility-landowner-landlord-requirements",
-    "name": "What you need to do",
-    "type": "submitOnly"
+    "name": "What you need to do — confirm consulted with tenants",
+    "type": "checkboxes",
+    "fieldName": "confirmConsultedWithTenants"
   },
   {
     "section": "check-your-eligibility",
@@ -96,10 +98,9 @@
   {
     "section": "check-your-eligibility",
     "slug": "eligibility-water-source",
-    "name": "Where water will come from - selects all options",
+    "name": "Where water will come from - surface water (first option)",
     "type": "checkboxes",
-    "fieldName": "whereWaterWillComeFrom",
-    "selectAll": true
+    "fieldName": "whereWaterWillComeFrom"
   },
   {
     "section": "check-your-eligibility",
@@ -138,8 +139,9 @@
   {
     "section": "check-your-eligibility",
     "slug": "eligibility-score-results",
-    "name": "Score results",
-    "type": "submitOnly"
+    "name": "Score results — confirm want to continue",
+    "type": "checkboxes",
+    "fieldName": "confirmWantToContinueOnScorePage"
   },
   {
     "section": "project-details-estimated-costs",
@@ -151,9 +153,12 @@
   {
     "section": "project-details-estimated-costs",
     "slug": "project-details-expected-start-date",
-    "name": "Expected project start date - current month year",
-    "type": "monthYear",
-    "fieldName": "expectedProjectStartDate"
+    "name": "Expected project start date - March 2027 (earliest allowed)",
+    "type": "textFields",
+    "fields": {
+      "expectedProjectStartDate__month": "3",
+      "expectedProjectStartDate__year": "2027"
+    }
   },
   {
     "section": "project-details-estimated-costs",
@@ -181,19 +186,11 @@
   },
   {
     "section": "project-details-estimated-costs",
-    "slug": "how-much-water-reservoir",
+    "slug": "project-details-reservoir-water-volume",
     "name": "Reservoir storage capacity - 25,000m³",
     "type": "numberField",
     "fieldName": "howMuchWater",
     "value": "25000"
-  },
-  {
-    "section": "project-details-estimated-costs",
-    "slug": "project-details-water-distribution-length",
-    "name": "Water distribution length - 10,000m",
-    "type": "numberField",
-    "fieldName": "waterDistributionLength",
-    "value": "10000"
   },
   {
     "section": "project-details-estimated-costs",
@@ -205,9 +202,18 @@
   },
   {
     "section": "project-details-estimated-costs",
+    "slug": "project-details-water-distribution-length",
+    "name": "Water distribution length - 10,000m",
+    "type": "numberField",
+    "fieldName": "waterDistributionLength",
+    "value": "10000"
+  },
+  {
+    "section": "project-details-estimated-costs",
     "slug": "project-details-total-estimated-grant",
-    "name": "Total estimated cost",
-    "type": "submitOnly"
+    "name": "Total estimated cost — understand no guarantee",
+    "type": "checkboxes",
+    "fieldName": "understandNoGuaranteedSuccessOnEstimatedCostPage"
   },
   {
     "section": "check-and-submit-your-application",
@@ -225,7 +231,8 @@
   {
     "section": "check-and-submit-your-application",
     "slug": "application-declaration",
-    "name": "Submit your application",
-    "type": "submitOnly"
+    "name": "Submit your application — accept terms and conditions",
+    "type": "checkboxes",
+    "fieldName": "acceptTermsAndConditionsOnSubmitApplicationPage"
   }
 ]
