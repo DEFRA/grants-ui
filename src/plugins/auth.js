@@ -430,10 +430,9 @@ function validateUserSession(userSession, sessionId, request) {
  * @param {UserSession} userSession
  * @param {string} sessionId
  * @param {Request} request
- * @param {{ cachedVersion?: number }} [options]
  * @returns {Promise<{ isValid: boolean }>}
  */
-async function verifyAndRefreshToken(userSession, sessionId, request, { cachedVersion } = {}) {
+async function verifyAndRefreshToken(userSession, sessionId, request) {
   const startTime = Date.now()
   try {
     const decoded = Jwt.token.decode(userSession.token)
@@ -442,19 +441,18 @@ async function verifyAndRefreshToken(userSession, sessionId, request, { cachedVe
     return { isValid: true }
   } catch (tokenError) {
     const error = /** @type {Error} */ (tokenError)
-    return await handleTokenVerificationError(userSession, sessionId, request, error, { cachedVersion }) // NOSONAR - await is necessary here
+    return await handleTokenVerificationError(userSession, sessionId, request, error) // NOSONAR - await is necessary here
   }
 }
 
 /**
- * @param {UserSession} userSession - in the current format; persisting it upgrades a legacy cached session
+ * @param {UserSession} userSession
  * @param {string} sessionId
  * @param {Request} request
  * @param {Error} tokenError
- * @param {{ cachedVersion?: number }} [options]
  * @returns {Promise<{ isValid: boolean }>}
  */
-async function handleTokenVerificationError(userSession, sessionId, request, tokenError, { cachedVersion } = {}) {
+async function handleTokenVerificationError(userSession, sessionId, request, tokenError) {
   const startTime = Date.now()
   if (!config.get('defraId.refreshTokens')) {
     log(
@@ -479,7 +477,6 @@ async function handleTokenVerificationError(userSession, sessionId, request, tok
     userSession.token = newToken
     userSession.refreshToken = newRefreshToken
     await request.server.app.cache.set(sessionId, userSession)
-    logSessionUpgradeIfNeeded(userSession, sessionId, request, cachedVersion)
     log(
       LogCodes.AUTH.TOKEN_VERIFICATION_SUCCESS,
       {
@@ -542,18 +539,14 @@ function getCookieOptions() {
         return sessionValidation
       }
 
-      const userSession = standardiseUserSessionIfNeededCanBeRemovedADayAfterGoLive(
-        /** @type {UserSession} */ (cachedUserSession)
-      )
+      const userSession = /** @type {UserSession} */ (cachedUserSession)
 
       if (isSignOutPath(request.path)) {
         return { isValid: true, credentials: userSession }
       }
 
       if (userSession.token) {
-        const tokenValidation = await verifyAndRefreshToken(userSession, session.sessionId, request, {
-          cachedVersion: /** @type {UserSession} */ (cachedUserSession).version
-        })
+        const tokenValidation = await verifyAndRefreshToken(userSession, session.sessionId, request)
         if (!tokenValidation.isValid) {
           return tokenValidation
         }
@@ -597,60 +590,6 @@ export function buildUserCredentials(userData, existingCreds = {}) {
   }
 }
 
-/**
- * Standardise a cached session into the current format for this request only.
- *
- * The cache is deliberately not written here: writing back on every request raced with
- * concurrent token refreshes. Legacy sessions are persisted in the current format when
- * their tokens are next refreshed (see handleTokenVerificationError).
- * @param {UserSession} userSession
- * @returns {UserSession}
- */
-function standardiseUserSessionIfNeededCanBeRemovedADayAfterGoLive(userSession) {
-  if (!userSession) {
-    return userSession
-  }
-  if (userSession.version === AUTH_SESSION_VERSION) {
-    return userSession
-  }
-
-  return /** @type {UserSession} */ (
-    buildUserCredentials(/** @type {JwtPayload} */ (userSession), {
-      isAuthenticated: true,
-      token: userSession.token,
-      refreshToken: userSession.refreshToken
-    })
-  )
-}
-
-/**
- * @param {UserSession} userSession - the refreshed session, already in the current format
- * @param {string} sessionId
- * @param {Request} request
- * @param {number | undefined} cachedVersion - the version of the session as it was read from the cache
- * @returns {void}
- */
-function logSessionUpgradeIfNeeded(userSession, sessionId, request, cachedVersion) {
-  if (cachedVersion === AUTH_SESSION_VERSION) {
-    return
-  }
-
-  log(
-    LogCodes.AUTH.SESSION_UPGRADED,
-    {
-      step: 'auth_session_upgraded',
-      userId: userSession.contactId,
-      sessionId,
-      fromVersion: cachedVersion ?? 'unversioned',
-      toVersion: AUTH_SESSION_VERSION,
-      hasCrn: Boolean(userSession.crn),
-      hasSbi: Boolean(userSession.sbi),
-      hasRelationshipId: Boolean(userSession.relationshipId)
-    },
-    request
-  )
-}
-
 export { getBellOptions, getCookieOptions }
 
 /**
@@ -683,18 +622,18 @@ export { getBellOptions, getCookieOptions }
 
 /**
  * @typedef {object} UserSession
- * @property {number} [version]
+ * @property {number} version
  * @property {string} token
  * @property {string} refreshToken
- * @property {string} [contactId]
- * @property {string} [currentRelationshipId]
- * @property {string[]} [relationships]
- * @property {string} [firstName]
- * @property {string} [lastName]
+ * @property {string} contactId
+ * @property {string} currentRelationshipId
+ * @property {string[]} relationships
+ * @property {string} firstName
+ * @property {string} lastName
  * @property {string} [organisationId]
- * @property {string} [crn]
- * @property {string} [sbi]
- * @property {string} [name]
- * @property {string} [organisationName]
- * @property {string} [relationshipId]
+ * @property {string} crn
+ * @property {string} sbi
+ * @property {string} name
+ * @property {string} organisationName
+ * @property {string} relationshipId
  */
