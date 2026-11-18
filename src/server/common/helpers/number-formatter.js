@@ -2,7 +2,22 @@ import { formatThousands } from '~/src/shared/format-number.js'
 
 const SUPPORTED_CURRENCIES = new Set(Intl.supportedValuesOf('currency'))
 
-/** @typedef {(value: number | string, suffix?: string) => string} NumberFormatter */
+/** @typedef {{ suffix?: string }} NumberFormatOptions */
+/** @typedef {(value: number | string) => string} BaseNumberFormatter */
+/** @typedef {(value: number | string, options?: NumberFormatOptions) => string} NumberFormatter */
+/** @typedef {(args: string[]) => BaseNumberFormatter | undefined} BaseNumberFormatterFactory */
+/** @typedef {(formatter: BaseNumberFormatter) => NumberFormatter} NumberModifier */
+
+/** @type {Map<string, BaseNumberFormatterFactory>} */
+const BASE_FORMATTER_FACTORIES = new Map([
+  ['thousands', (args) => (args.length === 0 ? formatThousands : undefined)],
+  ['decimal', createDecimalFormatter],
+  ['currency', createCurrencyFormatter]
+])
+
+/** @type {Map<string, NumberModifier>} */
+const MODIFIERS = new Map([['suffix', withSuffix]])
+
 /** @type {Map<string, NumberFormatter>} */
 const FORMATTERS = new Map()
 
@@ -45,74 +60,83 @@ export function formatNumberAnswer(component, value) {
     return undefined
   }
 
-  return formatter(value, component.options?.suffix)
+  return formatter(value, component.options)
 }
 
 /**
+ * Parses `<base>`, `<base>|<modifier>` or `<modifier>`, where a modifier on its
+ * own applies to the unformatted value.
  * @param {string} format
  * @returns {NumberFormatter | undefined}
  */
 function createNumberFormatter(format) {
   const parts = format.split('|').map((part) => part.trim())
-  if (parts.length > 2 || (parts.length === 2 && parts[1] !== 'suffix')) {
+  const [base, modifier, ...rest] = MODIFIERS.has(parts[0]) ? [undefined, ...parts] : parts
+  if (rest.length > 0) {
     return undefined
   }
-  const suffixOnly = parts.length === 1 && parts[0] === 'suffix'
-  const formatter = suffixOnly ? String : createBaseNumberFormatter(parts[0])
-  if (!formatter || (parts.length === 1 && !suffixOnly)) {
+
+  const formatter = base === undefined ? String : createBaseFormatter(base)
+  if (!formatter || modifier === undefined) {
     return formatter
   }
+  return MODIFIERS.get(modifier)?.(formatter)
+}
 
-  return (value, suffix) => {
+/**
+ * @param {string} format
+ * @returns {BaseNumberFormatter | undefined}
+ */
+function createBaseFormatter(format) {
+  const stage = parseFormatStage(format)
+  return stage ? BASE_FORMATTER_FACTORIES.get(stage.name)?.(stage.args) : undefined
+}
+
+/**
+ * @param {string} format
+ * @returns {{ name: string, args: string[] } | undefined}
+ */
+function parseFormatStage(format) {
+  const parts = format.split(':')
+  if (parts.length > 2) {
+    return undefined
+  }
+  return {
+    name: parts[0].trim(),
+    args: parts.length === 2 ? parts[1].split(',').map((arg) => arg.trim()) : []
+  }
+}
+
+/**
+ * @param {BaseNumberFormatter} formatter
+ * @returns {NumberFormatter}
+ */
+function withSuffix(formatter) {
+  return (value, options) => {
+    const suffix = options?.suffix
     const formatted = formatter(value)
     return suffix && formatted.trim() !== '' && Number.isFinite(Number(value)) ? formatted + suffix : formatted
   }
 }
 
 /**
- * @param {string} format
- * @returns {NumberFormatter | undefined}
+ * @param {string[]} args
+ * @returns {BaseNumberFormatter | undefined}
  */
-function createBaseNumberFormatter(format) {
-  const parts = format.split(':')
-  if (parts.length > 2) {
+function createDecimalFormatter(args) {
+  if (args.length > 1) {
     return undefined
   }
-  const name = parts[0].trim()
-  const args = parts.length === 2 ? parts[1].split(',').map((arg) => arg.trim()) : []
-
-  if (name === 'thousands') {
-    return args.length === 0 ? formatThousands : undefined
-  }
-  const options = getIntlFormatOptions(name, args)
-  if (!options) {
-    return undefined
-  }
-
-  const formatter = new Intl.NumberFormat('en-GB', options)
-  return (value) => {
-    if (typeof value === 'string' && value.trim() === '') {
-      return value
-    }
-    const number = Number(value)
-    return Number.isFinite(number) ? formatter.format(number) : String(value)
-  }
+  const options = withFractionDigits({ style: 'decimal' }, args[0] ?? '2')
+  return options ? createIntlNumberFormatter(options) : undefined
 }
 
 /**
- * @param {string} name
  * @param {string[]} args
- * @returns {Intl.NumberFormatOptions | undefined}
+ * @returns {BaseNumberFormatter | undefined}
  */
-function getIntlFormatOptions(name, args) {
-  if (name === 'decimal') {
-    if (args.length > 1) {
-      return undefined
-    }
-    const places = args.length ? args[0] : '2'
-    return withFractionDigits({ style: 'decimal' }, places)
-  }
-  if (name !== 'currency' || args.length < 1 || args.length > 2) {
+function createCurrencyFormatter(args) {
+  if (args.length < 1 || args.length > 2) {
     return undefined
   }
 
@@ -123,7 +147,23 @@ function getIntlFormatOptions(name, args) {
 
   /** @type {Intl.NumberFormatOptions} */
   const options = { style: 'currency', currency }
-  return args.length === 2 ? withFractionDigits(options, args[1]) : options
+  const resolvedOptions = args.length === 2 ? withFractionDigits(options, args[1]) : options
+  return resolvedOptions ? createIntlNumberFormatter(resolvedOptions) : undefined
+}
+
+/**
+ * @param {Intl.NumberFormatOptions} options
+ * @returns {BaseNumberFormatter}
+ */
+function createIntlNumberFormatter(options) {
+  const formatter = new Intl.NumberFormat('en-GB', options)
+  return (value) => {
+    if (typeof value === 'string' && value.trim() === '') {
+      return value
+    }
+    const number = Number(value)
+    return Number.isFinite(number) ? formatter.format(number) : String(value)
+  }
 }
 
 /**
