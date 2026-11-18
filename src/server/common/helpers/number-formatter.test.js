@@ -3,6 +3,8 @@ import { formatNumberAnswer, getNumberFormatter } from './number-formatter.js'
 describe('getNumberFormatter', () => {
   test.each([
     [undefined],
+    [42],
+    [''],
     ['unknown'],
     ['decimal:'],
     ['decimal:2,3'],
@@ -19,7 +21,13 @@ describe('getNumberFormatter', () => {
     ['unknown|suffix'],
     ['|suffix'],
     ['suffix|suffix'],
+    ['suffix|thousands'],
+    ['thousands|decimal:2'],
     ['suffix:2'],
+    ['decimal:2|suffix:2'],
+    ['decimal:2|suffix:'],
+    ['decimal:2|suffix:1:2'],
+    ['decimal:2|suffix|'],
     ['decimal:2,3|suffix'],
     ['currency'],
     ['currency:gbp,'],
@@ -32,6 +40,7 @@ describe('getNumberFormatter', () => {
 
   test.each([
     ['thousands', '125000.500', '125,000.500'],
+    ['decimal', 125000.5, '125,000.50'],
     ['decimal:0', 125000.5, '125,001'],
     ['decimal:4', 125000.5, '125,000.5000'],
     ['currency:gbp', 125000.5, '£125,000.50'],
@@ -50,6 +59,13 @@ describe('getNumberFormatter', () => {
   test('returns non-numeric values unchanged', () => {
     expect(getNumberFormatter('decimal')('not a number')).toBe('not a number')
   })
+
+  test.each(['thousands', 'decimal:4', 'currency:gbp', 'suffix', 'decimal:4|suffix'])(
+    'caches the compiled formatter for %s',
+    (format) => {
+      expect(getNumberFormatter(format)).toBe(getNumberFormatter(format))
+    }
+  )
 })
 
 describe('formatNumberAnswer', () => {
@@ -76,7 +92,9 @@ describe('formatNumberAnswer', () => {
     ['thousands', 100000, 'm³', '100,000'],
     ['thousands|suffix', '', 'm³', ''],
     ['decimal|suffix', '  ', 'm³', '  '],
-    ['thousands|suffix', 'invalid', 'm³', 'invalid']
+    ['thousands|suffix', 'invalid', 'm³', 'invalid'],
+    ['currency:gbp|suffix', Infinity, ' per year', 'Infinity'],
+    ['currency:gbp|suffix', 'invalid', ' per year', 'invalid']
   ])('formats %s with value %j and suffix %j', (format, value, suffix, expected) => {
     expect(formatNumberAnswer({ type: 'NumberField', options: { format, suffix } }, value)).toBe(expected)
   })
