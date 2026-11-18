@@ -146,6 +146,22 @@ Set `options.format` on a `NumberField` to format answers on Check answers and p
 | `currency:gbp`   | `125000.5` | `£125,000.50`   |
 | `currency:gbp,4` | `125000.5` | `£125,000.5000` |
 
+Append `|suffix` to any supported number format to include the component's existing `options.suffix` in the displayed
+answer. For example:
+
+```yaml
+options:
+  suffix: m³
+  format: 'thousands|suffix'
+```
+
+This displays `100000` as `100,000m³` on Check answers, repeat item lists and print pages. The suffix is appended exactly
+as configured, without adding a space. For example, `decimal:2|suffix` with `suffix: ' m³'` displays `100,000.00 m³`.
+If `suffix` is missing or empty, the modifier is ignored. Unanswered values remain unanswered, and formats without
+`|suffix` keep their existing behaviour. Input values and saved answers remain numeric and do not include the suffix.
+Only one trailing `|suffix` modifier is supported; unknown or repeated modifiers are rejected when the form definition
+is loaded. Configure these options in the form definitions served by Grants UI Backend.
+
 ### Date Components
 
 #### DatePartsField
