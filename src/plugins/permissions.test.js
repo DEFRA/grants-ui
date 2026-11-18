@@ -20,6 +20,7 @@ describe('permissions plugin', () => {
 
   beforeEach(async () => {
     server = {
+      decorate: vi.fn(),
       ext: vi.fn((event, handler) => {
         onPostAuthHandler = handler
       })
@@ -40,6 +41,10 @@ describe('permissions plugin', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  test('registers request.can decoration', () => {
+    expect(server.decorate).toHaveBeenCalledWith('request', 'can', expect.any(Function))
   })
 
   test('registers onPostAuth extension', () => {
@@ -187,7 +192,11 @@ describe('permissions plugin', () => {
 
     await onPostAuthHandler(request, h)
 
-    const result = request.can('submit', 'application')
+    const decoratedCan = server.decorate.mock.calls.find(
+      ([type, property]) => type === 'request' && property === 'can'
+    )[2]
+
+    const result = decoratedCan.call(request, 'submit', 'application')
 
     expect(can).toHaveBeenCalledWith(permissionGroups, 'submit', 'application')
 
