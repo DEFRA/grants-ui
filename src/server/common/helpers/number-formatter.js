@@ -2,7 +2,7 @@ import { formatThousands } from '~/src/shared/format-number.js'
 
 const SUPPORTED_CURRENCIES = new Set(Intl.supportedValuesOf('currency'))
 
-/** @typedef {(value: number | string) => string} NumberFormatter */
+/** @typedef {(value: number | string, suffix?: string) => string} NumberFormatter */
 /** @type {Map<string, NumberFormatter>} */
 const FORMATTERS = new Map()
 
@@ -29,7 +29,7 @@ export function getNumberFormatter(format) {
 
 /**
  * Formats a configured NumberField's display value.
- * @param {{ type?: string, options?: { format?: string } } | undefined} component
+ * @param {{ type?: string, options?: { format?: string, suffix?: string } } | undefined} component
  * @param {unknown} value
  * @returns {string | undefined} Undefined when no number format applies.
  */
@@ -45,7 +45,7 @@ export function formatNumberAnswer(component, value) {
     return undefined
   }
 
-  return formatter(value)
+  return formatter(value, component.options?.suffix)
 }
 
 /**
@@ -53,6 +53,26 @@ export function formatNumberAnswer(component, value) {
  * @returns {NumberFormatter | undefined}
  */
 function createNumberFormatter(format) {
+  const parts = format.split('|').map((part) => part.trim())
+  if (parts.length > 2 || (parts.length === 2 && parts[1] !== 'suffix')) {
+    return undefined
+  }
+  const formatter = createBaseNumberFormatter(parts[0])
+  if (!formatter || parts.length === 1) {
+    return formatter
+  }
+
+  return (value, suffix) => {
+    const formatted = formatter(value)
+    return suffix && formatted.trim() !== '' && Number.isFinite(Number(value)) ? formatted + suffix : formatted
+  }
+}
+
+/**
+ * @param {string} format
+ * @returns {NumberFormatter | undefined}
+ */
+function createBaseNumberFormatter(format) {
   const parts = format.split(':')
   if (parts.length > 2) {
     return undefined
