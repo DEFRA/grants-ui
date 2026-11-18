@@ -16,6 +16,20 @@ async function getDb() {
 }
 
 class Mongo {
+  async getApplicationStatusesByReference(sbi, grantCode) {
+    const db = await getDb()
+    const documents = await db
+      .collection(STATE_COLLECTION)
+      .find({ sbi, grantCode }, { projection: { applicationRef: 1, 'state.applicationStatus': 1 } })
+      .toArray()
+
+    return new Map(
+      documents
+        .filter((document) => document.applicationRef)
+        .map((document) => [document.applicationRef.toUpperCase(), document.state?.applicationStatus ?? ''])
+    )
+  }
+
   async setApplicationStatus(crn, sbi, grantCode, applicationStatus) {
     const grantVersion = (await Backend.resolveGrantVersion(crn, sbi, grantCode)) ?? 1
     const db = await getDb()

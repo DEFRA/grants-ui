@@ -142,8 +142,8 @@ Feature: Application Amendment
             | Country                        | England                 |
             | Radio option                   | Option two              |
             | Checkbox options               | Option two              |
-            | Enter amount                   | 100000                  |
-            | Routing amount                 | 50000                   |
+            | Enter amount                   | £100,000.00             |
+            | Routing amount                 | £50,000.00              |
             | Date                           | {DATE IN A WEEK}        |
             | Month and year                 | August 2025             |
             | Select option                  | Option two              |
@@ -163,12 +163,12 @@ Feature: Application Amendment
             | Hidden field                   | Not provided            |
             | Project name                   | Test project            |
             | Project description            | Project description     |
-            | Project budget                 | 50000                   |
+            | Project budget                 | £50,000.00              |
             | Select land parcels            | SD6351-8781             |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER              |
             | Item 1 | Item name | Repeat item example |
-            |        | Amount    | 12000               |
+            |        | Amount    | £12,000.00          |
         When the user continues
 
         # declaration
@@ -249,8 +249,8 @@ Feature: Application Amendment
             | Country                        | Wales                   |
             | Radio option                   | Option two              |
             | Checkbox options               | Option two              |
-            | Enter amount                   | 100000                  |
-            | Routing amount                 | 50000                   |
+            | Enter amount                   | £100,000.00             |
+            | Routing amount                 | £50,000.00              |
             | Date                           | {DATE IN A WEEK}        |
             | Month and year                 | August 2025             |
             | Select option                  | Option two              |
@@ -270,12 +270,12 @@ Feature: Application Amendment
             | Hidden field                   | Not provided            |
             | Project name                   | Test project            |
             | Project description            | Project description     |
-            | Project budget                 | 50000                   |
+            | Project budget                 | £50,000.00              |
             | Select land parcels            | SD6351-8781             |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER              |
             | Item 1 | Item name | Repeat item example |
-            |        | Amount    | 12000               |
+            |        | Amount    | £12,000.00          |
         When the user continues
 
         # declaration
@@ -348,8 +348,8 @@ Feature: Application Amendment
             | Country                        | France                  |
             | Radio option                   | Option two              |
             | Checkbox options               | Option two              |
-            | Enter amount                   | 100000                  |
-            | Routing amount                 | 50000                   |
+            | Enter amount                   | £100,000.00             |
+            | Routing amount                 | £50,000.00              |
             | Date                           | {DATE IN A WEEK}        |
             | Month and year                 | August 2025             |
             | Select option                  | Option two              |
@@ -369,12 +369,12 @@ Feature: Application Amendment
             | Hidden field                   | Not provided            |
             | Project name                   | Test project            |
             | Project description            | Project description     |
-            | Project budget                 | 50000                   |
+            | Project budget                 | £50,000.00              |
             | Select land parcels            | SD6351-8781             |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER              |
             | Item 1 | Item name | Repeat item example |
-            |        | Amount    | 12000               |
+            |        | Amount    | £12,000.00          |
         When the user continues
 
         # declaration

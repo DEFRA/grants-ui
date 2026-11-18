@@ -42,10 +42,10 @@ function createPersistenceError(reason, status) {
  *
  * @param {Record<string, unknown>} state - The state object to persist. Can include form/session data.
  * @param {string} key - The cache/session key to identify this state.
- * @param {{grantVersion?: unknown, lockToken?: string, failOnError?: boolean}} [options] - Optional grant version, lock token to identify who is locking the state.
+ * @param {{grantVersion?: unknown, lockToken?: string, failOnError?: boolean, createdAt?: string}} [options] - Optional grant version, lock token to identify who is locking the state, and the creation date to record if this save creates the document.
  * @returns {Promise<void>} Resolves once the state is sent to the backend.
  */
-export async function persistStateToApi(state, key, { lockToken, grantVersion, failOnError = false } = {}) {
+export async function persistStateToApi(state, key, { lockToken, grantVersion, failOnError = false, createdAt } = {}) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     if (failOnError) {
       throw createPersistenceError('Backend endpoint is not configured', statusCodes.serviceUnavailable)
@@ -67,7 +67,7 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion, f
     }
   })
 
-  const body = buildStateRequestBody({ sbi, grantCode, grantVersion, state }, key)
+  const body = buildStateRequestBody({ sbi, grantCode, grantVersion, state, ...(createdAt && { createdAt }) }, key)
 
   try {
     const response = await fetch(url.href, {

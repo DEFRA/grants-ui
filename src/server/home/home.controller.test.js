@@ -83,16 +83,46 @@ describe('homeController', () => {
     expect(h.view).not.toHaveBeenCalled()
   })
 
-  test('redirects to the SFD homepage when SFD is enabled', async () => {
+  test('redirects to the SFD homepage with the signed-in business relationship', async () => {
     configState.set('externalLinks.sfd.enabled', true)
-    const request = mockSimpleRequest()
+    const request = mockSimpleRequest({
+      auth: {
+        isAuthenticated: true,
+        credentials: { crn: '1100000001', sbi: '106000001', currentRelationshipId: 'REL123' }
+      }
+    })
+    const h = mockHapiResponseToolkit()
+
+    await homeController.handler(request, h)
+
+    expect(h.redirect).toHaveBeenCalledWith('https://sfd.example/home?ssoOrgId=REL123')
+    expect(fetchAllowedGrantDetails).not.toHaveBeenCalled()
+    expect(h.view).not.toHaveBeenCalled()
+  })
+
+  test('replaces a stale SSO hint while preserving other homepage query parameters', async () => {
+    configState.set('externalLinks.sfd.enabled', true)
+    configState.set('externalLinks.sfd.homeUrl', 'https://sfd.example/?source=grants&ssoOrgId=OLD')
+    const request = mockSimpleRequest({
+      auth: { isAuthenticated: true, credentials: { currentRelationshipId: 'REL/456' } }
+    })
+    const h = mockHapiResponseToolkit()
+
+    await homeController.handler(request, h)
+
+    expect(h.redirect).toHaveBeenCalledWith('https://sfd.example/?source=grants&ssoOrgId=REL%2F456')
+  })
+
+  test('does not add an SSO hint when the signed-in profile has no relationship ID', async () => {
+    configState.set('externalLinks.sfd.enabled', true)
+    const request = mockSimpleRequest({
+      auth: { isAuthenticated: true, credentials: { crn: '1100000001', sbi: '106000001' } }
+    })
     const h = mockHapiResponseToolkit()
 
     await homeController.handler(request, h)
 
     expect(h.redirect).toHaveBeenCalledWith('https://sfd.example/home')
-    expect(fetchAllowedGrantDetails).not.toHaveBeenCalled()
-    expect(h.view).not.toHaveBeenCalled()
   })
 
   test.each(['', 'not a URL', 'javascript:alert(1)'])(

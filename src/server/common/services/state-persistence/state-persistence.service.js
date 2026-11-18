@@ -90,7 +90,7 @@ export class StatePersistenceService extends CacheService {
    *
    * @param {AnyRequest} request
    * @param {FormSubmissionState} state
-   * @param {{failOnError?: boolean, allowMultipleApplications?: boolean}} [options] - Require a successful backend save before continuing.
+   * @param {{failOnError?: boolean, allowMultipleApplications?: boolean, createdAt?: string}} [options] - Require a successful backend save before continuing; `createdAt` is recorded if the save creates the document.
    * @returns {Promise<FormSubmissionState>} the persisted state
    */
   async setState(request, state, { allowMultipleApplications, ...options } = {}) {

@@ -193,6 +193,18 @@ describe('multiApplication plugin - reattaching the ref to redirects', () => {
     expect(request.response.headers.location).toBe('/test-grant/next?ref=REF-OTHER')
   })
 
+  it.each(['/test-grant/applications', '/test-grant/applications?page=2#list'])(
+    'does not attach an application ref to the applications list redirect %s',
+    (location) => {
+      const handler = registerAndGetPreResponse(server)
+      const request = makeRequest({ location })
+
+      handler(request, h)
+
+      expect(request.response.headers.location).toBe(location)
+    }
+  )
+
   it('does nothing when the request has no ref', () => {
     const handler = registerAndGetPreResponse(server)
     const request = makeRequest({ ref: null })
@@ -472,6 +484,26 @@ describe('multiApplication plugin - reattaching the ref to rendered links', () =
     expect(html).toBe(
       '<a href="/test-grant/tasks?ref=REF-1">Tasks</a><form action="/test-grant/page?ref=REF-1"></form><a href=\'/test-grant?ref=REF-1\'>Root</a>'
     )
+  })
+
+  it.each([
+    '/test-grant/applications',
+    '/test-grant/applications?page=2#list',
+    'applications',
+    './applications',
+    'http://localhost:3000/test-grant/applications'
+  ])('does not attach an application ref to the applications list link or form action %s', async (url) => {
+    const originalHtml = `<a href="${url}">Manage your applications</a><form action="${url}"></form>`
+
+    const { html } = await render(makeViewRequest({ html: originalHtml }))
+
+    expect(html).toBe(originalHtml)
+  })
+
+  it('still attaches the ref to application-specific paths with a similar name', async () => {
+    const { html } = await render(makeViewRequest({ html: '<a href="/test-grant/applications-summary">Summary</a>' }))
+
+    expect(html).toBe('<a href="/test-grant/applications-summary?ref=REF-1">Summary</a>')
   })
 
   it('appends to an existing, HTML-escaped query string without re-encoding it', async () => {

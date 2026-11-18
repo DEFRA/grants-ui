@@ -43,9 +43,9 @@ vi.mock('~/src/config/config.js', async () => {
 vi.mock('~/src/config/nunjucks/context/build-navigation.js', () => ({
   buildNavigation: () => [
     {
-      isActive: true,
-      text: 'Home',
-      url: '/'
+      current: true,
+      text: 'Manage your applications',
+      href: '/test-grant/applications'
     }
   ]
 }))
@@ -59,9 +59,9 @@ const getExpectedContext = () => ({
   getAssetPath: expect.any(Function),
   navigation: [
     {
-      isActive: true,
-      text: 'Home',
-      url: '/'
+      current: true,
+      text: 'Manage your applications',
+      href: '/test-grant/applications'
     }
   ],
   serviceName: 'Farm and Land Service',
@@ -481,6 +481,69 @@ describe('context', () => {
     })
   })
 
+  describe('phase branding from resolved definitions', () => {
+    test.each(['routingDefinition', 'stateWithDefinition'])(
+      'uses %s when a standalone grant page has no forms-engine model',
+      async (source) => {
+        setupManifestSuccess()
+        const request = {
+          ...mockSimpleRequest({ path: '/test-grant/applications' }),
+          app: { [source]: Promise.resolve({ definition: { definition: { metadata: { phase: 'public-beta' } } } }) }
+        }
+
+        const contextImport = await importContext()
+        expect(await contextImport.context(request)).toMatchObject({ grantPhase: 'public-beta', govukBranding: true })
+        expect(request.app.model).toBeUndefined()
+      }
+    )
+
+    test('keeps the current form model phase ahead of other loaded definitions', async () => {
+      setupManifestSuccess()
+      const request = requestWithMetadata({ phase: 'private-beta' })
+      request.app.routingDefinition = Promise.resolve({ definition: { definition: { metadata: { phase: 'live' } } } })
+
+      const contextImport = await importContext()
+      expect(await contextImport.context(request)).toMatchObject({ grantPhase: 'private-beta', govukBranding: false })
+    })
+
+    test('uses the application definition phase ahead of the latest routing definition', async () => {
+      setupManifestSuccess()
+      const request = {
+        ...mockSimpleRequest(),
+        app: {
+          stateWithDefinition: Promise.resolve({ definition: { definition: { metadata: { phase: 'private-beta' } } } }),
+          routingDefinition: Promise.resolve({ definition: { definition: { metadata: { phase: 'live' } } } })
+        }
+      }
+
+      const contextImport = await importContext()
+      expect(await contextImport.context(request)).toMatchObject({ grantPhase: 'private-beta', govukBranding: false })
+    })
+
+    test('renders with default branding without logging a previously failed definition again', async () => {
+      setupManifestSuccess()
+      const contextImport = await importContext()
+      const request = {
+        ...mockSimpleRequest(),
+        app: { routingDefinition: Promise.reject(new Error('Definition loader failed')) }
+      }
+
+      expect(await contextImport.context(request)).toMatchObject({ grantPhase: 'private-beta', govukBranding: false })
+      expect(mockLog).not.toHaveBeenCalled()
+    })
+
+    test.each([null, {}, { definition: {} }])(
+      'defaults safely when the loaded definition is missing (%j)',
+      async (envelope) => {
+        setupManifestSuccess()
+        const request = { ...mockSimpleRequest(), app: { routingDefinition: Promise.resolve(envelope) } }
+
+        const contextImport = await importContext()
+        expect(await contextImport.context(request)).toMatchObject({ grantPhase: 'private-beta', govukBranding: false })
+      }
+    )
+  })
+
   describe('submitButtonText in context', () => {
     test('Should include submitButtonText when present in request metadata', async () => {
       setupManifestSuccess()
@@ -633,6 +696,22 @@ describe('context', () => {
   })
 
   describe('Fallback context on error', () => {
+    test('preserves resolved branding if another part of the view context fails', async () => {
+      setupManifestSuccess()
+      vi.doMock('~/src/config/nunjucks/context/build-navigation.js', () => ({
+        buildNavigation: () => {
+          throw new Error('Navigation build failed')
+        }
+      }))
+      const request = {
+        ...mockSimpleRequest(),
+        app: { routingDefinition: Promise.resolve({ definition: { definition: { metadata: { phase: 'live' } } } }) }
+      }
+
+      const contextImport = await importContext()
+      expect(await contextImport.context(request)).toMatchObject({ grantPhase: 'live', govukBranding: true })
+    })
+
     test('returns fallback context with correct structure when buildNavigation throws', async () => {
       setupManifestSuccess()
 
