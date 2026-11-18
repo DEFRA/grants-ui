@@ -145,8 +145,8 @@ function createCurrencyFormatter(args) {
     return undefined
   }
 
-  /** @type {Intl.NumberFormatOptions} */
-  const options = { style: 'currency', currency }
+  /** @type {Intl.NumberFormatOptions & { trailingZeroDisplay: 'stripIfInteger' }} */
+  const options = { style: 'currency', currency, trailingZeroDisplay: 'stripIfInteger' }
   const resolvedOptions = args.length === 2 ? withFractionDigits(options, args[1]) : options
   return resolvedOptions ? createIntlNumberFormatter(resolvedOptions) : undefined
 }
