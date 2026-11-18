@@ -49,12 +49,12 @@
     "section": "check-your-eligibility",
     "slug": "eligibility-project-location",
     "name": "Where is project located — easting and northing, location confirmed",
-    "type": "textFields",
-    "fields": {
-      "projectLocated__easting": "530000",
-      "projectLocated__northing": "180000",
-      "confirmCorrectLocationSelected": "true"
-    }
+    "type": "fields",
+    "fields": [
+      { "type": "text", "fieldName": "projectLocated__easting", "value": "530000" },
+      { "type": "text", "fieldName": "projectLocated__northing", "value": "180000" },
+      { "type": "checkbox", "fieldName": "confirmCorrectLocationSelected", "checked": true }
+    ]
   },
   {
     "section": "check-your-eligibility",

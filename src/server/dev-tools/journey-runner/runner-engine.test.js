@@ -140,3 +140,109 @@ describe('runner-engine clickLink', () => {
     expect(submitted.getAll('confirmConsultedWithTenants')).toEqual(['true', 'unchecked'])
   })
 })
+
+describe('runner-engine fields', () => {
+  /** @type {import('vitest').MockInstance} */
+  let errorSpy
+
+  beforeEach(() => {
+    vi.spyOn(globalThis.console, 'log').mockImplementation(() => {})
+    errorSpy = vi.spyOn(globalThis.console, 'error').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    delete globalThis.__journeyRunner
+    delete globalThis.__journeySteps
+    sessionStorage.clear()
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  /**
+   * Renders the form, runs a single `fields` step against it and records each submit.
+   * @param {string} formHtml
+   * @param {object[]} fields
+   * @returns {Promise<FormData[]>}
+   */
+  const runFieldsStep = async (formHtml, fields) => {
+    document.body.innerHTML = `<form method="post">${formHtml}<button class="govuk-button">Continue</button></form>`
+    const form = document.querySelector('form')
+    /** @type {FormData[]} */
+    const submits = []
+    form.addEventListener('submit', (event) => {
+      event.preventDefault()
+      submits.push(new FormData(form))
+    })
+    await loadRunner('/example-grant/application-declaration', undefined, [
+      { slug: 'application-declaration', name: 'Complete declaration', type: 'fields', fields }
+    ])
+    globalThis.runJourney()
+    return submits
+  }
+
+  test('fills a text input and ticks a checkbox, then submits once', async () => {
+    const submits = await runFieldsStep(
+      `<input name="fullName" type="text">
+       <input name="declaration" type="checkbox" value="true">`,
+      [
+        { type: 'text', fieldName: 'fullName', value: 'Test Applicant' },
+        { type: 'checkbox', fieldName: 'declaration', checked: true }
+      ]
+    )
+
+    expect(errorSpy).not.toHaveBeenCalled()
+    expect(submits).toHaveLength(1)
+    expect(submits[0].get('fullName')).toBe('Test Applicant')
+    expect(submits[0].get('declaration')).toBe('true')
+  })
+
+  test('unticks a checkbox when checked is false', async () => {
+    const submits = await runFieldsStep(`<input name="marketing" type="checkbox" value="true" checked>`, [
+      { type: 'checkbox', fieldName: 'marketing', checked: false }
+    ])
+
+    expect(errorSpy).not.toHaveBeenCalled()
+    expect(submits).toHaveLength(1)
+    expect(submits[0].has('marketing')).toBe(false)
+  })
+
+  test('reuses the single-field fillers for radios and selects', async () => {
+    const submits = await runFieldsStep(
+      `<input name="choice" type="radio" value="a">
+       <input name="choice" type="radio" value="b">
+       <select name="county"><option value="">Select</option><option value="kent">Kent</option></select>`,
+      [
+        { type: 'radios', fieldName: 'choice', value: 'b' },
+        { type: 'selectField', fieldName: 'county' }
+      ]
+    )
+
+    expect(errorSpy).not.toHaveBeenCalled()
+    expect(submits).toHaveLength(1)
+    expect(submits[0].get('choice')).toBe('b')
+    expect(submits[0].get('county')).toBe('kent')
+  })
+
+  test.each([
+    [{ type: 'mystery', fieldName: 'fullName' }, 'Unknown field type "mystery" for fullName'],
+    [{ type: 'text', fieldName: 'missing', value: 'x' }, 'missing input not found']
+  ])('fails without submitting when an entry cannot be filled (%o)', async (entry, message) => {
+    const submits = await runFieldsStep(`<input name="fullName" type="text">`, [
+      { type: 'text', fieldName: 'fullName', value: 'Test Applicant' },
+      entry
+    ])
+
+    expect(submits).toHaveLength(0)
+    expect(errorSpy).toHaveBeenCalledWith('[journey-runner] Failed on "Complete declaration":', message)
+  })
+
+  test('fails without submitting when the fields array is empty', async () => {
+    const submits = await runFieldsStep(`<input name="fullName" type="text">`, [])
+
+    expect(submits).toHaveLength(0)
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[journey-runner] Failed on "Complete declaration":',
+      'fields step needs a non-empty "fields" array'
+    )
+  })
+})
