@@ -133,19 +133,19 @@ describe('buildConfirmLandAndActionsViewModel', () => {
       removeHref: 'remove-parcel?parcelId=SD1234-5678',
       addActionsHref:
         'select-actions-for-land-parcel?parcelId=SD1234-5678&origin=confirm-land-and-actions&changeActions=true',
-      yearlyPayment: '£30.00',
+      yearlyPayment: '£30',
       actions: [
         {
           action: 'Action description (CLIG3)',
           area: '2.0000 ha',
-          yearlyPayment: '£10.00',
+          yearlyPayment: '£10',
           changeHref:
             'select-actions-for-land-parcel?parcelId=SD1234-5678&origin=confirm-land-and-actions&changeActions=true'
         },
         {
           action: 'Another action (CSAM3)',
           area: '4.0000 ha',
-          yearlyPayment: '£20.00',
+          yearlyPayment: '£20',
           changeHref:
             'select-actions-for-land-parcel?parcelId=SD1234-5678&origin=confirm-land-and-actions&changeActions=true'
         }
@@ -278,7 +278,7 @@ describe('buildConfirmLandAndActionsViewModel', () => {
   it('takes applicationYearlyPayment from annualTotalPence, not from summed rows', () => {
     const model = buildConfirmLandAndActionsViewModel(payment, landParcels)
 
-    expect(model.applicationYearlyPayment).toBe('£1,234.00')
+    expect(model.applicationYearlyPayment).toBe('£1,234')
   })
 
   it('builds the agreement duration and estimated agreement payment from the API fields', () => {
@@ -286,7 +286,7 @@ describe('buildConfirmLandAndActionsViewModel', () => {
 
     expect(model.agreementDuration).toBe('3 years')
     expect(model.agreementDurationYears).toBe(3)
-    expect(model.agreementTotalPayment).toBe('£3,702.00')
+    expect(model.agreementTotalPayment).toBe('£3,702')
   })
 
   it('rounds an inclusive end date to the agreement duration in whole years', () => {
@@ -302,19 +302,19 @@ describe('buildConfirmLandAndActionsViewModel', () => {
   it('sums only the parcel-scoped action pence for each parcel total', () => {
     const model = buildConfirmLandAndActionsViewModel(payment, landParcels)
 
-    expect(model.parcels.map((parcel) => parcel.yearlyPayment)).toEqual(['£30.00', '£3.00'])
+    expect(model.parcels.map((parcel) => parcel.yearlyPayment)).toEqual(['£30', '£3'])
   })
 
-  it('renders a zero-payment action as £0.00', () => {
+  it('renders a zero-payment action as £0', () => {
     const free = { ...parcelItems[1], annualPaymentPence: 0 }
     const model = buildConfirmLandAndActionsViewModel(
       { annualTotalPence: 0, parcelItems: { 1: free } },
       { 'SD1234-5678': landParcels['SD1234-5678'] }
     )
 
-    expect(model.parcels[0].actions[0].yearlyPayment).toBe('£0.00')
-    expect(model.parcels[0].yearlyPayment).toBe('£0.00')
-    expect(model.applicationYearlyPayment).toBe('£0.00')
+    expect(model.parcels[0].actions[0].yearlyPayment).toBe('£0')
+    expect(model.parcels[0].yearlyPayment).toBe('£0')
+    expect(model.applicationYearlyPayment).toBe('£0')
   })
 
   describe('agreement-level items', () => {
@@ -360,7 +360,7 @@ describe('buildConfirmLandAndActionsViewModel', () => {
       expect(model.additionalYearlyPayments).toEqual([
         {
           action: 'Assess moorland and produce a written record (CMOR1)',
-          yearlyPayment: '£272.00'
+          yearlyPayment: '£272'
         }
       ])
       expect(model.parcels[0].yearlyPayment).toBe('£29.73')
@@ -379,7 +379,7 @@ describe('buildConfirmLandAndActionsViewModel', () => {
 
       expect(model.parcels).toEqual([])
       expect(model.additionalYearlyPayments).toHaveLength(1)
-      expect(model.applicationYearlyPayment).toBe('£272.00')
+      expect(model.applicationYearlyPayment).toBe('£272')
     })
 
     it('returns an empty list when the response has no agreement-level items', () => {
@@ -412,7 +412,7 @@ describe('buildConfirmLandAndActionsViewModel', () => {
     const model = buildConfirmLandAndActionsViewModel({ ...payment, parcelItems: duplicated }, landParcels)
 
     expect(model.parcels[0].actions).toHaveLength(3)
-    expect(model.parcels[0].yearlyPayment).toBe('£40.00')
+    expect(model.parcels[0].yearlyPayment).toBe('£40')
   })
 
   it('falls back to the action code when the description is missing', () => {
@@ -476,7 +476,7 @@ describe('buildConfirmLandAndActionsViewModel', () => {
       removeHref: 'remove-parcel?parcelId=SD1234-5678',
       addActionsHref:
         'select-actions-for-land-parcel?parcelId=SD1234-5678&origin=confirm-land-and-actions&changeActions=true',
-      yearlyPayment: '£10.00'
+      yearlyPayment: '£10'
     })
   })
 

@@ -2,6 +2,17 @@ const NUMBER_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/
 const INTEGER_FORMATTER = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 })
 
 /**
+ * @param {Intl.LocalesArgument} locale
+ * @param {string} currency
+ * @param {Pick<Intl.NumberFormatOptions, 'minimumFractionDigits' | 'maximumFractionDigits'>} [fractionDigits]
+ */
+export function createCurrencyNumberFormat(locale, currency, fractionDigits) {
+  /** @type {Intl.NumberFormatOptions & { trailingZeroDisplay: 'stripIfInteger' }} */
+  const options = { ...fractionDigits, style: 'currency', currency, trailingZeroDisplay: 'stripIfInteger' }
+  return new Intl.NumberFormat(locale, options)
+}
+
+/**
  * @param {unknown} value
  * @returns {value is string}
  */
@@ -12,11 +23,11 @@ export function isDecimalString(value) {
 /**
  * Formats a number with en-GB thousands grouping while preserving the decimal
  * places supplied by a string value.
- * @param {number | string} value
+ * @param {number | string | null | undefined} value
  * @returns {string}
  */
 export function formatThousands(value) {
-  const input = String(value)
+  const input = String(value ?? '')
   if (!isDecimalString(input)) {
     return input
   }

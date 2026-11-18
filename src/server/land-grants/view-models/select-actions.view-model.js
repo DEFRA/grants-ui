@@ -5,6 +5,7 @@
  */
 
 import nunjucks from 'nunjucks'
+import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 import { govukFrontendPath, viewPaths } from '~/src/config/nunjucks/view-paths.js'
 import { getActionChosenAreaDisplayId, getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
@@ -144,9 +145,9 @@ function getHintHtml(action, needsQuantity, chosenArea) {
       ? `${limit} ${formatUnit(action.availability?.unit)} available`
       : availableArea(limit ?? 0, action.availability?.unit)
   return landGrantsViewEnv.render(ACTION_HINT_TEMPLATE, {
-    rate: String(action.ratePerUnitGbp?.toFixed(2).replace(/\.00$/, '')),
+    rate: action.ratePerUnitGbp == null ? undefined : formatCurrency(action.ratePerUnitGbp),
     rateUnit: action.displayUnit ?? unitAlternativeLabel(action.availability),
-    agreementRate: action.ratePerAgreementPerYearGbp,
+    agreementRate: action.ratePerAgreementPerYearGbp ? formatCurrency(action.ratePerAgreementPerYearGbp) : undefined,
     requirementText,
     hintId: `${getActionQuantityFieldName(action.code)}-hint`,
     availabilityText: limit != null || (!needsQuantity && chosenArea != null) ? availabilityText : undefined,

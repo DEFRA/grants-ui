@@ -258,9 +258,9 @@ describe('additional answer display formatting', () => {
     ['thousands', 100000, '100,000'],
     ['decimal', 100000, '100,000.00'],
     ['decimal:4', -100000.5, '-100,000.5000'],
-    ['currency:gbp', 100000, '£100,000.00'],
+    ['currency:gbp', 100000, '£100,000'],
     ['currency:gbp,4', '100000.500', '£100,000.5000'],
-    ['currency:gbp', 0, '£0.00'],
+    ['currency:gbp', 0, '£0'],
     ['thousands', null, 'Not provided'],
     ['thousands', undefined, 'Not provided'],
     [undefined, 100000, '100000']

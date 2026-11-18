@@ -217,7 +217,7 @@ Feature: Reusable Components
         When the user enters the following
             | FIELD     | VALUE                  |
             | Item name | Applicant's first item |
-            | Amount    | 1,000                  |
+            | Amount    | 1,000.25                  |
         And continues
 
         # repeat-page (list summary)
@@ -285,12 +285,12 @@ Feature: Reusable Components
             | GeospatialField            | Added 1 location                                   |
             | Project name               | Test project                          |
             | Project description        | Project description                   |
-            | Project budget             | £50,000                                            |
+            | Project budget             | £50,000.50                            |
             | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774              |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER                  |
             | Item 1 | Item name | Applicant's first item  |
-            |        | Amount    | £1,000                  |
+            |        | Amount    | £1,000.25          |
             | Item 2 | Item name | Applicant's second item |
             |        | Amount    | £2,000                  |
         When the user chooses to change their summary answer to question "Country"
@@ -332,12 +332,12 @@ Feature: Reusable Components
             | GeospatialField            | Added 1 location                                   |
             | Project name               | Test project                          |
             | Project description        | Project description                   |
-            | Project budget             | £50,000                                            |
+            | Project budget             | £50,000.50                            |
             | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774              |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER                  |
             | Item 1 | Item name | Applicant's first item  |
-            |        | Amount    | £1,000                  |
+            |        | Amount    | £1,000.25          |
             | Item 2 | Item name | Applicant's second item |
             |        | Amount    | £2,000                  |
         When the user continues
@@ -398,12 +398,12 @@ Feature: Reusable Components
             | Latitude and longitude     | 51.51945, -0.127758                   |
             | Project name               | Test project                          |
             | Project description        | Project description                   |
-            | Project budget             | £50,000                                            |
+            | Project budget             | £50,000.50                            |
             | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774              |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER                  |
             | Item 1 | Item name | Applicant's first item  |
-            |        | Amount    | £1,000                  |
+            |        | Amount    | £1,000.25          |
             | Item 2 | Item name | Applicant's second item |
             |        | Amount    | £2,000                  |
         And should see the following configurable content

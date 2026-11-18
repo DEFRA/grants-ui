@@ -241,7 +241,7 @@ describe('payment-view-model.mapper', () => {
       expect(result[0].items).toHaveLength(1)
       expect(result[0].items[0][0].text).toContain('Additional payment per agreement per year')
       expect(result[0].items[0][0].text).toContain('Additional Action: SAM5')
-      expect(result[0].items[0][1].html).toContain('£500.00')
+      expect(result[0].items[0][1].html).toContain('£500')
     })
 
     it('should handle empty agreement items', () => {

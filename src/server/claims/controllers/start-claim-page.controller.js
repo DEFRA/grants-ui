@@ -8,19 +8,18 @@ import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { formatLinearUnit } from '~/src/shared/format-linear-unit.js'
+import { formatThousands } from '~/src/shared/format-number.js'
 
 /**
  * Nunjucks environment used to render each `Html` component's content with the
- * fetched claim data. The app's `formatCurrency`, `formatAreaUnit` and
- * `formatLinearUnit` filters are registered so the form definition can turn a
- * pence integer into a formatted pounds value
- * (e.g. `{{ (totalClaimAmountPence / 100) | formatCurrency }}`) and a unit
- * abbreviation into a human-readable name (e.g. `{{ unit | formatAreaUnit }}`).
+ * fetched claim data. Form definitions can format amounts, quantities and units
+ * (e.g. `{{ totalEligibleArea | formatThousands }} {{ unit | formatAreaUnit }}`).
  */
 const claimContentEnv = new nunjucks.Environment(null, { autoescape: true })
 claimContentEnv.addFilter('formatCurrency', formatCurrency)
 claimContentEnv.addFilter('formatAreaUnit', formatAreaUnit)
 claimContentEnv.addFilter('formatLinearUnit', formatLinearUnit)
+claimContentEnv.addFilter('formatThousands', formatThousands)
 
 /**
  * Generic controller for the start of a claim journey (e.g. "Review your

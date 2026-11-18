@@ -34,7 +34,7 @@ describe('action-view-model.mapper', () => {
 
       const result = mapActionToViewModel(action, [])
 
-      expect(result.hint.html).toBe('Payment rate per year: <strong>£257.00 per pond</strong>')
+      expect(result.hint.html).toBe('Payment rate per year: <strong>£257 per pond</strong>')
     })
 
     it('escapes the backend display unit', () => {
@@ -98,7 +98,7 @@ describe('action-view-model.mapper', () => {
       expect(result.checked).toBe(false)
     })
 
-    it('should handle action with undefined rates and display unit', () => {
+    it('omits the payment hint when neither rate is supplied', () => {
       const action = {
         code: 'SAM3',
         description: 'Test Action 3',
@@ -108,7 +108,7 @@ describe('action-view-model.mapper', () => {
 
       const result = mapActionToViewModel(action, addedActions)
 
-      expect(result.hint.html).toBe('Payment rate per year: <strong>£undefined per hectare</strong>')
+      expect(result.hint).toBeUndefined()
     })
 
     it('does not assume a unit when the backend display unit is absent', () => {
@@ -120,7 +120,7 @@ describe('action-view-model.mapper', () => {
 
       const result = mapActionToViewModel(action, [])
 
-      expect(result.hint.html).toBe('Payment rate per year: <strong>£100.00</strong>')
+      expect(result.hint.html).toBe('Payment rate per year: <strong>£100</strong>')
     })
   })
 

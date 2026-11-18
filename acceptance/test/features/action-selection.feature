@@ -107,11 +107,11 @@ Feature: Action Selection
             | PARCEL      | ACTION                                                    | QUANTITY  | YEARLY PAYMENT |
             | SK0972 6820 | Herbal leys (CSAM3_26)                                    | 0.2760 ha | £61.82         |
             |             | Subtotal                                                  |           | £61.82         |
-            | SK0971 5039 | Herbal leys (CSAM3_26)                                    | 1.2500 ha | £280.00        |
+            | SK0971 5039 | Herbal leys (CSAM3_26)                                    | 1.2500 ha | £280           |
             |             | Manage grassland with very low nutrient inputs (CLIG3_26) | 0.5674 ha | £85.68         |
             |             | Manage scrub and open habitat mosaics (SCR2_26)           | 0.7500 ha | £262.50        |
             |             | Subtotal                                                  |           | £628.18        |
-        And should see total yearly payment "£690.00"
+        And should see total yearly payment "£690"
 
         # use a change link but cancel
         When the user clicks the change link for action "CLIG3_26" for parcel "SK0971 5039"
@@ -127,11 +127,11 @@ Feature: Action Selection
             | PARCEL      | ACTION                                                    | QUANTITY  | YEARLY PAYMENT |
             | SK0972 6820 | Herbal leys (CSAM3_26)                                    | 0.2760 ha | £61.82         |
             |             | Subtotal                                                  |           | £61.82         |
-            | SK0971 5039 | Herbal leys (CSAM3_26)                                    | 1.2500 ha | £280.00        |
+            | SK0971 5039 | Herbal leys (CSAM3_26)                                    | 1.2500 ha | £280           |
             |             | Manage grassland with very low nutrient inputs (CLIG3_26) | 0.5674 ha | £85.68         |
             |             | Manage scrub and open habitat mosaics (SCR2_26)           | 0.7500 ha | £262.50        |
             |             | Subtotal                                                  |           | £628.18        |
-        And should see total yearly payment "£690.00"
+        And should see total yearly payment "£690"
 
         # use a change link
         When the user clicks the change link for action "CLIG3_26" for parcel "SK0971 5039"
@@ -149,7 +149,7 @@ Feature: Action Selection
             | PARCEL      | ACTION                                          | QUANTITY  | YEARLY PAYMENT |
             | SK0972 6820 | Herbal leys (CSAM3_26)                          | 0.2760 ha | £61.82         |
             |             | Subtotal                                        |           | £61.82         |
-            | SK0971 5039 | Herbal leys (CSAM3_26)                          | 1.5000 ha | £336.00        |
+            | SK0971 5039 | Herbal leys (CSAM3_26)                          | 1.5000 ha | £336           |
             |             | Manage scrub and open habitat mosaics (SCR2_26) | 0.7500 ha | £262.50        |
             |             | Subtotal                                        |           | £598.50        |
         And should see total yearly payment "£660.32"
@@ -168,7 +168,7 @@ Feature: Action Selection
             | PARCEL      | ACTION                                                    | QUANTITY  | YEARLY PAYMENT |
             | SK0972 6820 | Herbal leys (CSAM3_26)                                    | 0.2760 ha | £61.82         |
             |             | Subtotal                                                  |           | £61.82         |
-            | SK0971 5039 | Herbal leys (CSAM3_26)                                    | 1.5000 ha | £336.00        |
+            | SK0971 5039 | Herbal leys (CSAM3_26)                                    | 1.5000 ha | £336           |
             |             | Manage grassland with very low nutrient inputs (CLIG3_26) | 0.3174 ha | £47.93         |
             |             | Manage scrub and open habitat mosaics (SCR2_26)           | 0.7500 ha | £262.50        |
             |             | Subtotal                                                  |           | £646.43        |
@@ -187,7 +187,7 @@ Feature: Action Selection
             | PARCEL      | ACTION                                                    | QUANTITY  | YEARLY PAYMENT |
             | SK0972 6820 | Herbal leys (CSAM3_26)                                    | 0.2760 ha | £61.82         |
             |             | Subtotal                                                  |           | £61.82         |
-            | SK0971 5039 | Herbal leys (CSAM3_26)                                    | 1.5000 ha | £336.00        |
+            | SK0971 5039 | Herbal leys (CSAM3_26)                                    | 1.5000 ha | £336           |
             |             | Manage grassland with very low nutrient inputs (CLIG3_26) | 0.3174 ha | £47.93         |
             |             | Manage scrub and open habitat mosaics (SCR2_26)           | 0.7500 ha | £262.50        |
             |             | Subtotal                                                  |           | £646.43        |
@@ -203,7 +203,7 @@ Feature: Action Selection
         And should see a notification banner saying "SK0972 6820 and its actions have been removed."
         And should see the following parcel summary cards
             | PARCEL      | ACTION                                                    | QUANTITY  | YEARLY PAYMENT |
-            | SK0971 5039 | Herbal leys (CSAM3_26)                                    | 1.5000 ha | £336.00        |
+            | SK0971 5039 | Herbal leys (CSAM3_26)                                    | 1.5000 ha | £336           |
             |             | Manage grassland with very low nutrient inputs (CLIG3_26) | 0.3174 ha | £47.93         |
             |             | Manage scrub and open habitat mosaics (SCR2_26)           | 0.7500 ha | £262.50        |
             |             | Subtotal                                                  |           | £646.43        |
@@ -310,10 +310,10 @@ Feature: Action Selection
         And should see heading "Review land parcels and actions"
         And should see the following parcel summary cards
             | PARCEL      | ACTION                                                                 | QUANTITY | YEARLY PAYMENT |
-            | SD7323 4596 | Maintain weatherproof traditional farm or forestry buildings (HEF1_26) | 10 m²    | £50.00         |
-            |             | Manage ponds (WBD1_26)                                                 | 2 ponds  | £514.00        |
-            |             | Subtotal                                                               |          | £564.00        |
-        And should see total yearly payment "£564.00"
+            | SD7323 4596 | Maintain weatherproof traditional farm or forestry buildings (HEF1_26) | 10 m²    | £50            |
+            |             | Manage ponds (WBD1_26)                                                 | 2 ponds  | £514           |
+            |             | Subtotal                                                               |          | £564           |
+        And should see total yearly payment "£564"
 
     Scenario: User is told when both SSSI and HEFER apply to a land parcel
         Given there is no application data for SBI "800000009" and grant "example-grant-with-map"
