@@ -204,7 +204,7 @@
         throw new Error(`${step.fieldName} checkbox not found`)
       }
       const toClick = step.selectAll ? Array.from(all) : [all[0]]
-      toClick.forEach((cb) => cb.click())
+      toClick.filter((cb) => !cb.checked).forEach((cb) => cb.click())
       submitForm()
     },
 
@@ -299,7 +299,12 @@
     },
 
     clickLink(step) {
-      const link = document.querySelector(`a[href$="/${step.linkSlug}"]`)
+      const ref = new URLSearchParams(globalThis.location.search).get('ref')
+      const suffix = `/${step.linkSlug}`
+      const selector = ref
+        ? `a[href$="${suffix}"], a[href$="${suffix}?${new URLSearchParams({ ref })}"]`
+        : `a[href$="${suffix}"]`
+      const link = document.querySelector(selector)
       if (!link) {
         throw new Error(`Link to /${step.linkSlug} not found`)
       }
@@ -378,7 +383,15 @@
     textFields(step) {
       Object.keys(step.fields).forEach((name) => {
         const input = document.querySelector(`input[name="${name}"], textarea[name="${name}"]`)
-        if (input) {
+        if (!input) {
+          return
+        }
+        // A checkbox (e.g. a declaration beside the fields) is ticked, not retyped.
+        if (input.type === 'checkbox') {
+          if (!input.checked) {
+            input.click()
+          }
+        } else {
           setInputValue(input, step.fields[name])
         }
       })
@@ -710,7 +723,7 @@
  * @property {string} [overrideKey]        For `yesNo` steps: a `runJourney(stop, options)` key (e.g. `commonLand`) whose value replaces `value` when the run supplies it.
  * @property {boolean} [selectAll]         Tick every checkbox (or select every land parcel) instead of just the first.
  * @property {number} [offsetDays]         Days to add to "today" for date-parts steps.
- * @property {string} [linkSlug]           Slug to match against an `<a href>` for clickLink.
+ * @property {string} [linkSlug]           Slug to match against an `<a href>` for clickLink (with or without the current `?ref=`).
  * @property {'prefix'} [matchMode]        Match `/slug/{uuid}` instead of exact `/slug`.
  * @property {Record<string, string>} [fields] Multiple field name → value pairs.
  */
