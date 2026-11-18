@@ -544,10 +544,10 @@ export async function handleChecksCommand(dryRun) {
     { key: 'lint', label: 'lint', description: 'Run JavaScript, SCSS and type checks' },
     ...TEST_TARGETS.map((target) => ({
       key: `test:${target.key}`,
-      label: target.key === 'contracts' ? 'contract tests' : `${target.label} tests`,
+      label: `${target.label} tests`,
       description: target.note ? `${target.description} (${target.note})` : target.description
     })),
-    { key: 'all-tests', label: 'all tests', description: 'Run unit, contract and acceptance tests' },
+    { key: 'all-tests', label: 'all tests', description: 'Run unit and acceptance tests' },
     { key: 'sonar', label: 'sonar', description: 'Scan src/ with local SonarQube (dashboard left running)' },
     { key: 'snyk', label: 'snyk', description: 'Scan dependencies for vulnerabilities (same as CI)' },
     { key: 'check', label: 'pre-pr check', description: 'All tests, Snyk and a PR-scoped Sonar scan (CI gates)' }
