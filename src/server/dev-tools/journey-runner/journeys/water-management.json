@@ -5,7 +5,7 @@
     "type": "submitOnly"
   },
   {
-    "slug": "confirm-your-details",
+    "slug": "check-details",
     "name": "Confirm your details — yes",
     "type": "yesNo",
     "fieldName": "businessDetailsUpToDate",
@@ -220,11 +220,11 @@
     "slug": "task-list",
     "name": "Task list — check-and-submit-your-application",
     "type": "clickLink",
-    "linkSlug": "check-your-answers"
+    "linkSlug": "summary"
   },
   {
     "section": "check-and-submit-your-application",
-    "slug": "check-your-answers",
+    "slug": "summary",
     "name": "Check your answers",
     "type": "submitOnly"
   },

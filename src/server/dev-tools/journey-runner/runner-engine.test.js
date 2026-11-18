@@ -110,4 +110,33 @@ describe('runner-engine clickLink', () => {
     expect(submitted.get('projectLocated__easting')).toBe('530000')
     expect(submitted.getAll('confirmCorrectLocationSelected')).toEqual(['true', 'unchecked'])
   })
+
+  test.each([false, true])('checkboxes keeps a declaration ticked when it is already checked (%s)', async (checked) => {
+    document.body.innerHTML = `
+      <form method="post">
+        <input name="confirmConsultedWithTenants" type="checkbox" value="true"${checked ? ' checked' : ''}>
+        <input name="confirmConsultedWithTenants" type="hidden" value="unchecked">
+        <button class="govuk-button">Continue</button>
+      </form>`
+    const form = document.querySelector('form')
+    /** @type {FormData | undefined} */
+    let submitted
+    form.addEventListener('submit', (event) => {
+      event.preventDefault()
+      submitted = new FormData(form)
+    })
+    await loadRunner('/water-management/eligibility-landowner-landlord-requirements', undefined, [
+      {
+        slug: 'eligibility-landowner-landlord-requirements',
+        name: 'What you need to do',
+        type: 'checkboxes',
+        fieldName: 'confirmConsultedWithTenants'
+      }
+    ])
+
+    globalThis.runJourney()
+
+    expect(errorSpy).not.toHaveBeenCalled()
+    expect(submitted.getAll('confirmConsultedWithTenants')).toEqual(['true', 'unchecked'])
+  })
 })

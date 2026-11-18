@@ -204,7 +204,7 @@
         throw new Error(`${step.fieldName} checkbox not found`)
       }
       const toClick = step.selectAll ? Array.from(all) : [all[0]]
-      toClick.forEach((cb) => cb.click())
+      toClick.filter((cb) => !cb.checked).forEach((cb) => cb.click())
       submitForm()
     },
 
