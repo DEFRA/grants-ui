@@ -168,7 +168,7 @@ Feature: Task Lists Showing Questions
         Then the user should be at URL "summary"
         And should see heading "Check your answers"
         And the user should see answer "200,000.50m³" for question "Number with guidance"
-        And the user should see answer "200000.50m³" for question "Capacity without number formatting"
+        And the user should see answer "200000.50m³" for question "Capacity without number formatting (optional)"
         And the page is analyzed for accessibility
         When the user continues
 
