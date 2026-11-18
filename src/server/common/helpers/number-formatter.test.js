@@ -18,6 +18,8 @@ describe('getNumberFormatter', () => {
     ['thousands|suffix,other'],
     ['unknown|suffix'],
     ['|suffix'],
+    ['suffix|suffix'],
+    ['suffix:2'],
     ['decimal:2,3|suffix'],
     ['currency'],
     ['currency:gbp,'],
@@ -52,6 +54,17 @@ describe('getNumberFormatter', () => {
 
 describe('formatNumberAnswer', () => {
   test.each([
+    ['suffix', 100000, ' m³', '100000 m³'],
+    ['suffix', '125000.500', 'm³', '125000.500m³'],
+    ['suffix', '-125000.500', ' m³', '-125000.500 m³'],
+    [' suffix ', 0, 'm³', '0m³'],
+    ['suffix', '0.00', 'm³', '0.00m³'],
+    ['suffix', '125000.500', undefined, '125000.500'],
+    ['suffix', '125000.500', '', '125000.500'],
+    ['suffix', '', 'm³', ''],
+    ['suffix', '  ', 'm³', '  '],
+    ['suffix', 'invalid', 'm³', 'invalid'],
+    ['suffix', Infinity, 'm³', 'Infinity'],
     ['thousands|suffix', 100000, 'm³', '100,000m³'],
     ['thousands|suffix', '125000.500', 'm³', '125,000.500m³'],
     ['decimal|suffix', 125000.5, 'm³', '125,000.50m³'],
@@ -77,6 +90,7 @@ describe('formatNumberAnswer', () => {
   })
 
   test.each([null, undefined])('returns an empty string for a missing answer: %s', (value) => {
+    expect(formatNumberAnswer({ type: 'NumberField', options: { format: 'suffix', suffix: 'm³' } }, value)).toBe('')
     expect(formatNumberAnswer({ type: 'NumberField', options: { format: 'thousands' } }, value)).toBe('')
     expect(
       formatNumberAnswer({ type: 'NumberField', options: { format: 'thousands|suffix', suffix: 'm³' } }, value)

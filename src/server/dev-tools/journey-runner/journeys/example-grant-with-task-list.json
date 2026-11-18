@@ -60,9 +60,11 @@
   {
     "slug": "example-task-with-guidance",
     "name": "Task with guidance",
-    "type": "numberField",
-    "fieldName": "exampleNumberField",
-    "value": "42"
+    "type": "textFields",
+    "fields": {
+      "exampleNumberField": "150000.50",
+      "exampleSuffixOnlyField": "150000.50"
+    }
   },
 
   { "slug": "tasks", "name": "Task list — submit", "type": "clickLink", "linkSlug": "summary" },

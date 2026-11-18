@@ -149,6 +149,8 @@ function createJourney(
 
 describe('number display formatting', () => {
   it.each([
+    ['suffix', '125000.50', '125000.50 m³', ' m³'],
+    ['suffix', '125000.50', '125000.50'],
     ['thousands', '125000.50', '125,000.50'],
     ['decimal', '125000.567', '125,000.57'],
     ['currency:gbp,4', '125000.5', '£125,000.5000'],
@@ -289,6 +291,9 @@ describe('repeated number display formatting', () => {
     journey.print().sections[0].questions[0].repeatItems.map((item) => item.questions[0].answer)
 
   it.each([
+    ['suffix', '125000.50', '125000.50 m³', ' m³'],
+    ['suffix', '0.00', '0.00m³', 'm³'],
+    ['suffix', '125000.50', '125000.50'],
     ['thousands', '125000.50', '125,000.50'],
     ['decimal', '125000.567', '125,000.57'],
     ['decimal:4', '-125000.5', '-125,000.5000'],
@@ -323,8 +328,8 @@ describe('repeated number display formatting', () => {
     }
   )
 
-  it('keeps an unanswered optional field empty when the suffix modifier is enabled', async () => {
-    const journey = createJourney('thousands|suffix', { repeat: true, suffix: 'm³' })
+  it.each(['suffix', 'thousands|suffix'])('keeps an unanswered optional field empty with %s', async (format) => {
+    const journey = createJourney(format, { repeat: true, suffix: 'm³' })
     const itemId = randomUUID()
     await journey.dispatch(`amount/${itemId}`, { action: 'validate', capacity: '', sbi: '125000' })
 
