@@ -13,11 +13,6 @@ vi.mock('../../../confirmation/services/components.registry.js', () => ({
   }
 }))
 
-vi.mock('~/src/config/nunjucks/filters/filters.js', async () => {
-  const { mockFilters } = await import('~/src/__mocks__')
-  return mockFilters()
-})
-
 describe('print-application-service', () => {
   describe('buildPrintViewModel', () => {
     const baseParams = {
@@ -351,6 +346,22 @@ describe('print-application-service', () => {
         ])
       })
 
+      test('formats a saved payment total in an additional section', () => {
+        const paymentDefinition = structuredClone(definition)
+        paymentDefinition.metadata.pageConfig['/summary'].additionalSections = [
+          { title: 'Payment', items: [{ title: 'Annual payment', stateValue: 'totalPayment' }] }
+        ]
+        const result = buildPrintViewModel({
+          ...baseParams,
+          definition: paymentDefinition,
+          savedState: { totalPayment: '£1,500.00' }
+        })
+
+        expect(result.sections).toEqual([
+          { title: 'Payment', questions: [{ label: 'Annual payment', answer: '£1,500' }] }
+        ])
+      })
+
       test('renders a value only once when multiple Check answers pages configure it', () => {
         const repeatedDefinition = structuredClone(definition)
         repeatedDefinition.pages.push({
@@ -374,7 +385,7 @@ describe('print-application-service', () => {
         const result = buildPrintViewModel({
           ...baseParams,
           definition: invalidDefinition,
-          savedState: { ...savedState, totalPayment: '£1500.00', payment: MOCK_PAYMENT }
+          savedState: { ...savedState, totalPayment: '£1,500', payment: MOCK_PAYMENT }
         })
 
         expect(result.sections).toEqual([])
@@ -514,10 +525,10 @@ describe('print-application-service', () => {
         }
       })
 
-      expect(result.landAndActionsSummary.applicationYearlyPayment).toBe('£1500.00')
+      expect(result.landAndActionsSummary.applicationYearlyPayment).toBe('£1,500')
       expect(result.landAndActionsSummary.parcels).toHaveLength(2)
       expect(result.landAndActionsSummary.parcels[0].reference).toBe('AB1234 0001')
-      expect(result.landAndActionsSummary.parcels[0].yearlyPayment).toBe('£1300.00')
+      expect(result.landAndActionsSummary.parcels[0].yearlyPayment).toBe('£1,300')
     })
 
     test('should render an annual payment of zero', () => {
@@ -526,7 +537,7 @@ describe('print-application-service', () => {
         savedState: { payment: { annualTotalPence: 0, parcelItems: {}, agreementLevelItems: {} } }
       })
 
-      expect(result.landAndActionsSummary.applicationYearlyPayment).toBe('£0.00')
+      expect(result.landAndActionsSummary.applicationYearlyPayment).toBe('£0')
     })
 
     test.each([null, -1, 1.5, '100'])('should reject a malformed annual total of %s', (annualTotalPence) => {

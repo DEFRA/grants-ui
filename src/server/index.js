@@ -47,6 +47,7 @@ import ConfirmLandAndActionsPageController from '~/src/server/land-grants/contro
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { formatDate } from '../config/nunjucks/filters/format-date.js'
+import { formatThousands } from '../shared/format-number.js'
 import { gridColumnClass } from '../config/nunjucks/grid-column.js'
 import { pageHideBackLink, pageRpaDetails } from '../config/nunjucks/page-config.js'
 import { componentMapOptions } from '../config/nunjucks/component-map-options.js'
@@ -145,7 +146,8 @@ const registerFormsPlugin = async (server, prefix = '') => {
       ...(config.get('maps.forms.apiSecret') && { ordnanceSurveyApiSecret: config.get('maps.forms.apiSecret') }),
       filters: {
         formatCurrency,
-        formatDate
+        formatDate,
+        formatThousands
       },
       globals: {
         gridColumnClass,

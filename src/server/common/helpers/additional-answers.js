@@ -1,4 +1,5 @@
 import { resolvePath } from './path-utils.js'
+import { formatSavedPayment } from '~/src/server/common/utils/payment.js'
 
 /**
  * @typedef {{ title: string, stateValue: string }} AdditionalSectionItem
@@ -57,7 +58,13 @@ export function resolveAdditionalAnswerSections(
     return [
       {
         ...section,
-        items: items.map((item) => ({ ...item, value: resolvePath(state, item.stateValue) ?? 'Not provided' }))
+        items: items.map((item) => {
+          const value = resolvePath(state, item.stateValue) ?? 'Not provided'
+          return {
+            ...item,
+            value: item.stateValue === 'totalPayment' && typeof value === 'string' ? formatSavedPayment(value) : value
+          }
+        })
       }
     ]
   })

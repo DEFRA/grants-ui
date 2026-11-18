@@ -18,10 +18,6 @@ vi.mock('~/src/shared/format-parcel.js', () => ({
   stringifyParcel: ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
 }))
 
-vi.mock('~/src/server/common/utils/payment.js', () => ({
-  formatPrice: (value) => `£${(value / 100).toFixed(2)}`
-}))
-
 describe('PaymentPageController', () => {
   let controller
   let mockRequest
@@ -146,7 +142,7 @@ describe('PaymentPageController', () => {
     test('should handle zero payment correctly', async () => {
       mockStrategyFetch.mockResolvedValue({
         totalPence: 0,
-        totalPayment: '£0.00',
+        totalPayment: '£0',
         payment: { annualTotalPence: 0, parcelItems: {}, agreementLevelItems: {} },
         parcelItems: [],
         additionalYearlyPayments: []
@@ -158,7 +154,7 @@ describe('PaymentPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'payment-page',
         expect.objectContaining({
-          totalPayment: '£0.00'
+          totalPayment: '£0'
         })
       )
     })
@@ -207,6 +203,7 @@ describe('PaymentPageController', () => {
   describe('POST Handler - Form Validation', () => {
     test('should show validation error when user must choose but does not', async () => {
       mockRequest.payload = { action: 'validate' }
+      mockContext.state.totalPayment = '£1,200.00'
 
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
@@ -214,6 +211,7 @@ describe('PaymentPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'payment-page',
         expect.objectContaining({
+          totalPayment: '£1,200',
           errors: [{ href: '#addMoreActions', text: 'Select if you want to add an action to another land parcel' }]
         })
       )
@@ -322,8 +320,8 @@ describe('PaymentPageController', () => {
     })
 
     test('should handle zero totalPayment in view model', () => {
-      const viewModel = controller.buildViewModel(mockRequest, mockContext, '£0.00', [], [])
-      expect(viewModel.totalPayment).toBe('£0.00')
+      const viewModel = controller.buildViewModel(mockRequest, mockContext, '£0', [], [])
+      expect(viewModel.totalPayment).toBe('£0')
     })
 
     test('should handle a valid totalPayment in view model', () => {

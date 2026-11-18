@@ -360,13 +360,13 @@ describe('CheckResponsesPageController', () => {
       expect(summary.changeHref).toBe('/test-form/confirm-land-and-actions')
       expect(summary.parcels[0]).toMatchObject({
         reference: 'SD1234 5678',
-        yearlyPayment: '£100.00',
-        actions: [{ action: 'Action description (CLIG3)', area: '2.0000 ha', yearlyPayment: '£100.00' }]
+        yearlyPayment: '£100',
+        actions: [{ action: 'Action description (CLIG3)', area: '2.0000 ha', yearlyPayment: '£100' }]
       })
-      expect(summary.applicationYearlyPayment).toBe('£100.00')
+      expect(summary.applicationYearlyPayment).toBe('£100')
       expect(summary.agreementDuration).toBe('3 years')
       expect(summary.agreementDurationYears).toBe(3)
-      expect(summary.agreementTotalPayment).toBe('£300.00')
+      expect(summary.agreementTotalPayment).toBe('£300')
     })
 
     it('should replace the hidden display field used by a configured map-select page', () => {
@@ -418,7 +418,7 @@ describe('CheckResponsesPageController', () => {
       expect(result.details[0].items).toEqual([])
       expect(result.checkAnswers[0].summaryList.rows).toEqual([])
       expect(result.checkAnswers[0].landAndActionsSummary.parcels[0].reference).toBe('SD1234 5678')
-      expect(result.checkAnswers[0].landAndActionsSummary.applicationYearlyPayment).toBe('£100.00')
+      expect(result.checkAnswers[0].landAndActionsSummary.applicationYearlyPayment).toBe('£100')
     })
 
     it('should retain the engine answer when structured land parcels have no saved payment', () => {
@@ -473,7 +473,7 @@ describe('CheckResponsesPageController', () => {
       expect(result.checkAnswers[1]).toEqual({
         title: { text: 'Payment summary' },
         summaryList: {
-          rows: [{ key: { text: 'Annual payment for all parcels' }, value: { text: '£374.00' } }]
+          rows: [{ key: { text: 'Annual payment for all parcels' }, value: { text: '£374' } }]
         }
       })
     })
@@ -707,14 +707,14 @@ describe('CheckResponsesPageController', () => {
               }
             }
           },
-          totalPayment: '£100.00'
+          totalPayment: '£100'
         }
       })
 
       const result = ctrl.getSummaryViewModel(mockRequest, context)
 
       expect(result.checkAnswers).toHaveLength(1)
-      expect(result.checkAnswers[0].landAndActionsSummary.applicationYearlyPayment).toBe('£100.00')
+      expect(result.checkAnswers[0].landAndActionsSummary.applicationYearlyPayment).toBe('£100')
     })
   })
 

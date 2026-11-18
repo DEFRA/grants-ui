@@ -852,7 +852,7 @@ pages:
         schema:
           min: 1
           max: 999999
-          precision: 0
+          precision: 2
         shortDescription: Project budget
         id: 3b4c5d6e-7f8a-4b9c-9d0e-1f2a3b4c5d8f
     id: 089374a5-13e7-494d-994e-9b38c4b7392c
@@ -893,7 +893,7 @@ pages:
         schema:
           min: 1
           max: 999999
-          precision: 0
+          precision: 2
         shortDescription: Amount
         id: e0d3f7a4-5b6c-7d8e-9f0a-1b2c3d4e5f6a
     id: c8b1d5e2-3f4a-5b6c-7d8e-9f0a1b2c3d4e

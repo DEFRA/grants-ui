@@ -1,6 +1,5 @@
 // @ts-nocheck
 import { vi } from 'vitest'
-import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 import {
   calculateLandActionsPayment as calculateLandActionsPaymentService,
   fetchActionsWithPlannedActions as fetchActionsWithPlannedActionsService,
@@ -28,8 +27,6 @@ vi.mock('~/src/server/land-grants/services/land-grants.client.js', async (import
   return { ...(await importOriginal()), ...landGrantsClientMockOverrides }
 })
 
-vi.mock('~/src/config/nunjucks/filters/format-currency.js')
-
 vi.mock('~/src/config/config.js', async () => {
   const { mockConfigWithState } = await import('~/src/__mocks__/config-mocks.js')
   const { landGrantsApiConfigDefaults } = await import('./land-grants.service.test-helpers.js')
@@ -51,7 +48,6 @@ describe('land-grants service', () => {
         payment: { annualTotalPence: 123456 }
       }
       calculate.mockResolvedValueOnce(mockCalculateResponse)
-      formatCurrency.mockReturnValue('£1,234.56')
 
       const result = await calculateLandActionsPayment({
         landParcels: {
@@ -78,7 +74,6 @@ describe('land-grants service', () => {
         mockApiEndpoint,
         mockUserContext
       )
-      expect(formatCurrency).toHaveBeenCalledWith(1234.56)
       expect(result).toEqual({
         payment: { annualTotalPence: 123456 },
         paymentTotal: '£1,234.56'
@@ -90,7 +85,6 @@ describe('land-grants service', () => {
         payment: { annualTotalPence: 123400 }
       }
       calculate.mockResolvedValueOnce(mockCalculateResponse)
-      formatCurrency.mockReturnValue('£1,234.00')
 
       const result = await calculateLandActionsPayment({
         landParcels: {
@@ -130,29 +124,24 @@ describe('land-grants service', () => {
         mockApiEndpoint,
         mockUserContext
       )
-      expect(formatCurrency).toHaveBeenCalledWith(1234)
       expect(result).toEqual({
         payment: { annualTotalPence: 123400 },
-        paymentTotal: '£1,234.00',
+        paymentTotal: '£1,234',
         errorMessage: undefined
       })
     })
 
     it.each([
-      ['a zero annual total', { payment: { annualTotalPence: 0 } }, '£0.00', undefined],
+      ['a zero annual total', { payment: { annualTotalPence: 0 } }, '£0', undefined],
       ['no payment object', {}, undefined, PAYMENT_ERROR],
       ['a payment with no annual total', { payment: { total: 0 } }, undefined, PAYMENT_ERROR]
     ])('handles %s', async (_, response, expectedTotal, expectedError) => {
       calculate.mockResolvedValueOnce(response)
-      formatCurrency.mockReturnValue('£0.00')
 
       const result = await calculateLandActionsPayment({ landParcels: { 'SHEET123-PARCEL456': {} } })
 
       expect(result.paymentTotal).toBe(expectedTotal)
       expect(result.errorMessage).toBe(expectedError)
-      // A missing amount must never reach formatCurrency: it would format NaN
-      // and render "£NaN" to the user instead of the error message.
-      expect(formatCurrency).toHaveBeenCalledTimes(expectedTotal ? 1 : 0)
     })
 
     it('should propagate API errors', async () => {
