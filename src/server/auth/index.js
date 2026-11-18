@@ -1,4 +1,5 @@
 import { config } from '~/src/config/config.js'
+import { buildUserCredentials } from '~/src/plugins/auth.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { validateState } from '~/src/server/auth/state.js'
 import { verifyToken } from '~/src/server/auth/verify-token.js'
@@ -360,13 +361,14 @@ function validateProfileData(profile) {
  * @param {string} refreshToken
  */
 async function storeSessionData(request, profile, token, refreshToken) {
+  const sessionData = buildUserCredentials(profile, {
+    isAuthenticated: true,
+    token,
+    refreshToken
+  })
+
   try {
-    await request.server.app.cache.set(profile.sessionId, {
-      isAuthenticated: true,
-      ...profile,
-      token,
-      refreshToken
-    })
+    await request.server.app.cache.set(profile.sessionId, sessionData)
   } catch (cacheError) {
     const authError = new AuthError({
       message: 'Failed to store session data in cache',
@@ -407,8 +409,14 @@ function setCookieAuth(request, profile) {
  */
 function redirectAfterSignIn(request, h) {
   try {
-    const redirect = request.yar.get('redirect') ?? '/home'
+    const bellRedirect = request.auth.credentials?.query?.redirect
+
+    // TEMPORARY: sign-ins started before this deployment stored the return URL in yar.
+    // Remove this fallback (and the `yar.clear`) once a full deployment/session TTL window has passed.
+    const legacyYarRedirect = request.yar.get('redirect')
     request.yar.clear('redirect')
+
+    const redirect = bellRedirect ?? legacyYarRedirect ?? '/home'
     const safeRedirect = getSafeRedirect(redirect)
     return h.redirect(safeRedirect)
   } catch (redirectError) {
@@ -580,6 +588,8 @@ function handleJourneyUnauthorised(_request, h) {
  *   crn: string,
  *   organisationId: string,
  *   contactId: string,
+ *   firstName: string,
+ *   lastName: string,
  *   currentRelationshipId?: string,
  *   [key: string]: any
  * }} Profile
