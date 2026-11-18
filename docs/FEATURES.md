@@ -146,6 +146,9 @@ Set `options.format` on a `NumberField` to format answers on Check answers and p
 | `currency:gbp`   | `125000.5` | `£125,000.50`   |
 | `currency:gbp,4` | `125000.5` | `£125,000.5000` |
 
+Currency formatting omits zero-only decimal places for whole amounts, including when precision is configured. For example,
+`125000.00` displays as `£125,000` with `currency:gbp` on Check answers, repeat item lists and print pages.
+
 Use `format: suffix` to append `options.suffix` without grouping digits or rounding the answer:
 
 ```yaml

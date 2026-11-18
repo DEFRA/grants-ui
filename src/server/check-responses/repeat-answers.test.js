@@ -236,7 +236,7 @@ describe('repeat answers on Check answers with the forms engine', () => {
         .filter((_, row) => $(row).find('dt').text().trim() === 'Storage capacity')
         .map((_, row) => $(row).find('dd').text().trim())
         .get()
-      expect(amounts).toEqual(['£0.00', '£200,000.50'])
+      expect(amounts).toEqual(['£0', '£200,000.50'])
       expect($('main').text()).not.toContain('Internal answer')
     }
     expect(journey.state).toEqual(savedState)

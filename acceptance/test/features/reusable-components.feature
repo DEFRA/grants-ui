@@ -265,8 +265,8 @@ Feature: Reusable Components
             | Checkbox options           | Option two                                         |
             |                            | Option three                                       |
             | Guidance declaration       | I confirm I have read and understood this guidance |
-            | Enter amount               | £100,000.00                                        |
-            | Routing amount             | £50,000.00                                         |
+            |Enter amount               | £100,000                              |
+            | Routing amount             | £50,000                                            |
             | Date                       | {DATE IN A WEEK}                                   |
             | Month and year             | August 2025                                        |
             | Select option              | Option three                                       |
@@ -283,16 +283,16 @@ Feature: Reusable Components
             | Latitude and longitude     | Latitude: 51.51945                                 |
             |                            | Longitude: -0.127758                               |
             | GeospatialField            | Added 1 location                                   |
-            | Project name               | Test project                                       |
-            | Project description        | Project description                                |
-            | Project budget             | £50,000.00                                         |
+            | Project name               | Test project                          |
+            | Project description        | Project description                   |
+            | Project budget             | £50,000                                            |
             | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774              |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER                  |
             | Item 1 | Item name | Applicant's first item  |
-            |        | Amount    | £1,000.00               |
+            |        | Amount    | £1,000                  |
             | Item 2 | Item name | Applicant's second item |
-            |        | Amount    | £2,000.00               |
+            |        | Amount    | £2,000                  |
         When the user chooses to change their summary answer to question "Country"
 
         # autocomplete-field
@@ -312,8 +312,8 @@ Feature: Reusable Components
             | Checkbox options           | Option two                                         |
             |                            | Option three                                       |
             | Guidance declaration       | I confirm I have read and understood this guidance |
-            | Enter amount               | £100,000.00                                        |
-            | Routing amount             | £50,000.00                                         |
+            |Enter amount               | £100,000                              |
+            | Routing amount             | £50,000                                            |
             | Date                       | {DATE IN A WEEK}                                   |
             | Month and year             | August 2025                                        |
             | Select option              | Option three                                       |
@@ -330,16 +330,16 @@ Feature: Reusable Components
             | Latitude and longitude     | Latitude: 51.51945                                 |
             |                            | Longitude: -0.127758                               |
             | GeospatialField            | Added 1 location                                   |
-            | Project name               | Test project                                       |
-            | Project description        | Project description                                |
-            | Project budget             | £50,000.00                                         |
+            | Project name               | Test project                          |
+            | Project description        | Project description                   |
+            | Project budget             | £50,000                                            |
             | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774              |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER                  |
             | Item 1 | Item name | Applicant's first item  |
-            |        | Amount    | £1,000.00               |
+            |        | Amount    | £1,000                  |
             | Item 2 | Item name | Applicant's second item |
-            |        | Amount    | £2,000.00               |
+            |        | Amount    | £2,000                  |
         When the user continues
 
         # declaration
@@ -383,29 +383,29 @@ Feature: Reusable Components
             | Radio option               | Option one                                         |
             | Checkbox options           | Option two, Option three                           |
             | Guidance declaration       | I confirm I have read and understood this guidance |
-            | Enter amount               | £100,000.00                                        |
-            | Routing amount             | £50,000.00                                         |
-            | Date                       | {DATE IN A WEEK}                                   |
-            | Month and year             | August 2025                                        |
-            | Select option              | Option three                                       |
-            | Description                | Lorem ipsum                                        |
-            | Email address              | test@example.com                                   |
-            | Telephone number           | 01234 567890                                       |
-            | Address                    | 1 Example Street, Exampleton, EX1 1EX              |
-            | Easting and northing       | 530000, 180000                                     |
-            | OS grid reference          | ST 678 678                                         |
-            | National Grid field number | NG 1234 5678                                       |
-            | Latitude and longitude     | 51.51945, -0.127758                                |
-            | Project name               | Test project                                       |
-            | Project description        | Project description                                |
-            | Project budget             | £50,000.00                                         |
+            |Enter amount               | £100,000                              |
+            | Routing amount             | £50,000                               |
+            | Date                       | {DATE IN A WEEK}                      |
+            | Month and year             | August 2025                           |
+            | Select option              | Option three                          |
+            | Description                | Lorem ipsum                           |
+            | Email address              | test@example.com                      |
+            | Telephone number           | 01234 567890                          |
+            | Address                    | 1 Example Street, Exampleton, EX1 1EX |
+            | Easting and northing       | 530000, 180000                        |
+            | OS grid reference          | ST 678 678                            |
+            | National Grid field number | NG 1234 5678                          |
+            | Latitude and longitude     | 51.51945, -0.127758                   |
+            | Project name               | Test project                          |
+            | Project description        | Project description                   |
+            | Project budget             | £50,000                                            |
             | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774              |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER                  |
             | Item 1 | Item name | Applicant's first item  |
-            |        | Amount    | £1,000.00               |
+            |        | Amount    | £1,000                  |
             | Item 2 | Item name | Applicant's second item |
-            |        | Amount    | £2,000.00               |
+            |        | Amount    | £2,000                  |
         And should see the following configurable content
             | Configurable content                                                                                                                       |
             | This is an example of configurable content on the print page, defined via the configurablePrintContent property in the form YAML metadata. |
