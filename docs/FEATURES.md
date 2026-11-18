@@ -137,8 +137,18 @@ Set `options.format` on a `NumberField` to format answers on Check answers and p
 | `currency:gbp`   | `125000.5` | `£125,000.50`   |
 | `currency:gbp,4` | `125000.5` | `£125,000.5000` |
 
-Append `|suffix` to any supported number format to include the component's existing `options.suffix` in the displayed
-answer. For example:
+Use `format: suffix` to append `options.suffix` without grouping digits or rounding the answer:
+
+```yaml
+options:
+  suffix: ' m³'
+  format: suffix
+```
+
+This displays `100000` as `100000 m³` and preserves entered decimal places, for example `125000.50 m³`.
+
+Append `|suffix` to `thousands`, `decimal` or `currency` formatting to combine number formatting with the component's
+existing `options.suffix`. For example:
 
 ```yaml
 options:
@@ -148,10 +158,14 @@ options:
 
 This displays `100000` as `100,000m³` on Check answers, repeat item lists and print pages. The suffix is appended exactly
 as configured, without adding a space. For example, `decimal:2|suffix` with `suffix: ' m³'` displays `100,000.00 m³`.
-If `suffix` is missing or empty, the modifier is ignored. Unanswered values remain unanswered, and formats without
+If `suffix` is missing or empty, nothing is appended. Unanswered values remain unanswered. Other formats without
 `|suffix` keep their existing behaviour. Input values and saved answers remain numeric and do not include the suffix.
-Only one trailing `|suffix` modifier is supported; unknown or repeated modifiers are rejected when the form definition
-is loaded. Configure these options in the form definitions served by Grants UI Backend.
+Only one trailing `|suffix` modifier is supported on a base number format; `suffix|suffix`, unknown modifiers and repeated
+modifiers are rejected when the form definition is loaded. Configure these options in the form definitions served by
+Grants UI Backend.
+
+The [Example grant with task list](../compose/config-broker/example-grants/example-grant-with-task-list/grants-ui/example-grant-with-task-list.yaml)
+demonstrates `suffix` and `thousands|suffix` together on `/example-task-with-guidance`.
 
 ### Date Components
 

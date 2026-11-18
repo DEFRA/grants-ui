@@ -57,8 +57,9 @@ function createNumberFormatter(format) {
   if (parts.length > 2 || (parts.length === 2 && parts[1] !== 'suffix')) {
     return undefined
   }
-  const formatter = createBaseNumberFormatter(parts[0])
-  if (!formatter || parts.length === 1) {
+  const suffixOnly = parts.length === 1 && parts[0] === 'suffix'
+  const formatter = suffixOnly ? String : createBaseNumberFormatter(parts[0])
+  if (!formatter || (parts.length === 1 && !suffixOnly)) {
     return formatter
   }
 

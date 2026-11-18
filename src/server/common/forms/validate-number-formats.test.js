@@ -5,11 +5,13 @@ const definition = (component) => ({ pages: [{ components: [component] }] })
 
 describe('number display formatting configuration', () => {
   it.each([
+    { format: 'suffix', suffix: 'm³' },
+    { format: 'suffix' },
     { format: 'thousands|suffix', suffix: 'm³' },
     { format: 'decimal:2|suffix', suffix: 'ha' },
     { format: 'currency:gbp,2|suffix', suffix: ' per year' },
     { format: 'thousands|suffix' }
-  ])('accepts the suffix modifier with or without a suffix: %j', (options) => {
+  ])('accepts suffix formatting with or without a suffix: %j', (options) => {
     expect(() => validateNumberFormats(definition({ type: 'NumberField', name: 'capacity', options }))).not.toThrow()
   })
 
@@ -19,6 +21,8 @@ describe('number display formatting configuration', () => {
     { type: 'NumberField', name: 'capacity', options: { format: null } },
     { type: 'NumberField', name: 'capacity', options: { format: 'thousands|prefix' } },
     { type: 'NumberField', name: 'capacity', options: { format: 'thousands|suffix|suffix' } },
+    { type: 'NumberField', name: 'capacity', options: { format: 'suffix|suffix' } },
+    { type: 'NumberField', name: 'capacity', options: { format: '|suffix' } },
     { type: 'NumberField', name: 'capacity', format: 'thousands', options: { format: 'decimal' } },
     { type: 'NumberField', name: 'capacity', schema: { format: 'thousands' }, options: { format: 'decimal' } }
   ])('rejects invalid formatting as a configuration error: %j', (component) => {

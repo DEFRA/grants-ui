@@ -41,7 +41,7 @@ Feature: Task Lists Showing Questions
             | Example task two                 |                  |
             | Compound component               | Cannot start yet |
             | Land parcels                     | Cannot start yet |
-            | Number with guidance             | Cannot start yet |
+            | Example with guidance            | Cannot start yet |
             | Example check and submit task    |                  |
             | Check your answers               | Cannot start yet |
             | Confirm and send                 | Cannot start yet |
@@ -86,7 +86,7 @@ Feature: Task Lists Showing Questions
           | Example task two                 |                  |
           | Compound component               | Not started      |
           | Land parcels                     | Cannot start yet |
-          | Number with guidance             | Cannot start yet |
+          | Example with guidance            | Cannot start yet |
           | Example check and submit task    |                  |
           | Check your answers               | Cannot start yet |
           | Confirm and send                 | Cannot start yet |
@@ -118,7 +118,8 @@ Feature: Task Lists Showing Questions
         And should see task title "Example task two"
         And should see heading "Example with guidance"
         And the page is analyzed for accessibility
-        When the user enters "150000" for "Example number field"
+        When the user enters "150000.50" for "Example number field"
+        And the user enters "150000.50" for "Capacity without number formatting (optional)"
         And continues
 
         # tasks
@@ -132,17 +133,18 @@ Feature: Task Lists Showing Questions
           | Example task two                 |                  |
           | Compound component               | Completed        |
           | Land parcels                     | Completed        |
-          | Number with guidance             | Completed        |
+          | Example with guidance            | Completed        |
           | Example check and submit task    |                  |
           | Check your answers               | Not started      |
           | Confirm and send                 | Cannot start yet |
 
         # revisit a task
-        When the user selects task "Number with guidance"
+        When the user selects task "Example with guidance"
 
         # example-task-with-guidance
         Then the user should be at URL "example-task-with-guidance"
-        When the user enters "200000" for "Example number field"
+        When the user enters "200000.50" for "Example number field"
+        And the user enters "200000.50" for "Capacity without number formatting (optional)"
         And continues
 
         # tasks
@@ -156,7 +158,7 @@ Feature: Task Lists Showing Questions
         | Example task two                 |                  |
         | Compound component               | Completed        |
         | Land parcels                     | Completed        |
-        | Number with guidance             | Completed        |
+        | Example with guidance            | Completed        |
         | Example check and submit task    |                  |
         | Check your answers               | Not started      |
         | Confirm and send                 | Cannot start yet |
@@ -165,6 +167,8 @@ Feature: Task Lists Showing Questions
         # summary
         Then the user should be at URL "summary"
         And should see heading "Check your answers"
+        And the user should see answer "200,000.50m³" for question "Number with guidance"
+        And the user should see answer "200000.50m³" for question "Capacity without number formatting"
         And the page is analyzed for accessibility
         When the user continues
 
