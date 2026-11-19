@@ -1,4 +1,5 @@
 import { primeApplicationContext } from './common/request-pipeline/prime-application-context.js'
+import { normaliseNumberInputs } from './common/request-pipeline/normalise-number-inputs.js'
 import { captureLocationHints, renderLocationHints } from './common/map/location-hints.js'
 import plugin from '@defra/forms-engine-plugin'
 import Bell from '@hapi/bell'
@@ -297,6 +298,7 @@ export async function createServer() {
   })
 
   server.ext('onPostAuth', primeApplicationContext)
+  server.ext('onPreHandler', normaliseNumberInputs)
   server.ext('onPreHandler', captureLocationHints)
   server.ext('onPreResponse', renderLocationHints)
 
