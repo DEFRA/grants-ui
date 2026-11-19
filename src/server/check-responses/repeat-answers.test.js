@@ -101,13 +101,20 @@ function createSummary({ sections = true, force = false, withHiddenFields = fals
           section: sections ? 'other' : undefined,
           controller: 'RepeatPageController',
           repeat: { options: { name: 'tanks', title: 'Tank' }, schema: { min: 1, max: 5 } },
-          components: [
-            { type: hiddenOnly ? 'HiddenField' : 'TextField', name: 'tankName', title: 'Tank name' },
-            { type: 'CheckboxesField', name: 'tankLinings', title: 'Tank linings', list: 'linings' },
-            { type: 'FileUploadField', name: 'tankEvidence', title: 'Tank evidence', options: {}, schema: {} },
-            { type: 'UkAddressField', name: 'tankAddress', title: 'Tank address', options: { required: false } },
-            { type: 'EastingNorthingField', name: 'tankLocation', title: 'Tank location', options: { required: false } }
-          ]
+          components: hiddenOnly
+            ? [{ type: 'HiddenField', name: 'tankName', title: 'Tank name' }]
+            : [
+                { type: 'TextField', name: 'tankName', title: 'Tank name' },
+                { type: 'CheckboxesField', name: 'tankLinings', title: 'Tank linings', list: 'linings' },
+                { type: 'FileUploadField', name: 'tankEvidence', title: 'Tank evidence', options: {}, schema: {} },
+                { type: 'UkAddressField', name: 'tankAddress', title: 'Tank address', options: { required: false } },
+                {
+                  type: 'EastingNorthingField',
+                  name: 'tankLocation',
+                  title: 'Tank location',
+                  options: { required: false }
+                }
+              ]
         },
         { path: '/summary', title: 'Check your answers', controller: 'CheckResponsesPageController', components: [] }
       ]
