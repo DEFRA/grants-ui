@@ -25,6 +25,7 @@
           "autocompleteField",
           "radiosField",
           "checkboxesField",
+          "declarationField",
           "numberFieldValidation",
           "numberFieldRouting",
           "datePartsField__day",
@@ -69,6 +70,9 @@
             "items": {
               "type": "string"
             }
+          },
+          "declarationField": {
+            "type": "boolean"
           },
           "numberFieldValidation": {
             "type": "number"

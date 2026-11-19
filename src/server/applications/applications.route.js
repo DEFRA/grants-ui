@@ -1,5 +1,5 @@
-import { ApplicationsController } from './applications.controller.js'
 import { APPLICATIONS_PATH } from '../common/constants/applications-path.js'
+import { ApplicationsController } from './applications.controller.js'
 
 const applicationsController = new ApplicationsController()
 
