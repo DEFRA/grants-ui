@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { FormModel } from '@defra/forms-engine-plugin/engine/models/FormModel.js'
 import CheckResponsesPageController from './check-responses.controller.js'
 import { createPageRenderer } from '../common/test-helpers/component-helpers.js'
+import { validateNumberFormats } from '../common/forms/validate-number-formats.js'
+import { buildPrintViewModel } from '../common/helpers/print-application-service/print-application-service.js'
 
 vi.unmock('@defra/forms-model')
 vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
@@ -11,9 +13,12 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
 const render = createPageRenderer(import.meta.url, 'check-responses-page.html', {}, [
   'src/server/check-responses/views'
 ])
+const renderPrint = createPageRenderer(import.meta.url, 'print-submitted-application.html', {}, [
+  'src/server/print-submitted-application/views'
+])
 const normalise = (value) => value.replace(/\s+/g, ' ').trim()
 
-function createSummary({ sections = true, force = false, withHiddenFields = false, hiddenOnly = false } = {}) {
+function createSummary({ sections = true, force = false, withHiddenFields = false, hiddenOnly = false, format } = {}) {
   const model = new FormModel(
     {
       name: 'Repeat answers test',
@@ -75,7 +80,7 @@ function createSummary({ sections = true, force = false, withHiddenFields = fals
                 ]
               : []),
             { type: 'TextField', name: 'name', title: 'Reservoir name' },
-            { type: 'NumberField', name: 'capacity', title: 'Storage capacity' },
+            { type: 'NumberField', name: 'capacity', title: 'Storage capacity', options: { format } },
             { type: 'RadiosField', name: 'lining', title: 'Lining', list: 'linings' },
             { type: 'YesNoField', name: 'covered', title: 'Covered' },
             { type: 'DatePartsField', name: 'built', title: 'Date built' },
@@ -104,6 +109,7 @@ function createSummary({ sections = true, force = false, withHiddenFields = fals
     { formsService: { getFormMetadata: async () => ({}) } },
     { CheckResponsesPageController }
   )
+  validateNumberFormats(model.def)
   const state = {
     $$__referenceNumber: 'test-reference',
     ...(withHiddenFields ? { internal: 'Internal top-level value', blank: null } : {}),
@@ -188,6 +194,33 @@ describe('repeat answers on Check answers with the forms engine', () => {
     expect($('main').text()).not.toContain('Tank name')
     expect($('main').text()).not.toContain('Tank 1')
     expect(journey.state.tanks[0].tankName).toBe('Rainwater tank')
+  })
+
+  it('formats each repeated currency answer on Check answers and print without changing saved numbers', () => {
+    const journey = createSummary({ format: 'currency:gbp', withHiddenFields: true })
+    journey.state.reservoirs[1].capacity = 200000.5
+    const savedState = structuredClone(journey.state)
+    const printed = renderPrint(
+      buildPrintViewModel({
+        definition: journey.model.def,
+        form: journey.model.def,
+        answers: journey.context.relevantState,
+        savedState: journey.state,
+        slug: 'grant',
+        sessionData: {},
+        submittedAt: '2026-11-12T10:00:00.000Z'
+      })
+    )
+
+    for (const $ of [journey.view(), printed]) {
+      const amounts = $('.govuk-summary-list__row')
+        .filter((_, row) => $(row).find('dt').text().trim() === 'Storage capacity')
+        .map((_, row) => $(row).find('dd').text().trim())
+        .get()
+      expect(amounts).toEqual(['£0.00', '£200,000.50'])
+      expect($('main').text()).not.toContain('Internal answer')
+    }
+    expect(journey.state).toEqual(savedState)
   })
 
   it('renders every field of every repeat page in item cards and preserves answer order', () => {

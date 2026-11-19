@@ -29,6 +29,10 @@ class ReferenceNumberStore {
     return this._refs[2]
   }
 
+  get fourth() {
+    return this._refs[3]
+  }
+
   push(referenceNumber) {
     this._refs.push(referenceNumber)
   }

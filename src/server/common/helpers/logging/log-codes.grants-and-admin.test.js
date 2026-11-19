@@ -305,6 +305,23 @@ describe('LogCodes', () => {
     ])
   })
 
+  describe('APPLICATIONS log codes', () => {
+    testLogCodes('APPLICATIONS', [
+      [
+        'RULES_UNAVAILABLE',
+        'warn',
+        { grantCode: 'test-grant', major: 1, errorMessage: 'No active definition' },
+        "No post-submission rules for a listed application's grant major; read under the latest definition's rules: grantCode=test-grant, major=1, reason=No active definition"
+      ],
+      [
+        'NO_PINNED_MAJOR',
+        'info',
+        { grantCode: 'test-grant', applicationRefs: 'REF-1, REF-2' },
+        "Applications listed without a pinned grant major; read under the latest definition's rules: grantCode=test-grant, applications=REF-1, REF-2"
+      ]
+    ])
+  })
+
   describe('PURGE log codes', () => {
     testLogCodes('PURGE', [
       [

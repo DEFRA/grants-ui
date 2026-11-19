@@ -10,7 +10,7 @@ export default class LocationValidateController extends QuestionPageController {
    */
   getNextPath(context) {
     const locationFound = context.state.additionalAnswers?.locationFound
-    return locationFound ? super.getNextPath(context) : '/exit-where-project-located'
+    return locationFound ? super.getNextPath(context) : '/exit-eligibility-project-location'
   }
 
   makePostRouteHandler() {

@@ -12,6 +12,7 @@ export const COMPONENT_TYPES = {
   SelectField: 'SelectField',
   AutocompleteField: 'AutocompleteField',
   CheckboxesField: 'CheckboxesField',
+  DeclarationField: 'DeclarationField',
   EastingNorthingField: 'EastingNorthingField',
   LatLongField: 'LatLongField',
   OsGridRefField: 'OsGridRefField',

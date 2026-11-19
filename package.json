@@ -10,8 +10,8 @@
   "main": ".server/index.js",
   "type": "module",
   "engines": {
-    "node": ">=24.22.1 <25.0.0",
-    "npm": ">=11.12.1"
+    "node": ">=24.22.3 <25.0.0",
+    "npm": ">=11.19.1"
   },
   "scripts": {
     "build": "run-s build:frontend build:server",
@@ -82,7 +82,7 @@
     "ioredis": "6.0.0",
     "joi@>=17 <18": "17.13.9",
     "joi@>=18 <19": "18.3.1",
-    "basic-ftp": "6.2.1",
+    "basic-ftp": "6.2.6",
     "minimatch@>=7 <11": "11.0.3",
     "glob@>=10 <14.0.2": "14.0.3",
     "tinypool": "2.2.0",

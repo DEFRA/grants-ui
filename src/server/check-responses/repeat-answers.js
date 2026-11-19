@@ -4,6 +4,11 @@ import { evaluateTemplate, redirectPath } from '@defra/forms-engine-plugin/engin
 import { getAnswerMarkdown, markdown } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
 import escapeHtml from 'lodash/escape.js'
 import { shouldDisplayAnswer } from '../common/helpers/answer-components.js'
+import { formatNumberAnswer, getNumberFormatter } from '../common/helpers/number-formatter.js'
+import { getNumberDisplayValue } from '../common/helpers/number-display-value.js'
+import { getNumberFieldInputs } from '../common/helpers/state/persist-formatting.js'
+
+const NOT_PROVIDED = 'Not provided'
 
 /**
  * Associates each repeat answer row with cards built from relevant item state.
@@ -31,7 +36,7 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
 
       const list = page.getListFromState(context.relevantState)
       if (!list.length) {
-        row.value = { text: 'Not provided' }
+        row.value = { text: NOT_PROVIDED }
         return
       }
 
@@ -40,6 +45,7 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
         list.map((itemState, index) => {
           const itemContext = { ...context, relevantState: { ...context.relevantState, ...itemState } }
           const title = `${evaluateTemplate(page.repeat.options.title, itemContext)} ${index + 1}`
+          const inputs = getNumberFieldInputs(context.state, page.repeat.options.name, itemState.itemId)
           return {
             card: {
               title: { text: title },
@@ -57,10 +63,26 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
             },
             rows: fields.map((field) => {
               const answer = ItemField(page, itemState, field, { path: page.path })
-              const value = markdown.parse(escapeHtml(getAnswerMarkdown(field, itemState)), { async: false }).trim()
+              const component = /** @type {{ type: string, options?: { format?: string } } | undefined} */ (
+                context.componentDefMap.get(field.name)
+              )
+              const rawValue = itemState[field.name]
+              const displayValue =
+                component?.type === 'NumberField' && getNumberFormatter(component.options?.format)
+                  ? getNumberDisplayValue(rawValue, inputs?.[field.name])
+                  : rawValue
+              const formatted = formatNumberAnswer(component, displayValue)
+              const value =
+                formatted === undefined
+                  ? {
+                      html:
+                        markdown.parse(escapeHtml(getAnswerMarkdown(field, itemState)), { async: false }).trim() ||
+                        NOT_PROVIDED
+                    }
+                  : { text: formatted || NOT_PROVIDED }
               return {
                 key: { text: evaluateTemplate(answer.title, itemContext) },
-                value: { html: value || 'Not provided', classes: 'app-prose-scope' }
+                value: { ...value, classes: 'app-prose-scope' }
               }
             })
           }

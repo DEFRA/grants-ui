@@ -59,14 +59,14 @@ const payment = {
 
 describe('buildConfirmLandAndActionsViewModel', () => {
   it.each([
-    ['count', '4 count'],
-    ['sqm', '4 m²'],
-    ['m', '4.0000 m'],
-    ['ha', '4.0000 ha']
+    ['count', '12,500 count'],
+    ['sqm', '12,500 m²'],
+    ['m', '12,500.0000 m'],
+    ['ha', '12,500.0000 ha']
   ])('formats parcel action quantities using the payment unit %s', (unit, area) => {
     const model = buildConfirmLandAndActionsViewModel({
       ...payment,
-      parcelItems: { 1: { ...parcelItems[1], quantity: 4, unit } }
+      parcelItems: { 1: { ...parcelItems[1], quantity: 12500, unit } }
     })
 
     expect(model.parcels[0].actions[0].area).toBe(area)

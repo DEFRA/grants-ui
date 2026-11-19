@@ -56,6 +56,10 @@ _Avoid_: Draft, Unsubmitted, Open, Reset
 The application status used when the local application state should be treated as clear for a new or withdrawn journey.
 _Avoid_: Deleted, Cancelled, Empty, Archived
 
+**Withdrawn**
+The display state on the applications selector of a submitted application that GAS has withdrawn: its GAS status maps to `CLEARED` in the grant's redirect rules. The row stays listed with no action and the application is never opened.
+_Avoid_: Cleared when describing the row, Deleted, Cancelled, Removed
+
 **Reference number**
 The user-facing identifier for an application submission, shown on confirmation and print views.
 _Avoid_: Grant code, Slug, Case ID, SBI

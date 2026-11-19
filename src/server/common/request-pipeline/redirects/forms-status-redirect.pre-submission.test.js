@@ -376,15 +376,15 @@ describe('formsStatusRedirect', () => {
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
   })
 
-  it('throws when no grant version can be resolved for the status update', async () => {
+  it('throws when no grant version can be resolved for the status update, rather than redirecting', async () => {
     delete request.app.model.def.metadata.version
     mockGasStatus('APPLICATION_AMEND')
 
-    await formsStatusRedirect(request, h, context)
+    await expect(formsStatusRedirect(request, h, context)).rejects.toThrow('Missing grantVersion')
 
-    // handlePostSubmission fails on the unresolvable version and the error
-    // handler falls back to the default redirect rule instead of persisting.
+    // The transition is not persisted and the user is not sent on as if it had been.
     expect(updateApplicationStatus).not.toHaveBeenCalled()
+    expect(h.redirect).not.toHaveBeenCalled()
   })
 
   it('updates session cache when transitioning to REOPENED', async () => {
