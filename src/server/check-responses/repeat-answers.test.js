@@ -87,7 +87,11 @@ function createSummary({ sections = true, force = false, format } = {}) {
           section: sections ? 'other' : undefined,
           controller: 'RepeatPageController',
           repeat: { options: { name: 'tanks', title: 'Tank' }, schema: { min: 1, max: 5 } },
-          components: [{ type: 'TextField', name: 'tankName', title: 'Tank name' }]
+          components: [
+            { type: 'TextField', name: 'tankName', title: 'Tank name' },
+            { type: 'CheckboxesField', name: 'tankLinings', title: 'Tank linings', list: 'linings' },
+            { type: 'FileUploadField', name: 'tankEvidence', title: 'Tank evidence', options: {}, schema: {} }
+          ]
         },
         { path: '/summary', title: 'Check your answers', controller: 'CheckResponsesPageController', components: [] }
       ]
@@ -212,7 +216,13 @@ describe('repeat answers on Check answers with the forms engine', () => {
     expect(cards.eq(1).text()).toContain('South reservoir')
     expect(cards.eq(1).text()).toContain('Synthetic lining')
     expect(cards.eq(1).text()).toContain('Not provided')
-    expect(cards.eq(2).find('dt').text().trim()).toBe('Tank name')
+    expect(
+      cards
+        .eq(2)
+        .find('dt')
+        .map((_, label) => $(label).text().trim())
+        .get()
+    ).toEqual(['Tank name', 'Tank linings', 'Tank evidence'])
     expect(cards.eq(2).text()).toContain('Rainwater tank')
     expect(cards.first().find('.govuk-summary-list__row').last().find('dd').html()).toMatch(
       /First line<br>\s*Second line/
@@ -320,6 +330,53 @@ describe('repeat answers on Check answers with the forms engine', () => {
       expect(card.text()).not.toContain('&amp;')
       expect(card.text()).not.toContain('&lt;')
     }
+  })
+
+  it('preserves doubled backslashes, a literal URL and a line break on Check answers and print', () => {
+    const journey = createSummary()
+    const firstLine = String.raw`C:\\pond\\& chips https://example.com/a_b`
+    journey.state.reservoirs[0].notes = `${firstLine}\nSecond line`
+
+    for (const $ of renderBoth(journey)) {
+      const notes = $('.govuk-summary-card')
+        .first()
+        .find('dt')
+        .filter((_, label) => $(label).text().trim() === 'Notes (optional)')
+        .next('dd')
+      expect(notes.text()).toContain(firstLine)
+      expect(notes.html()).toMatch(/<br>\s*Second line/)
+      expect(notes.find('a')).toHaveLength(0)
+    }
+  })
+
+  it('renders checkbox selections as bullets and uploaded files as download links', () => {
+    const journey = createSummary()
+    const fileId = randomUUID()
+    journey.state.tanks[0].tankLinings = ['clay', 'synthetic']
+    journey.state.tanks[0].tankEvidence = [
+      {
+        uploadId: randomUUID(),
+        status: {
+          uploadStatus: 'ready',
+          metadata: { retrievalKey: 'test@example.com' },
+          form: { file: { fileId, filename: 'Tank plan.pdf', contentLength: 123, fileStatus: 'complete' } },
+          numberOfRejectedFiles: 0
+        }
+      }
+    ]
+
+    const $ = journey.view()
+    const tank = $('.govuk-summary-card').last()
+    const linings = tank
+      .find('dt')
+      .filter((_, label) => $(label).text().trim() === 'Tank linings')
+      .next('dd')
+      .find('ul li')
+    expect(linings.map((_, item) => $(item).text().trim()).get()).toEqual(['Clay lining', 'Synthetic lining'])
+    const download = tank.find('dd a')
+    expect(download).toHaveLength(1)
+    expect(download.text()).toBe('Tank plan.pdf')
+    expect(download.attr('href')).toMatch(new RegExp(`/file-download/${fileId}$`))
   })
 
   it('shows a blank single-line repeat answer as Not provided', () => {
