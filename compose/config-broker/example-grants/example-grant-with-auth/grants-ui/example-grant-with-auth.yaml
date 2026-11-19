@@ -6,7 +6,7 @@ metadata:
   enabledInProd: false
   phase: public-beta
   referenceNumberPrefix: EGWA
-  supportEmail: support@defra.gov.uk
+  supportEmail: ruralpayments@defra.gov.uk
   applicationWindow:
     closesAt: '2030-12-31T23:59:59Z'
   notificationBanner:
@@ -329,7 +329,7 @@ pages:
             Monday to Friday, 8:30am to 5pm (except bank holidays)
           </p>
           <p class="govuk-body"><a href="https://www.gov.uk/call-charges" class="govuk-link" rel="noreferrer noopener" target="_blank">Find out about call charges (opens in a new tab)</a></p>
-          <p class="govuk-body">Email: <a class="govuk-link" href="mailto:support@defra.gov.uk">support@defra.gov.uk</a></p>
+          <p class="govuk-body">Email: <a class="govuk-link" href="mailto:ruralpayments@defra.gov.uk">ruralpayments@defra.gov.uk</a></p>
           <p class="govuk-body">The RPA responds to email queries within 10 working days.</p>
 
   - title: YesNoField Example
@@ -468,6 +468,27 @@ pages:
         schema: {}
     condition: f7eaaeb1-2c3d-4e5f-6a7b-8c9daebfc0d1
     id: d5c8ecf9-0a1b-2c3d-4e5f-6a7b8c9daebf
+  - title: DeclarationField Example
+    path: /declaration-field
+    components:
+      - name: declarationFieldInfo
+        title: Html
+        type: Html
+        content: |
+          <p class="govuk-body">This is an example of a DeclarationField component. It is a single checkbox, usually placed at the bottom of a page of guidance, that the applicant must tick to confirm they have read and understood it.</p>
+          <p class="govuk-body">The declarationConfirmationLabel is shown as the checkbox text, and as the answer on Check your answers and the View / Print page.</p>
+        id: cf53d6e9-dd06-4b2c-a194-fe07caaeab41
+        options: {}
+        schema: {}
+      - name: declarationField
+        id: 9b0f272a-2a78-4ad9-8568-dab30412698a
+        title: Confirm
+        type: DeclarationField
+        options:
+          required: true
+          declarationConfirmationLabel: I confirm I have read and understood this guidance
+        shortDescription: Guidance declaration
+    id: a5803e91-c55d-4c9b-acc7-b16783a8e9bb
   - title: NumberField with validation
     path: /number-field-validation
     components:
@@ -484,6 +505,7 @@ pages:
         title: Enter amount
         options:
           prefix: £
+          format: currency:gbp
           required: true
           autocomplete: off
           classes: govuk-!-width-one-third
@@ -514,6 +536,7 @@ pages:
         title: Enter amount that may divert the journey
         options:
           prefix: £
+          format: currency:gbp
           required: true
           autocomplete: off
           classes: govuk-!-width-one-third
@@ -837,6 +860,7 @@ pages:
         hint: Enter the total project budget in pounds, for example 50000
         options:
           prefix: £
+          format: currency:gbp
           required: true
           autocomplete: off
           classes: govuk-!-width-one-third
@@ -878,6 +902,7 @@ pages:
         type: NumberField
         options:
           prefix: £
+          format: currency:gbp
           required: true
           classes: govuk-!-width-one-third
           customValidationMessages:

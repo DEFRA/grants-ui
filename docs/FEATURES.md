@@ -61,6 +61,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Pattern matching for various phone formats
   - Autocomplete support
   - Custom validation messages
+  - Native `options.format` validation: `uk` for UK numbers or `international` for non-UK numbers
 - **Example**: [Example Grant – Multi Field Form (/multi-field-form)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – mobile number with regex pattern validation
 
 ### Selection Components
@@ -113,6 +114,15 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Conditional navigation to terminal pages
 - **Example**: [Example Grant – Yes/No page (/yes-no-field)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – eligibility confirmation that can route to a terminal page
 
+#### DeclarationField
+
+- **Purpose**: Single checkbox the applicant ticks to confirm a statement
+- **Use Cases**: Confirming they have read guidance or meet conditions, usually at the bottom of an information page
+- **Features**:
+  - Configurable confirmation label (`declarationConfirmationLabel`), shown on Check answers and the View / Print page
+  - Required/optional configuration
+- **Example**: [Example Grant – Declaration page (/declaration-field)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – "I confirm I have read and understood this guidance" declaration under some guidance
+
 ### Numeric Components
 
 #### NumberField
@@ -125,6 +135,16 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Currency prefix support
   - Custom validation messages
 - **Example**: [Example Grant – Number field page (/number-field)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – project cost entry with £ prefix and range validation
+
+Set `options.format` on a `NumberField` to format answers on Check answers and print pages.
+
+| `options.format` | Input      | Display         |
+| ---------------- | ---------- | --------------- |
+| `thousands`      | `125000.5` | `125,000.5`     |
+| `decimal`        | `125000.5` | `125,000.50`    |
+| `decimal:4`      | `125000.5` | `125,000.5000`  |
+| `currency:gbp`   | `125000.5` | `£125,000.50`   |
+| `currency:gbp,4` | `125000.5` | `£125,000.5000` |
 
 ### Date Components
 

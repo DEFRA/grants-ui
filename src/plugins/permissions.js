@@ -38,6 +38,24 @@ export default {
      * @param {Server} server
      */
     register: async (server) => {
+      server.decorate(
+        'request',
+        'can',
+        /**
+         * @this {PipelineRequest & { auth: { credentials: PermissionCredentials } }}
+         * @param {PermissionAction} action
+         * @param {PermissionResource} resource
+         * @returns {boolean}
+         */
+        function (action, resource) {
+          return can(
+            /** @type {Array<{ id: string, level: PermissionLevel }>} */ (this.auth.credentials?.permissions ?? []),
+            action,
+            resource
+          )
+        }
+      )
+
       server.ext(
         'onPostAuth',
         /**
@@ -55,15 +73,6 @@ export default {
             /** @type {unknown} */ (request)
           )
           pipelineRequest.auth.credentials.permissions = permissionGroups
-          pipelineRequest.can = (action, resource) => {
-            return can(
-              /** @type {Array<{ id: string, level: PermissionLevel }>} */ (
-                pipelineRequest.auth.credentials?.permissions ?? []
-              ),
-              /** @type {PermissionAction} */ (action),
-              /** @type {PermissionResource} */ (resource)
-            )
-          }
 
           return h.continue
         }
