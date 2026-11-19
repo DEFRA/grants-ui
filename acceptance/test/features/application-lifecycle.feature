@@ -42,6 +42,11 @@ Feature: Application Lifecycle
             | Option two   |
         And continues
 
+        # declaration-field
+        Then the user should be at URL "declaration-field"
+        When the user selects "I confirm I have read and understood this guidance"
+        And continues
+
         # number-field-validation
         Then the user should be at URL "number-field-validation"
         When the user enters "100000" for "Enter amount"
