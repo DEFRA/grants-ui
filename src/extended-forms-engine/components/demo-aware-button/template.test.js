@@ -1,4 +1,4 @@
-import { createComponentRenderer } from '~/src/server/common/test-helpers/component-helpers.js'
+import { createComponentRenderer } from '../../test-helpers/component-helpers.js'
 
 const renderDemoAwareButton = createComponentRenderer(import.meta.url, 'appDemoAwareButton')
 

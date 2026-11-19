@@ -35,6 +35,9 @@ nvm use
 
 The repository has been structured to follow a feature-based structure, where each feature is organized into its own directory with all related components (controllers, views, tests, and utilities).
 
+Reusable form components and their dependency rules are documented in the
+[extended forms engine module](../src/extended-forms-engine/README.md).
+
 ### Feature Organization
 
 Each feature follows a consistent structure:

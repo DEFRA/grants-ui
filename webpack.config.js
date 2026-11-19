@@ -114,6 +114,8 @@ export default {
               sassOptions: {
                 loadPaths: [
                   path.join(dirname, 'src/client/stylesheets'),
+                  path.join(dirname, 'src/extended-forms-engine/stylesheets'),
+                  path.join(dirname, 'src/extended-forms-engine/components'),
                   path.join(dirname, 'src/server/common/components'),
                   path.join(dirname, 'src/server/common/templates/partials'),
                   path.join(dirname, 'node_modules')

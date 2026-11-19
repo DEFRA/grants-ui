@@ -18,6 +18,7 @@ export const viewPaths = (() => {
     path.join(serverDir, 'claims/views'),
     path.join(serverDir, 'details-page/views'),
     path.join(serverDir, 'common/components'),
+    path.resolve(process.cwd(), 'src/extended-forms-engine/components'),
     path.join(serverDir, 'common/templates'),
     path.join(serverDir, 'confirmation/views'),
     path.join(serverDir, 'cookies/views'),

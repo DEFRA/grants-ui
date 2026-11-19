@@ -2,7 +2,6 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import nunjucks from 'nunjucks'
 import { load } from 'cheerio'
-import { camelCase } from 'lodash'
 import * as filters from '~/src/config/nunjucks/filters/filters.js'
 import * as globals from '~/src/config/nunjucks/globals.js'
 
@@ -38,6 +37,7 @@ export function createComponentRenderer(callerMetaUrl, macroName) {
       path.join(projectRoot, 'node_modules/govuk-frontend/dist/'),
       path.normalize(path.resolve(testDir, '../')),
       path.normalize(path.join(projectRoot, 'src/server/common/components')),
+      path.normalize(path.join(projectRoot, 'src/extended-forms-engine/components')),
       path.normalize(path.join(projectRoot, 'src/server/common/templates'))
     ],
     {
@@ -82,6 +82,7 @@ export function createPageRenderer(callerMetaUrl, template, defaults = {}, extra
       testDir,
       ...extraViewPaths.map((viewPath) => path.join(projectRoot, viewPath)),
       path.join(projectRoot, 'src/server/common/components'),
+      path.join(projectRoot, 'src/extended-forms-engine/components'),
       path.join(projectRoot, 'src/server/common/templates'),
       path.join(projectRoot, 'src/server/land-grants/components')
     ],
@@ -111,40 +112,6 @@ export function createPageRenderer(callerMetaUrl, template, defaults = {}, extra
         ...viewModel
       })
     )
-}
-
-const nunjucksTestEnv = nunjucks.configure(
-  [
-    '~/node_modules/govuk-frontend/dist/',
-    path.normalize(path.resolve(dirname, '../templates')),
-    path.normalize(path.resolve(dirname, '../components'))
-  ],
-  {
-    trimBlocks: true,
-    lstripBlocks: true
-  }
-)
-
-configureNunjucksEnv(nunjucksTestEnv)
-
-/**
- * @param {string} componentName
- * @param {object} params
- * @param {string} [callBlock]
- */
-export function renderComponent(componentName, params, callBlock) {
-  const macroPath = `${componentName}/macro.njk`
-  const macroName = `app${componentName.charAt(0).toUpperCase() + camelCase(componentName.slice(1))}`
-  const macroParams = JSON.stringify(params, null, 2)
-  let macroString = `{%- from "${macroPath}" import ${macroName} -%}`
-
-  if (callBlock) {
-    macroString += `{%- call ${macroName}(${macroParams}) -%}${callBlock}{%- endcall -%}`
-  } else {
-    macroString += `{{- ${macroName}(${macroParams}) -}}`
-  }
-
-  return load(nunjucksTestEnv.renderString(macroString, {}))
 }
 
 /**

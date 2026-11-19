@@ -13,7 +13,8 @@ const env = nunjucks.configure(
   [
     path.join(projectRoot, 'node_modules/govuk-frontend/dist/'),
     path.normalize(path.resolve(dirname, '..')),
-    path.normalize(path.join(projectRoot, 'src/server/common/components'))
+    path.normalize(path.join(projectRoot, 'src/server/common/components')),
+    path.normalize(path.join(projectRoot, 'src/extended-forms-engine/components'))
   ],
   {
     trimBlocks: true,

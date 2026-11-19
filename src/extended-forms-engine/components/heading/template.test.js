@@ -1,4 +1,6 @@
-import { renderComponent } from '~/src/server/common/test-helpers/component-helpers.js'
+import { createComponentRenderer } from '../../test-helpers/component-helpers.js'
+
+const renderHeading = createComponentRenderer(import.meta.url, 'appHeading')
 
 describe('Heading Component', () => {
   /** @type {CheerioAPI} */
@@ -6,7 +8,7 @@ describe('Heading Component', () => {
 
   describe('With caption', () => {
     beforeEach(() => {
-      $heading = renderComponent('heading', {
+      $heading = renderHeading({
         text: 'Services',
         caption: 'A page showing available services'
       })

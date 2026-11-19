@@ -15,6 +15,7 @@ const environment = nunjucks.configure(
     path.join(projectRoot, 'node_modules/govuk-frontend/dist'),
     dirname,
     path.join(projectRoot, 'src/server/common/components'),
+    path.join(projectRoot, 'src/extended-forms-engine/components'),
     path.join(projectRoot, 'src/server/land-grants/components'),
     path.join(projectRoot, 'node_modules/@defra/forms-engine-plugin/.server/server/plugins/engine/views')
   ],
