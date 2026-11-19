@@ -255,6 +255,7 @@ Feature: Reusable Components
         # summary
         Then the user should be at URL "summary"
         And should see heading "Check your answers"
+        And should not see an answer labelled "Hidden field"
         And the page is analyzed for accessibility
         Then the user should see the following answers
             | QUESTION                   | ANSWER                                             |
@@ -282,7 +283,6 @@ Feature: Reusable Components
             | Latitude and longitude     | Latitude: 51.51945                                 |
             |                            | Longitude: -0.127758                               |
             | GeospatialField            | Added 1 location                                   |
-            | Hidden field               | Not provided                                       |
             | Project name               | Test project                                       |
             | Project description        | Project description                                |
             | Project budget             | £50,000.00                                         |
@@ -330,7 +330,6 @@ Feature: Reusable Components
             | Latitude and longitude     | Latitude: 51.51945                                 |
             |                            | Longitude: -0.127758                               |
             | GeospatialField            | Added 1 location                                   |
-            | Hidden field               | Not provided                                       |
             | Project name               | Test project                                       |
             | Project description        | Project description                                |
             | Project budget             | £50,000.00                                         |
@@ -361,6 +360,7 @@ Feature: Reusable Components
         # print-submitted-application
         Given the user navigates to "/example-grant-with-auth/print-submitted-application"
         Then the user should see heading "Example grant with auth application"
+        And should not see an answer labelled "Hidden field"
         And the page is analyzed for accessibility
         And the user should not see a notification banner
         Then the user should see the following submitted application details

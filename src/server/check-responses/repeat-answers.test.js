@@ -18,7 +18,7 @@ const renderPrint = createPageRenderer(import.meta.url, 'print-submitted-applica
 ])
 const normalise = (value) => value.replace(/\s+/g, ' ').trim()
 
-function createSummary({ sections = true, force = false, format } = {}) {
+function createSummary({ sections = true, force = false, withHiddenFields = false, hiddenOnly = false, format } = {}) {
   const model = new FormModel(
     {
       name: 'Repeat answers test',
@@ -56,7 +56,15 @@ function createSummary({ sections = true, force = false, format } = {}) {
           path: '/before',
           title: 'Before repeats',
           section: sections ? 'water' : undefined,
-          components: [{ type: 'TextField', name: 'before', title: 'Before repeats' }]
+          components: [
+            ...(withHiddenFields
+              ? [
+                  { type: 'HiddenField', name: 'internal', title: 'Internal answer', options: { required: false } },
+                  { type: 'HiddenField', name: 'blank', title: 'Blank hidden answer', options: { required: false } }
+                ]
+              : []),
+            { type: 'TextField', name: 'before', title: 'Before repeats' }
+          ]
         },
         {
           path: '/reservoirs',
@@ -65,6 +73,12 @@ function createSummary({ sections = true, force = false, format } = {}) {
           controller: 'RepeatPageController',
           repeat: { options: { name: 'reservoirs', title: 'Reservoir' }, schema: { min: 1, max: 5 } },
           components: [
+            ...(withHiddenFields
+              ? [
+                  { type: 'HiddenField', name: 'internal', title: 'Internal answer', options: { required: false } },
+                  { type: 'HiddenField', name: 'blank', title: 'Blank hidden answer', options: { required: false } }
+                ]
+              : []),
             { type: 'TextField', name: 'name', title: 'Reservoir name' },
             { type: 'NumberField', name: 'capacity', title: 'Storage capacity', options: { format } },
             { type: 'RadiosField', name: 'lining', title: 'Lining', list: 'linings' },
@@ -86,7 +100,7 @@ function createSummary({ sections = true, force = false, format } = {}) {
           section: sections ? 'other' : undefined,
           controller: 'RepeatPageController',
           repeat: { options: { name: 'tanks', title: 'Tank' }, schema: { min: 1, max: 5 } },
-          components: [{ type: 'TextField', name: 'tankName', title: 'Tank name' }]
+          components: [{ type: hiddenOnly ? 'HiddenField' : 'TextField', name: 'tankName', title: 'Tank name' }]
         },
         { path: '/summary', title: 'Check your answers', controller: 'CheckResponsesPageController', components: [] }
       ]
@@ -98,11 +112,13 @@ function createSummary({ sections = true, force = false, format } = {}) {
   validateNumberFormats(model.def)
   const state = {
     $$__referenceNumber: 'test-reference',
+    ...(withHiddenFields ? { internal: 'Internal top-level value', blank: null } : {}),
     before: 'First answer',
     after: 'Last answer',
     reservoirs: [
       {
         itemId: randomUUID(),
+        ...(withHiddenFields ? { internal: 'Internal first item', blank: null } : {}),
         name: 'North reservoir',
         capacity: 0,
         lining: 'clay',
@@ -114,6 +130,7 @@ function createSummary({ sections = true, force = false, format } = {}) {
       },
       {
         itemId: randomUUID(),
+        ...(withHiddenFields ? { internal: 'Internal second item', blank: null } : {}),
         name: 'South reservoir',
         capacity: 200000,
         lining: 'synthetic',
@@ -146,8 +163,41 @@ function createSummary({ sections = true, force = false, format } = {}) {
 }
 
 describe('repeat answers on Check answers with the forms engine', () => {
+  it.each([false, true])(
+    'hides ordinary and repeated hidden fields with preview=%s without changing engine data',
+    (force) => {
+      const journey = createSummary({ withHiddenFields: true, force })
+      const originalState = structuredClone(journey.state)
+      const originalFields = journey.model.pages.map((page) => [...page.collection.fields])
+      const $ = journey.view()
+
+      expect($('main').text()).not.toContain('Internal answer')
+      expect($('main').text()).not.toContain('Blank hidden answer')
+      expect($('main').text()).not.toContain('Internal top-level value')
+      expect($('main').text()).not.toContain('Internal first item')
+      expect($('main').text()).not.toContain('Internal second item')
+      expect($('.govuk-summary-card')).toHaveLength(3)
+      expect(normalise($('.check-answers-summary > dl dt').first().text())).toBe('Before repeats')
+      expect($('.govuk-summary-card').first().find('.govuk-summary-list__row')).toHaveLength(6)
+      expect(journey.state).toEqual(originalState)
+      expect(journey.context.relevantState.internal).toBe('Internal top-level value')
+      expect(journey.context.relevantState.reservoirs[0].internal).toBe('Internal first item')
+      expect(journey.model.pages.map((page) => page.collection.fields)).toEqual(originalFields)
+    }
+  )
+
+  it('omits repeat cards and section headings when every field in them is hidden', () => {
+    const journey = createSummary({ hiddenOnly: true })
+    const $ = journey.view()
+    expect($('.govuk-summary-card')).toHaveLength(2)
+    expect($('main').text()).not.toContain('Other details')
+    expect($('main').text()).not.toContain('Tank name')
+    expect($('main').text()).not.toContain('Tank 1')
+    expect(journey.state.tanks[0].tankName).toBe('Rainwater tank')
+  })
+
   it('formats each repeated currency answer on Check answers and print without changing saved numbers', () => {
-    const journey = createSummary({ format: 'currency:gbp' })
+    const journey = createSummary({ format: 'currency:gbp', withHiddenFields: true })
     journey.state.reservoirs[1].capacity = 200000.5
     const savedState = structuredClone(journey.state)
     const printed = renderPrint(
@@ -168,6 +218,7 @@ describe('repeat answers on Check answers with the forms engine', () => {
         .map((_, row) => $(row).find('dd').text().trim())
         .get()
       expect(amounts).toEqual(['£0.00', '£200,000.50'])
+      expect($('main').text()).not.toContain('Internal answer')
     }
     expect(journey.state).toEqual(savedState)
   })
