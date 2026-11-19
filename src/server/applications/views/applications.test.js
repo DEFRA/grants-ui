@@ -4,7 +4,7 @@ import { buildApplicationsViewModel } from '../applications.view-model.js'
 import { context } from '~/src/config/nunjucks/context/context.js'
 
 const render = createPageRenderer(import.meta.url, 'applications.njk', {
-  pageTitle: 'Your Water Management grant applications',
+  pageTitle: 'Manage your Water Management grant applications',
   schemeName: 'Water Management grant',
   supportEmail: 'ruralpayments@defra.gov.uk',
   canStartApplication: true,
@@ -32,7 +32,7 @@ const render = createPageRenderer(import.meta.url, 'applications.njk', {
 
 it('renders separate creation and submission dates and coloured status tags', () => {
   const $ = render()
-  expect($('main h1').text().trim()).toBe('Your Water Management grant applications')
+  expect($('main h1').text().trim()).toBe('Manage your Water Management grant applications')
   expect(
     $('thead th')
       .map((_, cell) => $(cell).text().trim())
@@ -48,6 +48,33 @@ it('renders separate creation and submission dates and coloured status tags', ()
   expect(submitted.find('.govuk-tag--green').text().trim()).toBe('Submitted')
   expect(submitted.find('a').attr('href')).toBe('/test-grant/print-submitted-application?ref=REF-SUBMITTED')
   expect(submitted.find('a').attr('target')).toBeUndefined()
+})
+
+describe('applications page configuration', () => {
+  const request = { params: { slug: 'test-grant' }, path: '/test-grant/applications', app: {} }
+
+  it.each([undefined, {}, { title: '', content: '' }, { title: ' \n ', content: { html: ' \n ' } }])(
+    'uses the default heading and omits content when the configuration is blank (%j)',
+    (applicationsPage) => {
+      const definition = { name: 'Test grant', metadata: { applicationsPage } }
+      const $ = render(buildApplicationsViewModel(request, definition, []))
+
+      expect($('main h1').text()).toBe('Manage your Test grant applications')
+      expect($('main h1').next()).toHaveLength(0)
+    }
+  )
+
+  const html = '<p class="govuk-body"><a href="/{{SLUG}}/help">Get help</a></p>{{DEFRASUPPORTDETAILS}}'
+
+  it.each([html, { html }])('renders configured HTML below the heading (%j)', (content) => {
+    const definition = { metadata: { applicationsPage: { title: '  Applications <overview>  ', content } } }
+    const $ = render(buildApplicationsViewModel(request, definition, []))
+    const heading = $('main h1')
+
+    expect(heading.text()).toBe('Applications <overview>')
+    expect(heading.next('p').find('a').attr('href')).toBe('/test-grant/help')
+    expect(heading.siblings('.govuk-details')).toHaveLength(1)
+  })
 })
 
 it('reuses expandable RPA contact details and retains the protected creation form', () => {
