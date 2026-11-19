@@ -310,13 +310,37 @@ describe('repeat answers on Check answers with the forms engine', () => {
   it('keeps user-typed backslashes before escaped characters on Check answers and print', () => {
     const journey = createSummary()
     journey.state.reservoirs[0].name = 'Tom\\&Jerry \\<b>pond'
+    journey.state.reservoirs[0].notes = 'Fish \\& chips\\<i>'
 
     for (const $ of renderBoth(journey)) {
       const card = $('.govuk-summary-card').first()
-      expect(card.find('b')).toHaveLength(0)
+      expect(card.find('b, i')).toHaveLength(0)
       expect(card.text()).toContain('Tom\\&Jerry \\<b>pond')
+      expect(card.text()).toContain('Fish \\& chips\\<i>')
       expect(card.text()).not.toContain('&amp;')
       expect(card.text()).not.toContain('&lt;')
+    }
+  })
+
+  it('shows a blank single-line repeat answer as Not provided', () => {
+    const journey = createSummary()
+    journey.state.reservoirs[1].name = ''
+    const $ = journey.view()
+    const nameRow = $('.govuk-summary-card')
+      .eq(1)
+      .find('.govuk-summary-list__row')
+      .filter((_, row) => $(row).find('dt').text().trim() === 'Reservoir name')
+    expect(normalise(nameRow.find('dd').text())).toBe('Not provided')
+  })
+
+  it('shows single-line repeat answers verbatim without Markdown links or escapes', () => {
+    const journey = createSummary()
+    journey.state.reservoirs[0].name = 'See https://example.com/a_b (v1.2) *draft*'
+
+    for (const $ of renderBoth(journey)) {
+      const card = $('.govuk-summary-card').first()
+      expect(card.find('dd a')).toHaveLength(0)
+      expect(card.text()).toContain('See https://example.com/a_b (v1.2) *draft*')
     }
   })
 

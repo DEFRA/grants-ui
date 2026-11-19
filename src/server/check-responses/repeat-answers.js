@@ -1,4 +1,11 @@
 import { RepeatPageController } from '@defra/forms-engine-plugin/controllers/RepeatPageController.js'
+import { ListFormComponent } from '@defra/forms-engine-plugin/engine/components/ListFormComponent.js'
+import {
+  EastingNorthingField,
+  LatLongField,
+  MultilineTextField,
+  UkAddressField
+} from '@defra/forms-engine-plugin/components'
 import { ItemField } from '@defra/forms-engine-plugin/engine/models/SummaryViewModel.js'
 import { evaluateTemplate, redirectPath } from '@defra/forms-engine-plugin/engine/helpers.js'
 import { getAnswerMarkdown, markdown } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
@@ -9,10 +16,28 @@ import { getNumberFieldInputs } from '../common/helpers/state/persist-formatting
 
 const NOT_PROVIDED = 'Not provided'
 
+// The same field types the engine's getAnswer renders through Markdown
+const MULTI_LINE_FIELDS = [ListFormComponent, MultilineTextField, UkAddressField, EastingNorthingField, LatLongField]
+
+function renderAnswerValue(field, itemState) {
+  if (!MULTI_LINE_FIELDS.some((Type) => field instanceof Type)) {
+    return { text: field.getDisplayStringFromState(itemState) || NOT_PROVIDED }
+  }
+  return { html: renderAnswerHtml(getAnswerMarkdown(field, itemState)) || NOT_PROVIDED }
+}
+
 function renderAnswerHtml(answerMarkdown) {
   // A user-typed backslash before an entity added here would make Markdown consume the `&`;
   // doubling an odd run of backslashes keeps them literal.
-  const escaped = escapeText(answerMarkdown).replace(/\\+&/g, (run) => (run.length % 2 ? run : `\\${run}`))
+  let escaped = ''
+  let backslashes = 0
+  for (const char of escapeText(answerMarkdown)) {
+    if (char === '&' && backslashes % 2) {
+      escaped += '\\'
+    }
+    backslashes = char === '\\' ? backslashes + 1 : 0
+    escaped += char
+  }
   return markdown.parse(escaped, { async: false }).trim()
 }
 
@@ -73,11 +98,7 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
                   : rawValue
               const formatted = formatNumberAnswer(component, displayValue)
               const value =
-                formatted === undefined
-                  ? {
-                      html: renderAnswerHtml(getAnswerMarkdown(field, itemState)) || NOT_PROVIDED
-                    }
-                  : { text: formatted || NOT_PROVIDED }
+                formatted === undefined ? renderAnswerValue(field, itemState) : { text: formatted || NOT_PROVIDED }
               return {
                 key: { text: evaluateTemplate(answer.title, itemContext) },
                 value: { ...value, classes: 'app-prose-scope' }
