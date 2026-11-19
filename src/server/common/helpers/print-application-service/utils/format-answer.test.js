@@ -1,6 +1,24 @@
 import { formatAnswer } from './format-answer.js'
 
 describe('formatAnswer', () => {
+  describe('DeclarationField', () => {
+    const labelled = {
+      type: 'DeclarationField',
+      name: 'understandNoGuarantee',
+      title: 'Understand no guarantee',
+      options: { declarationConfirmationLabel: 'I understand there is no guarantee' }
+    }
+    const unlabelled = { type: 'DeclarationField', name: 'acceptTerms', title: 'Accept terms' }
+
+    test.each([
+      ['configured confirmation label', labelled, true, 'I understand there is no guarantee'],
+      ['forms engine default label', unlabelled, true, 'I understand and agree'],
+      ['forms engine not provided text', labelled, false, 'Not provided']
+    ])('should return the %s', (_case, component, value, expected) => {
+      expect(formatAnswer(component, value)).toBe(expected)
+    })
+  })
+
   describe('null and undefined values', () => {
     test.each([null, undefined])('should return empty string for %s value', (value) => {
       expect(formatAnswer({ type: 'TextField' }, value)).toBe('')
