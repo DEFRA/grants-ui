@@ -115,14 +115,14 @@ Feature: Reusable Components
         Then the user should be at URL "number-field-validation"
         And should see heading "NumberField with validation"
         And the page is analyzed for accessibility
-        When the user enters "100000" for "Enter amount"
+        When the user enters "100,000" for "Enter amount"
         And continues
 
         # number-field-routing
         Then the user should be at URL "number-field-routing"
         And should see heading "NumberField with conditional routing"
         And the page is analyzed for accessibility
-        When the user enters "50000" for "Enter amount that may divert the journey"
+        When the user enters "50,000" for "Enter amount that may divert the journey"
         And continues
 
         # date-parts-field
@@ -207,7 +207,7 @@ Feature: Reusable Components
             | FIELD               | VALUE               |
             | Project name        | Test project        |
             | Project description | Project description |
-            | Project budget      | 50000               |
+            | Project budget      | 50,000              |
         And continues
 
         # repeat-page (item entry)
@@ -217,7 +217,7 @@ Feature: Reusable Components
         When the user enters the following
             | FIELD     | VALUE             |
             | Item name | First repeat item |
-            | Amount    | 1000              |
+            | Amount    | 1,000             |
         And continues
 
         # repeat-page (list summary)
@@ -232,7 +232,7 @@ Feature: Reusable Components
         When the user enters the following
             | FIELD     | VALUE              |
             | Item name | Second repeat item |
-            | Amount    | 2000               |
+            | Amount    | 2,000              |
         And continues
 
         # repeat-page (list summary)
