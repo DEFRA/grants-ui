@@ -9,6 +9,13 @@ import { getNumberFieldInputs } from '../common/helpers/state/persist-formatting
 
 const NOT_PROVIDED = 'Not provided'
 
+function renderAnswerHtml(answerMarkdown) {
+  // A user-typed backslash before an entity added here would make Markdown consume the `&`;
+  // doubling an odd run of backslashes keeps them literal.
+  const escaped = escapeText(answerMarkdown).replace(/\\+&/g, (run) => (run.length % 2 ? run : `\\${run}`))
+  return markdown.parse(escaped, { async: false }).trim()
+}
+
 /**
  * Associates each repeat answer row with cards built from relevant item state.
  * Run while the engine's detail items and summary rows still share their indexes.
@@ -68,9 +75,7 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
               const value =
                 formatted === undefined
                   ? {
-                      html:
-                        markdown.parse(escapeText(getAnswerMarkdown(field, itemState)), { async: false }).trim() ||
-                        NOT_PROVIDED
+                      html: renderAnswerHtml(getAnswerMarkdown(field, itemState)) || NOT_PROVIDED
                     }
                   : { text: formatted || NOT_PROVIDED }
               return {

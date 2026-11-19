@@ -307,6 +307,19 @@ describe('repeat answers on Check answers with the forms engine', () => {
     }
   })
 
+  it('keeps user-typed backslashes before escaped characters on Check answers and print', () => {
+    const journey = createSummary()
+    journey.state.reservoirs[0].name = 'Tom\\&Jerry \\<b>pond'
+
+    for (const $ of renderBoth(journey)) {
+      const card = $('.govuk-summary-card').first()
+      expect(card.find('b')).toHaveLength(0)
+      expect(card.text()).toContain('Tom\\&Jerry \\<b>pond')
+      expect(card.text()).not.toContain('&amp;')
+      expect(card.text()).not.toContain('&lt;')
+    }
+  })
+
   it('escapes injected markup in repeat answers on Check answers and print', () => {
     const journey = createSummary()
     journey.state.reservoirs[0].name = HTML_INJECTION
