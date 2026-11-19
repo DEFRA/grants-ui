@@ -3,6 +3,7 @@ import { ItemField } from '@defra/forms-engine-plugin/engine/models/SummaryViewM
 import { evaluateTemplate, redirectPath } from '@defra/forms-engine-plugin/engine/helpers.js'
 import { getAnswerMarkdown, markdown } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
 import escapeHtml from 'lodash/escape.js'
+import { shouldDisplayAnswer } from '../common/helpers/answer-components.js'
 import { formatNumberAnswer, getNumberFormatter } from '../common/helpers/number-formatter.js'
 import { getNumberDisplayValue } from '../common/helpers/number-display-value.js'
 import { getNumberFieldInputs } from '../common/helpers/state/persist-formatting.js'
@@ -24,6 +25,12 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
       const { page } = item
       const row = viewModel.checkAnswers?.[sectionIndex]?.summaryList?.rows[itemIndex]
       if (!(page instanceof RepeatPageController) || !context.relevantPages.includes(page) || !row) {
+        return
+      }
+
+      const fields = page.collection.fields.filter(shouldDisplayAnswer)
+      if (page.collection.fields.length && !fields.length) {
+        cardsByRow.set(row, [])
         return
       }
 
@@ -54,7 +61,7 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
                     ]
               }
             },
-            rows: page.collection.fields.map((field) => {
+            rows: fields.map((field) => {
               const answer = ItemField(page, itemState, field, { path: page.path })
               const component = /** @type {{ type: string, options?: { format?: string } } | undefined} */ (
                 context.componentDefMap.get(field.name)

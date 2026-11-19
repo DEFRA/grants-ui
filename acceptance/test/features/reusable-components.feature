@@ -104,6 +104,13 @@ Feature: Reusable Components
         And the page is analyzed for accessibility
         When the user continues
 
+        # declaration-field
+        Then the user should be at URL "declaration-field"
+        And should see heading "DeclarationField Example"
+        And the page is analyzed for accessibility
+        When the user selects "I confirm I have read and understood this guidance"
+        And continues
+
         # number-field-validation
         Then the user should be at URL "number-field-validation"
         And should see heading "NumberField with validation"
@@ -248,37 +255,38 @@ Feature: Reusable Components
         # summary
         Then the user should be at URL "summary"
         And should see heading "Check your answers"
+        And should not see an answer labelled "Hidden field"
         And the page is analyzed for accessibility
         Then the user should see the following answers
-            | QUESTION                   | ANSWER                                |
-            | Yes or No                  | Yes                                   |
-            | Country                    | England                               |
-            | Radio option               | Option one                            |
-            | Checkbox options           | Option two                            |
-            |                            | Option three                          |
-            | Enter amount               | £100,000                              |
-            | Routing amount             | £50,000                               |
-            | Date                       | {DATE IN A WEEK}                      |
-            | Month and year             | August 2025                           |
-            | Select option              | Option three                          |
-            | Description                | Lorem ipsum                           |
-            | Email address              | test@example.com                      |
-            | Telephone number           | 01234 567890                          |
-            | Address                    | 1 Example Street                      |
-            |                            | Exampleton                            |
-            |                            | EX1 1EX                               |
-            | Easting and northing       | Easting: 530000                       |
-            |                            | Northing: 180000                      |
-            | OS grid reference          | ST 678 678                            |
-            | National Grid field number | NG 1234 5678                          |
-            | Latitude and longitude     | Latitude: 51.51945                    |
-            |                            | Longitude: -0.127758                  |
-            | GeospatialField            | Added 1 location                      |
-            | Hidden field               | Not provided                          |
-            | Project name               | Test project                          |
-            | Project description        | Project description                   |
-            | Project budget             | £50,000.50                            |
-            | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774 |
+            | QUESTION                   | ANSWER                                             |
+            | Yes or No                  | Yes                                                |
+            | Country                    | England                                            |
+            | Radio option               | Option one                                         |
+            | Checkbox options           | Option two                                         |
+            |                            | Option three                                       |
+            | Guidance declaration       | I confirm I have read and understood this guidance |
+            | Enter amount               | £100,000                                           |
+            | Routing amount             | £50,000                                            |
+            | Date                       | {DATE IN A WEEK}                                   |
+            | Month and year             | August 2025                                        |
+            | Select option              | Option three                                       |
+            | Description                | Lorem ipsum                                        |
+            | Email address              | test@example.com                                   |
+            | Telephone number           | 01234 567890                                       |
+            | Address                    | 1 Example Street                                   |
+            |                            | Exampleton                                         |
+            |                            | EX1 1EX                                            |
+            | Easting and northing       | Easting: 530000                                    |
+            |                            | Northing: 180000                                   |
+            | OS grid reference          | ST 678 678                                         |
+            | National Grid field number | NG 1234 5678                                       |
+            | Latitude and longitude     | Latitude: 51.51945                                 |
+            |                            | Longitude: -0.127758                               |
+            | GeospatialField            | Added 1 location                                   |
+            | Project name               | Test project                                       |
+            | Project description        | Project description                                |
+            | Project budget             | £50,000.50                                         |
+            | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774              |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER             |
             | Item 1 | Item name | First repeat item  |
@@ -297,35 +305,35 @@ Feature: Reusable Components
         Then the user should be at URL "summary"
         And the page is analyzed for accessibility
         Then the user should see the following answers
-            | QUESTION                   | ANSWER                                |
-            | Yes or No                  | Yes                                   |
-            | Country                    | Wales                                 |
-            | Radio option               | Option one                            |
-            | Checkbox options           | Option two                            |
-            |                            | Option three                          |
-            | Enter amount               | £100,000                              |
-            | Routing amount             | £50,000                               |
-            | Date                       | {DATE IN A WEEK}                      |
-            | Month and year             | August 2025                           |
-            | Select option              | Option three                          |
-            | Description                | Lorem ipsum                           |
-            | Email address              | test@example.com                      |
-            | Telephone number           | 01234 567890                          |
-            | Address                    | 1 Example Street                      |
-            |                            | Exampleton                            |
-            |                            | EX1 1EX                               |
-            | Easting and northing       | Easting: 530000                       |
-            |                            | Northing: 180000                      |
-            | OS grid reference          | ST 678 678                            |
-            | National Grid field number | NG 1234 5678                          |
-            | Latitude and longitude     | Latitude: 51.51945                    |
-            |                            | Longitude: -0.127758                  |
-            | GeospatialField            | Added 1 location                      |
-            | Hidden field               | Not provided                          |
-            | Project name               | Test project                          |
-            | Project description        | Project description                   |
-            | Project budget             | £50,000.50                            |
-            | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774 |
+            | QUESTION                   | ANSWER                                             |
+            | Yes or No                  | Yes                                                |
+            | Country                    | Wales                                              |
+            | Radio option               | Option one                                         |
+            | Checkbox options           | Option two                                         |
+            |                            | Option three                                       |
+            | Guidance declaration       | I confirm I have read and understood this guidance |
+            | Enter amount               | £100,000                                           |
+            | Routing amount             | £50,000                                            |
+            | Date                       | {DATE IN A WEEK}                                   |
+            | Month and year             | August 2025                                        |
+            | Select option              | Option three                                       |
+            | Description                | Lorem ipsum                                        |
+            | Email address              | test@example.com                                   |
+            | Telephone number           | 01234 567890                                       |
+            | Address                    | 1 Example Street                                   |
+            |                            | Exampleton                                         |
+            |                            | EX1 1EX                                            |
+            | Easting and northing       | Easting: 530000                                    |
+            |                            | Northing: 180000                                   |
+            | OS grid reference          | ST 678 678                                         |
+            | National Grid field number | NG 1234 5678                                       |
+            | Latitude and longitude     | Latitude: 51.51945                                 |
+            |                            | Longitude: -0.127758                               |
+            | GeospatialField            | Added 1 location                                   |
+            | Project name               | Test project                                       |
+            | Project description        | Project description                                |
+            | Project budget             | £50,000.50                                         |
+            | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774              |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER             |
             | Item 1 | Item name | First repeat item  |
@@ -352,44 +360,46 @@ Feature: Reusable Components
         # print-submitted-application
         Given the user navigates to "/example-grant-with-auth/print-submitted-application"
         Then the user should see heading "Example grant with auth application"
+        And should not see an answer labelled "Hidden field"
         And the page is analyzed for accessibility
         And the user should not see a notification banner
         Then the user should see the following submitted application details
-            | Application number         | {REFERENCE NUMBER}                    |
-            | Applicant details          |                                       |
-            | Title                      | {ANY}                                 |
-            | First name                 | {ANY}                                 |
-            | Middle name                | {ANY}                                 |
-            | Last name                  | {ANY}                                 |
-            | Business name              | {ANY}                                 |
-            | Address 1                  | {ANY}                                 |
-            | Address 2                  | {ANY}                                 |
-            | City                       | {ANY}                                 |
-            | Postcode                   | {ANY}                                 |
-            | SBI number                 | {ANY}                                 |
-            | Email address              | {ANY}                                 |
-            | Submitted answers          |                                       |
-            | Yes or No                  | Yes                                   |
-            | Country                    | Wales                                 |
-            | Radio option               | Option one                            |
-            | Checkbox options           | Option two, Option three              |
-            | Enter amount               | £100,000                              |
-            | Routing amount             | £50,000                               |
-            | Date                       | {DATE IN A WEEK}                      |
-            | Month and year             | August 2025                           |
-            | Select option              | Option three                          |
-            | Description                | Lorem ipsum                           |
-            | Email address              | test@example.com                      |
-            | Telephone number           | 01234 567890                          |
-            | Address                    | 1 Example Street, Exampleton, EX1 1EX |
-            | Easting and northing       | 530000, 180000                        |
-            | OS grid reference          | ST 678 678                            |
-            | National Grid field number | NG 1234 5678                          |
-            | Latitude and longitude     | 51.51945, -0.127758                   |
-            | Project name               | Test project                          |
-            | Project description        | Project description                   |
-            | Project budget             | £50,000.50                            |
-            | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774 |
+            | Application number         | {REFERENCE NUMBER}                                 |
+            | Applicant details          |                                                    |
+            | Title                      | {ANY}                                              |
+            | First name                 | {ANY}                                              |
+            | Middle name                | {ANY}                                              |
+            | Last name                  | {ANY}                                              |
+            | Business name              | {ANY}                                              |
+            | Address 1                  | {ANY}                                              |
+            | Address 2                  | {ANY}                                              |
+            | City                       | {ANY}                                              |
+            | Postcode                   | {ANY}                                              |
+            | SBI number                 | {ANY}                                              |
+            | Email address              | {ANY}                                              |
+            | Submitted answers          |                                                    |
+            | Yes or No                  | Yes                                                |
+            | Country                    | Wales                                              |
+            | Radio option               | Option one                                         |
+            | Checkbox options           | Option two, Option three                           |
+            | Guidance declaration       | I confirm I have read and understood this guidance |
+            | Enter amount               | £100,000                                           |
+            | Routing amount             | £50,000                                            |
+            | Date                       | {DATE IN A WEEK}                                   |
+            | Month and year             | August 2025                                        |
+            | Select option              | Option three                                       |
+            | Description                | Lorem ipsum                                        |
+            | Email address              | test@example.com                                   |
+            | Telephone number           | 01234 567890                                       |
+            | Address                    | 1 Example Street, Exampleton, EX1 1EX              |
+            | Easting and northing       | 530000, 180000                                     |
+            | OS grid reference          | ST 678 678                                         |
+            | National Grid field number | NG 1234 5678                                       |
+            | Latitude and longitude     | 51.51945, -0.127758                                |
+            | Project name               | Test project                                       |
+            | Project description        | Project description                                |
+            | Project budget             | £50,000.50                                         |
+            | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774              |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER             |
             | Item 1 | Item name | First repeat item  |

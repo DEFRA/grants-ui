@@ -240,6 +240,48 @@ describe('print-submitted-application.html view', () => {
       }
     }
 
+    it.each([true, false])('hides populated and unanswered hidden fields with task grouping=%s', (hasTaskList) => {
+      const saved = repeatParams(hasTaskList)
+      const hiddenFields = [
+        { type: 'HiddenField', name: 'secret', title: 'Hidden label' },
+        { type: 'HiddenField', name: 'blank', title: 'Blank hidden label' }
+      ]
+      saved.definition.pages.find((page) => page.path === '/before').components.push(...hiddenFields)
+      saved.definition.pages.find((page) => page.path === '/reservoirs').components.push(...hiddenFields)
+      saved.answers.secret = 'Top-level hidden value'
+      saved.answers.blank = null
+      saved.answers.reservoirItems[0].secret = 'First hidden item value'
+      saved.answers.reservoirItems[0].blank = null
+      saved.answers.reservoirItems[1].secret = 'Second hidden item value'
+      const originalAnswers = structuredClone(saved.answers)
+
+      const $ = renderPage(buildPrintViewModel(saved))
+      const content = normalise($('main').text())
+      expect(content).not.toContain('Hidden label')
+      expect(content).not.toContain('Blank hidden label')
+      expect(content).not.toContain('Top-level hidden value')
+      expect(content).not.toContain('First hidden item value')
+      expect(content).not.toContain('Second hidden item value')
+      expect(content).toContain('First saved answer')
+      expect(content).toContain('Reservoir name North reservoir')
+      expect($('.govuk-summary-card')).toHaveLength(3)
+      expect($('.govuk-summary-card').first().find('.govuk-summary-list__row')).toHaveLength(6)
+      expect(saved.answers).toEqual(originalAnswers)
+    })
+
+    it('omits hidden-only ordinary pages and repeat cards', () => {
+      const saved = repeatParams(false)
+      saved.definition.pages.find((page) => page.path === '/before').components[0].type = 'HiddenField'
+      saved.definition.pages.find((page) => page.path === '/tanks').components[0].type = 'HiddenField'
+
+      const $ = renderPage(buildPrintViewModel(saved))
+      expect($('.govuk-summary-card')).toHaveLength(2)
+      expect($('main').text()).not.toContain('First saved answer')
+      expect($('main').text()).not.toContain('Tank 1')
+      expect($('main').text()).not.toContain('Rainwater tank')
+      expect($('main').text()).toContain('Last saved answer')
+    })
+
     it('excludes notification banners from repeat item answers even when unanswered fields are included', () => {
       const saved = repeatParams()
       saved.definition.pages

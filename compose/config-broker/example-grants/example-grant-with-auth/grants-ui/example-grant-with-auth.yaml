@@ -468,6 +468,27 @@ pages:
         schema: {}
     condition: f7eaaeb1-2c3d-4e5f-6a7b-8c9daebfc0d1
     id: d5c8ecf9-0a1b-2c3d-4e5f-6a7b8c9daebf
+  - title: DeclarationField Example
+    path: /declaration-field
+    components:
+      - name: declarationFieldInfo
+        title: Html
+        type: Html
+        content: |
+          <p class="govuk-body">This is an example of a DeclarationField component. It is a single checkbox, usually placed at the bottom of a page of guidance, that the applicant must tick to confirm they have read and understood it.</p>
+          <p class="govuk-body">The declarationConfirmationLabel is shown as the checkbox text, and as the answer on Check your answers and the View / Print page.</p>
+        id: cf53d6e9-dd06-4b2c-a194-fe07caaeab41
+        options: {}
+        schema: {}
+      - name: declarationField
+        id: 9b0f272a-2a78-4ad9-8568-dab30412698a
+        title: Confirm
+        type: DeclarationField
+        options:
+          required: true
+          declarationConfirmationLabel: I confirm I have read and understood this guidance
+        shortDescription: Guidance declaration
+    id: a5803e91-c55d-4c9b-acc7-b16783a8e9bb
   - title: NumberField with validation
     path: /number-field-validation
     components:

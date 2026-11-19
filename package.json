@@ -177,7 +177,7 @@
     "prettier-plugin-jinja-template": "2.2.0",
     "sass-embedded": "1.107.0",
     "sass-loader": "17.1.0",
-    "snyk": "1.1308.3",
+    "snyk": "1.1309.0",
     "source-map-loader": "5.0.0",
     "string-width": "8.3.0",
     "stylelint": "17.16.0",

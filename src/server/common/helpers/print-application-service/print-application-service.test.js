@@ -251,6 +251,31 @@ describe('print-application-service', () => {
       expect(result.sections).toEqual([])
     })
 
+    describe('declarations', () => {
+      const definition = {
+        pages: [
+          {
+            title: 'Estimated cost',
+            components: [
+              {
+                type: 'DeclarationField',
+                name: 'understandNoGuarantee',
+                title: 'Understand no guaranteed success',
+                options: { declarationConfirmationLabel: 'I understand there is no guarantee' }
+              }
+            ]
+          }
+        ]
+      }
+      test('shows the confirmation label instead of the saved boolean', () => {
+        const result = buildPrintViewModel({ ...baseParams, definition, answers: { understandNoGuarantee: true } })
+
+        expect(result.sections[0].questions).toEqual([
+          { label: 'Understand no guaranteed success', answer: 'I understand there is no guarantee' }
+        ])
+      })
+    })
+
     describe('saved additional answers', () => {
       const definition = {
         sections: [{ id: 'costs', title: 'Project costs' }],
