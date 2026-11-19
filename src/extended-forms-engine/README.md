@@ -43,6 +43,16 @@ and installed npm packages, but must not import grants-ui sources or repository-
 must resolve within this module or the installed GOV.UK templates; Sass dependencies must remain within this module or
 installed packages. Isolation enables later extraction without introducing compatibility copies or re-export shims.
 
+ESLint enforces JavaScript imports for all module sources, tests and helpers. Use ESM imports with literal paths;
+grants-ui aliases, application/root-file imports, computed imports, CommonJS loaders, loader factories and URL imports
+are prohibited.
+
+`tools/extended-forms-engine-isolation.test.js` checks the real ESLint policy and recursively validates Nunjucks
+dependencies, including conditional imports and `ignore missing`. Template names must be literal strings naming existing
+files within the approved roots, with no traversal or symlink escape. It also compiles every module Sass entry, checks its
+loaded dependencies and rejects residual CSS `@import` rules. Positive and negative fixtures guard each policy.
+These checks enforce source dependencies; they are not a sandbox for hostile code.
+
 ## Verification
 
 From the repository root:
@@ -56,6 +66,16 @@ npx vitest run --coverage.enabled=false \
   src/server/home/views/home.test.js \
   src/server/common/map/views/map-select-parcel.template.test.js
 ```
+
+Run the dependency-policy checks with:
+
+```sh
+npx vitest run --coverage.enabled=false tools/extended-forms-engine-isolation.test.js
+npx eslint src/extended-forms-engine
+```
+
+The policy test also runs through the existing `tools/**/*.test.js` discovery in `npm test`; no separate test
+configuration is needed.
 
 The existing Vitest configuration discovers the colocated tests. Production templates and styles were relocated without
 implementation changes; rendering and application CSS must remain unchanged by relocation-only work.

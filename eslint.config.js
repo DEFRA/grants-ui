@@ -2,6 +2,11 @@ import neostandard from 'neostandard'
 import prettier from 'eslint-config-prettier'
 import vitestPlugin from '@vitest/eslint-plugin'
 import grantsUiPlugin from './.eslint/index.js'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url))
+const moduleRoot = path.join(projectRoot, 'src/extended-forms-engine')
 
 export default [
   {
@@ -80,6 +85,39 @@ export default [
       'vitest/no-mocks-import': 'off',
       'vitest/no-conditional-expect': 'off',
       'vitest/no-unneeded-async-expect-function': 'off'
+    }
+  },
+  {
+    files: ['src/extended-forms-engine/**/*.{js,mjs,cjs}'],
+    settings: {
+      n: {
+        resolverConfig: {
+          alias: { '~': projectRoot },
+          symlinks: false
+        }
+      }
+    },
+    rules: {
+      'n/no-restricted-import': [
+        'error',
+        [
+          {
+            name: ['/**', '!/**/node_modules/**', `!${moduleRoot}/**`, '~', '~/**', 'module', 'node:module'],
+            message: 'Keep extended-forms-engine independent of application sources.'
+          }
+        ]
+      ],
+      'no-restricted-syntax': [
+        'error',
+        { selector: 'ImportExpression[source.type!="Literal"]', message: 'Use literal module imports.' },
+        { selector: 'Identifier[name="require"]', message: 'Use ES module imports.' },
+        { selector: 'MemberExpression[computed=true][property.value="require"]', message: 'Use ES module imports.' },
+        {
+          selector:
+            ':matches(ImportDeclaration,ExportNamedDeclaration,ExportAllDeclaration,ImportExpression)[source.value=/^(file|data|https?):/]',
+          message: 'Use relative module imports or npm packages.'
+        }
+      ]
     }
   }
 ]
