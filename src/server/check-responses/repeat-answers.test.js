@@ -90,7 +90,9 @@ function createSummary({ sections = true, force = false, format } = {}) {
           components: [
             { type: 'TextField', name: 'tankName', title: 'Tank name' },
             { type: 'CheckboxesField', name: 'tankLinings', title: 'Tank linings', list: 'linings' },
-            { type: 'FileUploadField', name: 'tankEvidence', title: 'Tank evidence', options: {}, schema: {} }
+            { type: 'FileUploadField', name: 'tankEvidence', title: 'Tank evidence', options: {}, schema: {} },
+            { type: 'UkAddressField', name: 'tankAddress', title: 'Tank address', options: { required: false } },
+            { type: 'EastingNorthingField', name: 'tankLocation', title: 'Tank location', options: { required: false } }
           ]
         },
         { path: '/summary', title: 'Check your answers', controller: 'CheckResponsesPageController', components: [] }
@@ -222,7 +224,7 @@ describe('repeat answers on Check answers with the forms engine', () => {
         .find('dt')
         .map((_, label) => $(label).text().trim())
         .get()
-    ).toEqual(['Tank name', 'Tank linings', 'Tank evidence'])
+    ).toEqual(['Tank name', 'Tank linings', 'Tank evidence', 'Tank address (optional)', 'Tank location (optional)'])
     expect(cards.eq(2).text()).toContain('Rainwater tank')
     expect(cards.first().find('.govuk-summary-list__row').last().find('dd').html()).toMatch(
       /First line<br>\s*Second line/
@@ -377,6 +379,35 @@ describe('repeat answers on Check answers with the forms engine', () => {
     expect(download).toHaveLength(1)
     expect(download.text()).toBe('Tank plan.pdf')
     expect(download.attr('href')).toMatch(new RegExp(`/file-download/${fileId}$`))
+  })
+
+  it('shows each address part and coordinate on its own line, exactly as entered', () => {
+    const journey = createSummary()
+    Object.assign(journey.state.tanks[0], {
+      tankAddress__addressLine1: String.raw`Tom\&Jerry's <b>Farm`,
+      tankAddress__town: 'Penrith',
+      tankAddress__postcode: 'CA10 1AA',
+      tankLocation__easting: 351000,
+      tankLocation__northing: 530000
+    })
+
+    const $ = journey.view()
+    const answer = (label) =>
+      $('.govuk-summary-card')
+        .last()
+        .find('dt')
+        .filter((_, key) => $(key).text().trim() === label)
+        .next('dd')
+    expect(answer('Tank address (optional)').find('b')).toHaveLength(0)
+    expect(answer('Tank address (optional)').html().trim().split('<br>').map(normalise)).toEqual([
+      String.raw`Tom\&amp;Jerry's &lt;b&gt;Farm`,
+      'Penrith',
+      'CA10 1AA'
+    ])
+    expect(answer('Tank location (optional)').html().trim().split('<br>').map(normalise)).toEqual([
+      'Easting: 351000',
+      'Northing: 530000'
+    ])
   })
 
   it('shows a blank single-line repeat answer as Not provided', () => {
