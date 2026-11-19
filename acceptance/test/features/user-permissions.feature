@@ -72,6 +72,11 @@ Feature: User Permissions
         And should see heading "Checkbox follow-up"
         When the user continues
 
+        # declaration-field
+        Then the user should be at URL "declaration-field"
+        When the user selects "I confirm I have read and understood this guidance"
+        And continues
+
         # number-field-validation
         Then the user should be at URL "number-field-validation"
         And should see heading "NumberField with validation"
