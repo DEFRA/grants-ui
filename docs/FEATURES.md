@@ -114,6 +114,15 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Conditional navigation to terminal pages
 - **Example**: [Example Grant – Yes/No page (/yes-no-field)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – eligibility confirmation that can route to a terminal page
 
+#### DeclarationField
+
+- **Purpose**: Single checkbox the applicant ticks to confirm a statement
+- **Use Cases**: Confirming they have read guidance or meet conditions, usually at the bottom of an information page
+- **Features**:
+  - Configurable confirmation label (`declarationConfirmationLabel`), shown on Check answers and the View / Print page
+  - Required/optional configuration
+- **Example**: [Example Grant – Declaration page (/declaration-field)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – "I confirm I have read and understood this guidance" declaration under some guidance
+
 ### Numeric Components
 
 #### NumberField
