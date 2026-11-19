@@ -84,7 +84,7 @@ let installed = false
 /** @type {string} Where each data point is also written for local testing; empty when off */
 let debugLogFile = ''
 
-/** @type {Promise<unknown> | undefined} */
+/** @type {Promise<unknown> | null} */
 let debugLogDirReady
 
 /**
@@ -270,9 +270,9 @@ function finishCall(key, failed) {
  * @param {{ origin?: unknown, path?: string }} request - An undici request
  * @returns {URL | undefined}
  */
-function urlOfFetchRequest({ origin, path = '' }) {
+function urlOfFetchRequest({ origin, path: urlPath = '' }) {
   // Through a forward proxy, `origin` is the proxy and `path` the absolute target URL.
-  return parseUrl(path) ?? parseUrl(`${origin}${path}`)
+  return parseUrl(urlPath) ?? parseUrl(`${origin}${urlPath}`)
 }
 
 /**
@@ -333,7 +333,7 @@ export function installOutboundCallMetrics() {
   installed = true
   knownServices = buildKnownServices()
   debugLogFile = config.get('metricsDebugLogFile')
-  debugLogDirReady = undefined
+  debugLogDirReady = null
   for (const [name, subscriber] of Object.entries(subscribers)) {
     diagnosticsChannel.subscribe(name, subscriber)
   }
