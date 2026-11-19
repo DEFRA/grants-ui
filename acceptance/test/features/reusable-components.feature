@@ -215,9 +215,9 @@ Feature: Reusable Components
         And should see heading "RepeatPage Example"
         And the page is analyzed for accessibility
         When the user enters the following
-            | FIELD     | VALUE             |
-            | Item name | First repeat item |
-            | Amount    | 1000              |
+            | FIELD     | VALUE                  |
+            | Item name | Applicant's first item |
+            | Amount    | 1000                   |
         And continues
 
         # repeat-page (list summary)
@@ -230,9 +230,9 @@ Feature: Reusable Components
         Then the user should be at URL "repeat-page"
         And should see heading "RepeatPage Example"
         When the user enters the following
-            | FIELD     | VALUE              |
-            | Item name | Second repeat item |
-            | Amount    | 2000               |
+            | FIELD     | VALUE                   |
+            | Item name | Applicant's second item |
+            | Amount    | 2000                    |
         And continues
 
         # repeat-page (list summary)
@@ -288,11 +288,11 @@ Feature: Reusable Components
             | Project budget             | £50,000.00                                         |
             | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774              |
         And should see the following summary cards
-            | CARD   | QUESTION  | ANSWER             |
-            | Item 1 | Item name | First repeat item  |
-            |        | Amount    | £1,000.00          |
-            | Item 2 | Item name | Second repeat item |
-            |        | Amount    | £2,000.00          |
+            | CARD   | QUESTION  | ANSWER                  |
+            | Item 1 | Item name | Applicant's first item  |
+            |        | Amount    | £1,000.00               |
+            | Item 2 | Item name | Applicant's second item |
+            |        | Amount    | £2,000.00               |
         When the user chooses to change their summary answer to question "Country"
 
         # autocomplete-field
@@ -335,11 +335,11 @@ Feature: Reusable Components
             | Project budget             | £50,000.00                                         |
             | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774              |
         And should see the following summary cards
-            | CARD   | QUESTION  | ANSWER             |
-            | Item 1 | Item name | First repeat item  |
-            |        | Amount    | £1,000.00          |
-            | Item 2 | Item name | Second repeat item |
-            |        | Amount    | £2,000.00          |
+            | CARD   | QUESTION  | ANSWER                  |
+            | Item 1 | Item name | Applicant's first item  |
+            |        | Amount    | £1,000.00               |
+            | Item 2 | Item name | Applicant's second item |
+            |        | Amount    | £2,000.00               |
         When the user continues
 
         # declaration
@@ -401,11 +401,11 @@ Feature: Reusable Components
             | Project budget             | £50,000.00                                         |
             | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774              |
         And should see the following summary cards
-            | CARD   | QUESTION  | ANSWER             |
-            | Item 1 | Item name | First repeat item  |
-            |        | Amount    | £1,000.00          |
-            | Item 2 | Item name | Second repeat item |
-            |        | Amount    | £2,000.00          |
+            | CARD   | QUESTION  | ANSWER                  |
+            | Item 1 | Item name | Applicant's first item  |
+            |        | Amount    | £1,000.00               |
+            | Item 2 | Item name | Applicant's second item |
+            |        | Amount    | £2,000.00               |
         And should see the following configurable content
             | Configurable content                                                                                                                       |
             | This is an example of configurable content on the print page, defined via the configurablePrintContent property in the form YAML metadata. |
