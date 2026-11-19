@@ -1,8 +1,8 @@
-import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
+import { GrantsSummaryPageController } from '~/src/server/common/controllers/summary-page.controller.js'
 import { getConfirmationPath } from '~/src/server/common/helpers/form-slug-helper.js'
 import { withTaskContext } from '~/src/server/task-list/task-list.helper.js'
 
-export default class MapSubmissionPageController extends withTaskContext(SummaryPageController) {
+export default class MapSubmissionPageController extends withTaskContext(GrantsSummaryPageController) {
   makePostRouteHandler() {
     /**
      * @param {AnyFormRequest} request

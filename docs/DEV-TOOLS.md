@@ -296,8 +296,23 @@ Each step requires:
 | `multilineText` | Fills a textarea                                                                                                                                                                                                                               | `fieldName`, `value`                                                                                                                                   |
 | `dateParts`     | Fills day/month/year inputs with today                                                                                                                                                                                                         | `fieldName`, `offsetDays` (optional, shifts date)                                                                                                      |
 | `monthYear`     | Fills month/year inputs with current                                                                                                                                                                                                           | `fieldName`                                                                                                                                            |
-| `textFields`    | Fills multiple text inputs at once                                                                                                                                                                                                             | `fields` (object of `{ name: value }` pairs)                                                                                                           |
-| `clickLink`     | Clicks a link by its href suffix                                                                                                                                                                                                               | `linkSlug`                                                                                                                                             |
+| `textFields`    | Fills multiple text inputs at once; a named checkbox (e.g. a declaration on the same page) is ticked instead                                                                                                                                   | `fields` (object of `{ name: value }` pairs)                                                                                                           |
+| `clickLink`     | Clicks a link by its href suffix (also matches the link with the current `?ref=` on multiple-application grants)                                                                                                                               | `linkSlug`                                                                                                                                             |
+| `fields`        | Fills each component on a page that mixes field types, then submits once. If any entry cannot be filled, the step fails without submitting                                                                                                     | `fields` (array of entries, see below)                                                                                                                 |
+
+Each `fields` entry has a `type` and a `fieldName`. The `type` is `text` (fills an input or textarea with `value`), `checkbox` (leaves the box ticked, or unticked with `"checked": false`; `value` picks one box in a group) or one of the single-field step types above (`yesNo`, `radios`, `checkboxes`, `numberField`, `selectField`, `multilineText`, `dateParts`, `monthYear`), taking the same extra fields as that step:
+
+```json
+{
+  "slug": "application-declaration",
+  "name": "Complete declaration",
+  "type": "fields",
+  "fields": [
+    { "type": "text", "fieldName": "fullName", "value": "Test Applicant" },
+    { "type": "checkbox", "fieldName": "declaration", "checked": true }
+  ]
+}
+```
 
 ### Existing journeys
 

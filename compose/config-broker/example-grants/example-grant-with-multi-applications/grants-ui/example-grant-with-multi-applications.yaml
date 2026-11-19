@@ -3,6 +3,7 @@ name: Example Grant With Multiple Applications
 metadata:
   id: 53f61c80-64c1-492d-81be-4d031d5eead9
   surveyLabel: Example grant with multiple applications
+  phase: public-beta
   enabledInProd: false
   allowMultipleApplications: true
   grantRedirectRules:

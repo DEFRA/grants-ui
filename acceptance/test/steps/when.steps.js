@@ -25,6 +25,10 @@ When('(the user )clicks {string} for application {string}', async function (text
     .click()
 })
 
+When('(the user )clicks {string} in the service information bar', async function (text) {
+  await this.page.getByRole('region', { name: 'Service information' }).getByRole('link', { name: text }).click()
+})
+
 When('(the user )waits for {int} seconds', async function (seconds) {
   await this.page.waitForTimeout(seconds * 1000)
 })
