@@ -1,0 +1,63 @@
+name: Update PR review status
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - converted_to_draft
+      - review_requested
+      - review_request_removed
+      - closed
+  pull_request_review:
+    types:
+      - submitted
+      - edited
+      - dismissed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-review-status-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  update-review-status:
+    name: Update Grants Enablement Project
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out trusted workflow code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Create GitHub App token
+        id: project-token
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3
+        with:
+          client-id: ${{ vars.GRANTS_PROJECTS_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GRANTS_PROJECTS_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: grants-ui
+          permission-pull-requests: read
+          permission-organization-projects: write
+
+      - name: Update Review Status
+        run: node tools/update-pr-review-status.js
+        env:
+          GRANTS_ENABLEMENT_PROJECT_NUMBER: ${{ vars.GRANTS_ENABLEMENT_PROJECT_NUMBER || '25' }}
+          GRANTS_PROJECTS_TOKEN: ${{ steps.project-token.outputs.token }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_API_URL: ${{ github.api_url }}
