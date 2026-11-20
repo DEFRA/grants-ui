@@ -84,7 +84,7 @@ export const sessionSchema = {
       segment: {
         doc: 'Session cookie cache segment name',
         format: String,
-        default: 'auth'
+        default: 'session'
       },
       ttl: {
         doc: 'Session cookie cache ttl',

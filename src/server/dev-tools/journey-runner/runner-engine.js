@@ -157,15 +157,12 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Step handlers - one per `step.type`
+  // Field fillers - fill one component without submitting. Shared by the
+  // single-field step handlers and by the composite `fields` step.
   // ---------------------------------------------------------------------------
 
-  /** @type {Record<string, (step: JourneyStep) => void>} */
-  const stepHandlers = {
-    submitOnly() {
-      submitForm()
-    },
-
+  /** @type {Record<string, (entry: JourneyStep | FieldEntry) => void>} */
+  const fieldFillers = {
     yesNo(step) {
       // A step can name an `overrideKey` (e.g. "commonLand") so a run-level
       // option (`runJourney(stop, { commonLand: true })`, i.e.
@@ -180,7 +177,6 @@
         throw new Error(`${step.fieldName} radio not found`)
       }
       input.click()
-      submitForm()
     },
 
     radios(step) {
@@ -195,7 +191,6 @@
         throw new Error(`${step.fieldName} radio${valueSuffix} not found`)
       }
       radio.click()
-      submitForm()
     },
 
     checkboxes(step) {
@@ -204,7 +199,137 @@
         throw new Error(`${step.fieldName} checkbox not found`)
       }
       const toClick = step.selectAll ? Array.from(all) : [all[0]]
-      toClick.forEach((cb) => cb.click())
+      toClick.filter((cb) => !cb.checked).forEach((cb) => cb.click())
+    },
+
+    numberField(step) {
+      const input = document.querySelector(inputSelector(step.fieldName))
+      if (!input) {
+        throw new Error(`${step.fieldName} input not found`)
+      }
+      setInputValue(input, step.value)
+    },
+
+    selectField(step) {
+      const select = document.querySelector(`select[name="${step.fieldName}"]`)
+      if (!select) {
+        throw new Error(`${step.fieldName} select not found`)
+      }
+      const option = select.querySelector('option[value]:not([value=""])')
+      if (!option) {
+        throw new Error(`${step.fieldName} has no options`)
+      }
+      select.value = option.value
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    },
+
+    multilineText(step) {
+      const textarea = document.querySelector(`textarea[name="${step.fieldName}"]`)
+      if (!textarea) {
+        throw new Error(`${step.fieldName} textarea not found`)
+      }
+      setInputValue(textarea, step.value)
+    },
+
+    dateParts(step) {
+      const date = new Date()
+      if (step.offsetDays) {
+        date.setDate(date.getDate() + step.offsetDays)
+      }
+      const day = document.querySelector(inputSelector(`${step.fieldName}__day`))
+      const month = document.querySelector(inputSelector(`${step.fieldName}__month`))
+      const year = document.querySelector(inputSelector(`${step.fieldName}__year`))
+      if (!day || !month || !year) {
+        throw new Error(`${step.fieldName} date inputs not found`)
+      }
+      setInputValue(day, String(date.getDate()))
+      setInputValue(month, String(date.getMonth() + 1))
+      setInputValue(year, String(date.getFullYear()))
+    },
+
+    monthYear(step) {
+      const date = new Date()
+      const month = document.querySelector(inputSelector(`${step.fieldName}__month`))
+      const year = document.querySelector(inputSelector(`${step.fieldName}__year`))
+      if (!month || !year) {
+        throw new Error(`${step.fieldName} month/year inputs not found`)
+      }
+      setInputValue(month, String(date.getMonth() + 1))
+      setInputValue(year, String(date.getFullYear()))
+    },
+
+    text(entry) {
+      const input = document.querySelector(`input[name="${entry.fieldName}"], textarea[name="${entry.fieldName}"]`)
+      if (!input) {
+        throw new Error(`${entry.fieldName} input not found`)
+      }
+      setInputValue(input, entry.value)
+    },
+
+    /**
+     * Leave one checkbox ticked (default) or unticked per `checked`; `value`
+     * picks a specific box in a group.
+     * @param {FieldEntry} entry
+     * @returns {void}
+     */
+    checkbox(entry) {
+      const valueSelector = entry.value ? `[value="${entry.value}"]` : ''
+      const input = document.querySelector(`input[type="checkbox"][name="${entry.fieldName}"]${valueSelector}`)
+      if (!input) {
+        throw new Error(`${entry.fieldName} checkbox not found`)
+      }
+      if (input.checked !== (entry.checked ?? true)) {
+        input.click()
+      }
+    }
+  }
+
+  /**
+   * Single-field step types: fill with the shared filler, then submit.
+   * @param {string} type
+   * @returns {(step: JourneyStep) => void}
+   */
+  const fillAndSubmit = (type) => (step) => {
+    fieldFillers[type](step)
+    submitForm()
+  }
+
+  // ---------------------------------------------------------------------------
+  // Step handlers - one per `step.type`
+  // ---------------------------------------------------------------------------
+
+  /** @type {Record<string, (step: JourneyStep) => void>} */
+  const stepHandlers = {
+    submitOnly() {
+      submitForm()
+    },
+
+    yesNo: fillAndSubmit('yesNo'),
+    radios: fillAndSubmit('radios'),
+    checkboxes: fillAndSubmit('checkboxes'),
+    numberField: fillAndSubmit('numberField'),
+    selectField: fillAndSubmit('selectField'),
+    multilineText: fillAndSubmit('multilineText'),
+    dateParts: fillAndSubmit('dateParts'),
+    monthYear: fillAndSubmit('monthYear'),
+
+    /**
+     * Composite step for pages mixing component types: fill every entry with
+     * its filler, then submit once. Any failing entry stops before submit.
+     * @param {JourneyStep} step
+     * @returns {void}
+     */
+    fields(step) {
+      if (!Array.isArray(step.fields) || !step.fields.length) {
+        throw new Error('fields step needs a non-empty "fields" array')
+      }
+      step.fields.forEach((entry) => {
+        const filler = fieldFillers[entry.type]
+        if (!filler) {
+          throw new Error(`Unknown field type "${entry.type}" for ${entry.fieldName}`)
+        }
+        filler(entry)
+      })
       submitForm()
     },
 
@@ -237,69 +362,13 @@
       submitForm()
     },
 
-    numberField(step) {
-      const input = document.querySelector(inputSelector(step.fieldName))
-      if (!input) {
-        throw new Error(`${step.fieldName} input not found`)
-      }
-      setInputValue(input, step.value)
-      submitForm()
-    },
-
-    selectField(step) {
-      const select = document.querySelector(`select[name="${step.fieldName}"]`)
-      if (!select) {
-        throw new Error(`${step.fieldName} select not found`)
-      }
-      const option = select.querySelector('option[value]:not([value=""])')
-      if (!option) {
-        throw new Error(`${step.fieldName} has no options`)
-      }
-      select.value = option.value
-      select.dispatchEvent(new Event('change', { bubbles: true }))
-      submitForm()
-    },
-
-    multilineText(step) {
-      const textarea = document.querySelector(`textarea[name="${step.fieldName}"]`)
-      if (!textarea) {
-        throw new Error(`${step.fieldName} textarea not found`)
-      }
-      setInputValue(textarea, step.value)
-      submitForm()
-    },
-
-    dateParts(step) {
-      const date = new Date()
-      if (step.offsetDays) {
-        date.setDate(date.getDate() + step.offsetDays)
-      }
-      const day = document.querySelector(inputSelector(`${step.fieldName}__day`))
-      const month = document.querySelector(inputSelector(`${step.fieldName}__month`))
-      const year = document.querySelector(inputSelector(`${step.fieldName}__year`))
-      if (!day || !month || !year) {
-        throw new Error(`${step.fieldName} date inputs not found`)
-      }
-      setInputValue(day, String(date.getDate()))
-      setInputValue(month, String(date.getMonth() + 1))
-      setInputValue(year, String(date.getFullYear()))
-      submitForm()
-    },
-
-    monthYear(step) {
-      const date = new Date()
-      const month = document.querySelector(inputSelector(`${step.fieldName}__month`))
-      const year = document.querySelector(inputSelector(`${step.fieldName}__year`))
-      if (!month || !year) {
-        throw new Error(`${step.fieldName} month/year inputs not found`)
-      }
-      setInputValue(month, String(date.getMonth() + 1))
-      setInputValue(year, String(date.getFullYear()))
-      submitForm()
-    },
-
     clickLink(step) {
-      const link = document.querySelector(`a[href$="/${step.linkSlug}"]`)
+      const ref = new URLSearchParams(globalThis.location.search).get('ref')
+      const suffix = `/${step.linkSlug}`
+      const selector = ref
+        ? `a[href$="${suffix}"], a[href$="${suffix}?${new URLSearchParams({ ref })}"]`
+        : `a[href$="${suffix}"]`
+      const link = document.querySelector(selector)
       if (!link) {
         throw new Error(`Link to /${step.linkSlug} not found`)
       }
@@ -378,7 +447,15 @@
     textFields(step) {
       Object.keys(step.fields).forEach((name) => {
         const input = document.querySelector(`input[name="${name}"], textarea[name="${name}"]`)
-        if (input) {
+        if (!input) {
+          return
+        }
+        // A checkbox (e.g. a declaration beside the fields) is ticked, not retyped.
+        if (input.type === 'checkbox') {
+          if (!input.checked) {
+            input.click()
+          }
+        } else {
           setInputValue(input, step.fields[name])
         }
       })
@@ -710,9 +787,20 @@
  * @property {string} [overrideKey]        For `yesNo` steps: a `runJourney(stop, options)` key (e.g. `commonLand`) whose value replaces `value` when the run supplies it.
  * @property {boolean} [selectAll]         Tick every checkbox (or select every land parcel) instead of just the first.
  * @property {number} [offsetDays]         Days to add to "today" for date-parts steps.
- * @property {string} [linkSlug]           Slug to match against an `<a href>` for clickLink.
+ * @property {string} [linkSlug]           Slug to match against an `<a href>` for clickLink (with or without the current `?ref=`).
  * @property {'prefix'} [matchMode]        Match `/slug/{uuid}` instead of exact `/slug`.
- * @property {Record<string, string>} [fields] Multiple field name → value pairs.
+ * @property {Record<string, string> | FieldEntry[]} [fields] `textFields`: field name → value pairs; `fields`: one entry per component to fill.
+ */
+
+/**
+ * @typedef {object} FieldEntry
+ * @property {string} type                 `text`, `checkbox`, or a single-field step type (`yesNo`, `radios`, `checkboxes`, `numberField`, `selectField`, `multilineText`, `dateParts`, `monthYear`).
+ * @property {string} fieldName            Form field name.
+ * @property {string} [value]              Value to set or option to pick, as for the matching step type.
+ * @property {boolean} [checked]           For `checkbox`: leave it ticked (default `true`) or unticked.
+ * @property {boolean} [selectAll]         For `checkboxes`: tick every checkbox.
+ * @property {number} [offsetDays]         For `dateParts`: days to add to today.
+ * @property {string} [overrideKey]        For `yesNo`: run option whose value replaces `value`.
  */
 
 /**

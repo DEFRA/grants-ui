@@ -378,6 +378,7 @@ describe('CheckResponsesPageController', () => {
               items: [
                 {
                   name: 'selectedParcelsDisplay',
+                  field: { type: 'HiddenField' },
                   page: { path: '/select-land-parcel' },
                   value: 'SD1234-5678'
                 }
@@ -777,6 +778,41 @@ describe('CheckResponsesPageController', () => {
 
       expect(controller.proceed).toHaveBeenCalledWith(request, h, '/next')
       expect(result).toBe('ok')
+    })
+  })
+
+  describe('getSummaryViewModel - excluded answer rows', () => {
+    it.each([false, true])('omits a hidden-only section while preserving additional answers=%s', (withAdditional) => {
+      const hiddenItem = { name: 'internal', field: { type: 'HiddenField' }, page: { path: '/internal' } }
+      const hiddenRow = { key: { text: 'Internal answer' }, value: { text: 'Internal value' } }
+      const fixture = buildViewModel({
+        details: [{ items: [hiddenItem] }],
+        checkAnswers: [{ title: { text: 'Internal section' }, summaryList: { rows: [hiddenRow] } }]
+      })
+      mockModel.def.pages = [{ path: '/internal', components: [{ name: 'internal', type: 'HiddenField' }] }]
+      controller.additionalSections = withAdditional
+        ? [{ page: '/internal', items: [{ title: 'Calculated total', stateValue: 'total' }] }]
+        : undefined
+      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue(fixture)
+      const context = mockContext({
+        state: { internal: 'Internal value', total: 123 },
+        relevantPages: [{ path: '/internal' }]
+      })
+
+      const result = controller.getSummaryViewModel(mockSimpleRequest(), context)
+
+      expect(result.details[0].items).toEqual([hiddenItem])
+      expect(context.state.internal).toBe('Internal value')
+      expect(result.checkAnswers).toEqual(
+        withAdditional
+          ? [
+              {
+                title: { text: 'Internal section' },
+                summaryList: { rows: [{ key: { text: 'Calculated total' }, value: { text: 123 } }] }
+              }
+            ]
+          : []
+      )
     })
   })
 

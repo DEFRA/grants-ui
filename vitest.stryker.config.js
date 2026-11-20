@@ -5,6 +5,6 @@ export default {
   test: {
     ...baseConfig.test,
     include: ['src/**/*.test.js'],
-    exclude: ['**/contracts/**', '**/server/common/helpers/errors.test.js']
+    exclude: ['**/server/common/helpers/errors.test.js']
   }
 }

@@ -44,6 +44,13 @@ Feature: Multiple Applications
         And logs in as CRN "9000000022"
         Then the user should be at URL "confirmation"
         And should have application reference "{FIRST REFERENCE NUMBER}" in the URL
+        When the user clicks on "manage your applications"
+
+        # applications
+        Then the user should be at URL "applications"
+        And should see the following applications
+            | REFERENCE                 | STATUS    | ACTION               |
+            | {FIRST REFERENCE NUMBER}  | Submitted | View application     |
         When the user clicks button "Start a new application"
 
         # start, second application

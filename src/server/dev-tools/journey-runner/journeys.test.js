@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readdirSync, readFileSync, existsSync } from 'node:fs'
 import { basename, resolve } from 'node:path'
 import { parse } from 'yaml'
+import { APPLICATIONS_PATH } from '~/src/server/common/constants/applications-path.js'
 
 /**
  * Drift guard: journey definitions are hand-written against a grant's form
@@ -41,6 +42,12 @@ const OFF_JOURNEY_CONTROLLERS = new Set([
  * whose pages are defined in code rather than YAML). Nothing to compare.
  */
 const NO_FORM_DEFINITION = new Set(['methane'])
+
+/**
+ * Pages Grants UI serves under the grant slug itself, outside the form
+ * definition (e.g. the multiple-application selector).
+ */
+const GRANTS_UI_PAGES = new Set([APPLICATIONS_PATH.replace(/^\//, '')])
 
 // PMF remains deployable, but its dedicated external config repo is not wired
 // into local setup yet. Check its journey when an external config is available.
@@ -115,7 +122,7 @@ describe.skipIf(!comparable.length)('journey definitions match their form defini
     const pageIndex = new Map(pages.map((page, index) => [page.path.replace(/^\//, ''), index]))
 
     it('has no step pointing at a page the form definition does not have', () => {
-      const unknown = steps.map(pageSlug).filter((slug) => !pageIndex.has(slug))
+      const unknown = steps.map(pageSlug).filter((slug) => !pageIndex.has(slug) && !GRANTS_UI_PAGES.has(slug))
       expect([...new Set(unknown)]).toEqual([])
     })
 

@@ -7,6 +7,17 @@ import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
 import { AuthError } from '~/src/server/common/utils/errors/AuthError.js'
 import { log, debug, LogCodes, logger } from '~/src/server/common/helpers/logging/log.js'
 
+export const AUTH_SESSION_VERSION = 2
+
+const PROFILE_FIELDS_TO_KEEP_IN_SESSION_CACHE = /** @type {const} */ ([
+  'sessionId',
+  'contactId',
+  'firstName',
+  'lastName',
+  'currentRelationshipId',
+  'relationships'
+])
+
 /**
  * @returns {Promise<OidcConfig>}
  */
@@ -307,27 +318,13 @@ function extractFarmDetails(relationships) {
  * @returns {symbol}
  */
 export function mapPayloadToProfile(request, h) {
-  if (request.auth.isAuthenticated) {
-    // Get the actual user data, handling both nested and flat structures
+  if (request.auth.isAuthenticated && request.auth.credentials?.version !== AUTH_SESSION_VERSION) {
     const userData = /** @type {JwtPayload} */ (request.auth.credentials.profile || request.auth.credentials)
 
-    const currentRelationship = (userData?.relationships || []).find(
-      (/** @type {string} */ relationship) => relationship.split(':')[0] === userData.currentRelationshipId
-    )
-    // eslint-disable-next-line no-unused-vars
-    const [relationshipId, sbi, organisationName, _organisationLoa, _relationship, _relationshipLoa] =
-      extractFarmDetails(currentRelationship)
-
-    const existingCreds = request.auth.credentials
-
-    request.auth.credentials = {
-      ...existingCreds,
-      sbi: String(sbi),
-      crn: String(userData.contactId),
-      name: `${userData.firstName} ${userData.lastName}`,
-      organisationName,
-      relationshipId: String(relationshipId)
-    }
+    request.auth.credentials = buildUserCredentials(userData, {
+      ...request.auth.credentials,
+      version: AUTH_SESSION_VERSION
+    })
   }
 
   return h.continue
@@ -354,28 +351,8 @@ function getBellOptions(oidcConfig) {
     clientSecret: config.get('defraId.clientSecret'),
     isSecure: config.get('session.cookie.secure'),
     location: function (/** @type {Request} */ request) {
-      const startTime = Date.now()
       try {
-        const redirectParam = request.query.redirect
-
-        if (redirectParam) {
-          try {
-            const safeRedirect = getSafeRedirect(/** @type {string} */ (redirectParam))
-            request.yar.set('redirect', safeRedirect)
-          } catch (redirectError) {
-            debug(LogCodes.AUTH.SIGN_IN_FAILURE, {
-              userId: 'unknown',
-              errorMessage: `Failed to store redirect parameter: ${/** @type {Error} */ (redirectError).message}`,
-              step: 'bell_location_redirect_store_error',
-              redirectError: {
-                message: /** @type {Error} */ (redirectError).message,
-                stack: /** @type {Error} */ (redirectError).stack,
-                originalRedirect: redirectParam
-              }
-            })
-          }
-        }
-        logger.debug(`Bell location function completed ${Date.now() - startTime}ms`)
+        keepOnlySafeRedirect(request)
         return config.get('defraId.redirectUrl')
       } catch (error) {
         const authError = new AuthError({
@@ -401,6 +378,29 @@ function getBellOptions(oidcConfig) {
       }
     }
   }
+}
+
+/**
+ * @param {Request} request
+ * @returns {void}
+ */
+function keepOnlySafeRedirect(request) {
+  const redirect = request.query?.redirect
+  if (redirect === undefined) {
+    return
+  }
+
+  if (typeof redirect === 'string') {
+    request.query.redirect = getSafeRedirect(redirect)
+    return
+  }
+
+  debug(LogCodes.AUTH.SIGN_IN_FAILURE, {
+    userId: 'unknown',
+    errorMessage: `Ignored redirect parameter of type ${typeof redirect}`,
+    step: 'bell_location_redirect_invalid'
+  })
+  delete request.query.redirect
 }
 
 /**
@@ -440,7 +440,8 @@ async function verifyAndRefreshToken(userSession, sessionId, request) {
     logger.debug(`Token verification succeeded ${Date.now() - startTime}ms`)
     return { isValid: true }
   } catch (tokenError) {
-    return await handleTokenVerificationError(userSession, sessionId, request, /** @type {Error} */ (tokenError)) // NOSONAR - await is necessary here
+    const error = /** @type {Error} */ (tokenError)
+    return await handleTokenVerificationError(userSession, sessionId, request, error) // NOSONAR - await is necessary here
   }
 }
 
@@ -524,27 +525,28 @@ function getCookieOptions() {
       isSecure: config.get('session.cookie.secure'),
       isSameSite: 'Lax'
     },
-    redirectTo: function (/** @type {Request} */ request) {
-      return `/auth/sign-in?redirect=${request.url.pathname}${request.url.search}`
+    redirectTo: '/auth/sign-in',
+    appendNext: {
+      name: 'redirect'
     },
     validate: async function (/** @type {Request} */ request, /** @type {{ sessionId: string }} */ session) {
-      const userSession = /** @type {UserSession | undefined} */ (await request.server.app.cache.get(session.sessionId))
+      const cachedUserSession = /** @type {UserSession | undefined} */ (
+        await request.server.app.cache.get(session.sessionId)
+      )
 
-      const sessionValidation = validateUserSession(userSession, session.sessionId, request)
+      const sessionValidation = validateUserSession(cachedUserSession, session.sessionId, request)
       if (!sessionValidation.isValid) {
         return sessionValidation
       }
+
+      const userSession = /** @type {UserSession} */ (cachedUserSession)
 
       if (isSignOutPath(request.path)) {
         return { isValid: true, credentials: userSession }
       }
 
-      if (/** @type {UserSession} */ (userSession).token) {
-        const tokenValidation = await verifyAndRefreshToken(
-          /** @type {UserSession} */ (userSession),
-          session.sessionId,
-          request
-        )
+      if (userSession.token) {
+        const tokenValidation = await verifyAndRefreshToken(userSession, session.sessionId, request)
         if (!tokenValidation.isValid) {
           return tokenValidation
         }
@@ -554,6 +556,37 @@ function getCookieOptions() {
       // Depending on the service, additional checks can be performed here before returning `isValid: true`
       return { isValid: true, credentials: userSession }
     }
+  }
+}
+
+/**
+ * @param {JwtPayload} userData
+ * @param {Record<string, unknown>} [existingCreds]
+ * @returns {Record<string, unknown>}
+ */
+export function buildUserCredentials(userData, existingCreds = {}) {
+  const currentRelationship = (userData?.relationships || []).find(
+    (/** @type {string} */ relationship) => relationship.split(':')[0] === userData.currentRelationshipId
+  )
+
+  const [relationshipId, sbi, organisationName] = extractFarmDetails(currentRelationship)
+
+  const fieldsToKeepFromProfile = Object.fromEntries(
+    PROFILE_FIELDS_TO_KEEP_IN_SESSION_CACHE.filter((field) => userData[field] !== undefined).map((field) => [
+      field,
+      userData[field]
+    ])
+  )
+
+  return {
+    version: AUTH_SESSION_VERSION,
+    ...existingCreds,
+    ...fieldsToKeepFromProfile,
+    sbi: String(sbi),
+    crn: String(userData.contactId),
+    name: `${userData.firstName} ${userData.lastName}`,
+    organisationName,
+    relationshipId: String(relationshipId)
   }
 }
 
@@ -589,8 +622,18 @@ export { getBellOptions, getCookieOptions }
 
 /**
  * @typedef {object} UserSession
+ * @property {number} version
  * @property {string} token
  * @property {string} refreshToken
- * @property {string} [contactId]
+ * @property {string} contactId
+ * @property {string} currentRelationshipId
+ * @property {string[]} relationships
+ * @property {string} firstName
+ * @property {string} lastName
  * @property {string} [organisationId]
+ * @property {string} crn
+ * @property {string} sbi
+ * @property {string} name
+ * @property {string} organisationName
+ * @property {string} relationshipId
  */
