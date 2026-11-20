@@ -24,6 +24,7 @@ import { outputService } from '~/src/server/common/forms/services/output.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
 import { requestLogger } from '~/src/server/common/helpers/logging/request-logger.js'
 import { setupProxy } from '~/src/server/common/helpers/proxy/setup-proxy.js'
+import { installOutboundCallMetrics } from '~/src/server/common/helpers/outbound-call-metrics.js'
 import { pulse } from '~/src/server/common/helpers/pulse.js'
 import { updateVisitedSections } from '~/src/server/common/helpers/visited-sections-guard.js'
 import { requestTracing } from '~/src/server/common/helpers/request-tracing.js'
@@ -254,6 +255,8 @@ export async function createServer() {
     phase: 'proxy_setup',
     status: 'complete'
   })
+
+  installOutboundCallMetrics()
 
   const server = createHapiServer()
   log(LogCodes.SYSTEM.STARTUP_PHASE, {

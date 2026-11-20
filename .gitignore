@@ -36,6 +36,8 @@ compose/config-broker/local-form-definitions/*
 /grants-ui-grasslands-tests-schemas/
 /grants-ui-woodland-tests-schemas/
 AGENTS.local.md
+# Local debug output, e.g. METRICS_DEBUG_LOG_FILE
+/logs/
 
 # Personal, portable Grants TUI themes
 /.grants-ui-cli-theme.json

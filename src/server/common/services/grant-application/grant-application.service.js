@@ -7,6 +7,13 @@ const GAS_API_ENDPOINT = config.get('gas.apiEndpoint')
 const GAS_API_AUTH_TOKEN = config.get('gas.authToken')
 
 /**
+ * @returns {string}
+ */
+function buildGasUrl(...segments) {
+  return `${GAS_API_ENDPOINT}/${segments.map((segment) => encodeURIComponent(segment)).join('/')}`
+}
+
+/**
  * Custom error type thrown when GAS API requests fail.
  */
 class GrantApplicationServiceApiError extends Error {
@@ -181,7 +188,7 @@ export async function makeGasApiRequest(url, grantCode, request, options = {}) {
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
 export async function invokeGasPostAction(code, name, payload, request) {
-  const url = `${GAS_API_ENDPOINT}/grants/${code}/actions/${name}/invoke`
+  const url = buildGasUrl('grants', code, 'actions', name, 'invoke')
   const response = await makeGasApiRequest(url, code, request, {
     method: 'POST',
     payload
@@ -199,7 +206,7 @@ export async function invokeGasPostAction(code, name, payload, request) {
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
 export async function invokeGasGetAction(code, name, request, queryParams = {}) {
-  const url = `${GAS_API_ENDPOINT}/grants/${code}/actions/${name}/invoke`
+  const url = buildGasUrl('grants', code, 'actions', name, 'invoke')
   const response = await makeGasApiRequest(url, code, request, {
     method: 'GET',
     queryParams
@@ -242,7 +249,7 @@ function auditApplicationSubmission(code, payload, request) {
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
 export async function submitGrantApplication(code, payload, request) {
-  const url = `${GAS_API_ENDPOINT}/grants/${mapFarmPaymentsGrantCode(code)}/applications`
+  const url = buildGasUrl('grants', mapFarmPaymentsGrantCode(code), 'applications')
   const response = await makeGasApiRequest(url, code, request, { method: 'POST', payload })
 
   // Submission succeeded (makeGasApiRequest throws on non-2xx), so audit it.
@@ -286,7 +293,13 @@ function auditClaimSubmission(code, payload, request) {
  */
 export async function submitClaim(code, payload, request) {
   const metadata = /** @type {Record<string, string | undefined>} */ (payload?.metadata ?? {})
-  const url = `${GAS_API_ENDPOINT}/grants/${mapFarmPaymentsGrantCode(code)}/applications/${metadata.clientRef}/claims`
+  const url = buildGasUrl(
+    'grants',
+    mapFarmPaymentsGrantCode(code),
+    'applications',
+    String(metadata.clientRef),
+    'claims'
+  )
   const response = await makeGasApiRequest(url, code, request, { method: 'POST', payload })
 
   // Submission succeeded (makeGasApiRequest throws on non-2xx), so audit it.
@@ -305,7 +318,7 @@ export async function submitClaim(code, payload, request) {
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
 export async function getApplicationStatus(code, clientRef, request, retryConfig) {
-  const url = `${GAS_API_ENDPOINT}/grants/${mapFarmPaymentsGrantCode(code)}/applications/${clientRef}/status`
+  const url = buildGasUrl('grants', mapFarmPaymentsGrantCode(code), 'applications', clientRef, 'status')
   return makeGasApiRequest(url, code, request, { method: 'GET', ...(retryConfig && { retryConfig }) })
 }
 
@@ -318,7 +331,7 @@ export async function getApplicationStatus(code, clientRef, request, retryConfig
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
 export async function getAvailableClaimEntitlements(code, clientRef, request) {
-  const url = `${GAS_API_ENDPOINT}/grants/${code}/entitlements/${clientRef.toLowerCase()}/available-claims`
+  const url = buildGasUrl('grants', code, 'entitlements', clientRef.toLowerCase(), 'available-claims')
   const response = await makeGasApiRequest(url, code, request, { method: 'GET' })
   return response.json()
 }

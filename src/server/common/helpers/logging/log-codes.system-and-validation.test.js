@@ -384,6 +384,12 @@ describe('LogCodes', () => {
         'info',
         { authMethod: 'web_identity' },
         'Entra token refresh succeeded via authMethod=web_identity'
+      ],
+      [
+        'METRICS_EMIT_FAILED',
+        'warn',
+        { service: 'gas', method: 'GET', errorMessage: 'flush failed' },
+        'Failed to emit metrics: service=gas | method=GET | error=flush failed'
       ]
     ])
   })

@@ -3,6 +3,8 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Created here so Docker does not create the ./logs bind mount as root.
+mkdir -p "$PROJECT_ROOT/logs"
 CONFIG_BROKER_LOCAL="$PROJECT_ROOT/compose/config-broker-local"
 # The config tree is built into a staging folder first so that a failed pull
 # (e.g. when the developer is offline) leaves the existing config-broker-local
