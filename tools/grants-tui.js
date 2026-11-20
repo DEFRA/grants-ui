@@ -17,7 +17,7 @@
  *   gt down [--dry-run]          # uses saved state automatically
  *   gt debug                     # restart grants-ui in debug mode (detached, port 9229)
  *   gt restart [--dry-run]       # restart running containers (with --no-deps)
- *   gt test [unit|contracts|acceptance]  # run tests (default: unit)
+ *   gt test [unit|acceptance]    # run tests (default: unit)
  *   gt state <grant-code> --sbi <sbi>    # inspect persisted application state
  *   gt sonar [--skip-tests]      # local SonarQube scan (server left up for the dashboard)
  *   gt sonar --changed           # scope scan to src files changed vs main (approx. CI PR view)

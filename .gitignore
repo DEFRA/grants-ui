@@ -18,7 +18,6 @@ coverage
 .envrc
 tsconfig.tsbuildinfo
 .eslintcache
-src/contracts/pacts
 compose.override.yml
 reports/mutation/mutation.html
 .stryker-tmp

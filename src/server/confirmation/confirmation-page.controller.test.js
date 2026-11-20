@@ -111,17 +111,8 @@ describe('ConfirmationPageController', () => {
         controller.model.def,
         'test-form',
         mockH,
-        expect.any(Array),
-        true
+        expect.any(Array)
       )
-    })
-
-    test('passes a closed application window to confirmation rendering', async () => {
-      controller.model.def.metadata.applicationWindow = { closesAt: '2000-01-01T00:00:00Z' }
-      vi.spyOn(controller, 'loadConfirmationContent').mockResolvedValue(null)
-      const renderSpy = vi.spyOn(controller, 'buildAndRenderConfirmationResponse').mockReturnValue('rendered')
-      await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
-      expect(renderSpy.mock.calls[0][6]).toBe(false)
     })
 
     test('passes session data to renderer', async () => {
@@ -152,8 +143,7 @@ describe('ConfirmationPageController', () => {
         expect.any(Object),
         expect.any(String),
         mockH,
-        expect.any(Array),
-        true
+        expect.any(Array)
       )
     })
 
@@ -176,8 +166,7 @@ describe('ConfirmationPageController', () => {
         expect.any(Object),
         expect.any(String),
         mockH,
-        expect.any(Array),
-        true
+        expect.any(Array)
       )
     })
 
@@ -202,8 +191,7 @@ describe('ConfirmationPageController', () => {
         expect.any(Object),
         expect.any(String),
         mockH,
-        expect.any(Array),
-        true
+        expect.any(Array)
       )
     })
 
@@ -237,8 +225,7 @@ describe('ConfirmationPageController', () => {
         expect.any(Object),
         expect.any(String),
         mockH,
-        expect.any(Array),
-        true
+        expect.any(Array)
       )
     })
 
@@ -308,7 +295,7 @@ describe('ConfirmationPageController', () => {
     { enabled: false, type: 'application', expected: undefined },
     { enabled: true, type: 'claim', expected: undefined }
   ])(
-    'shows another-application action only for enabled application confirmations ($enabled, $type)',
+    'shows the manage applications link only for enabled application confirmations ($enabled, $type)',
     ({ enabled, type, expected }) => {
       controller.model.def.metadata.allowMultipleApplications = enabled
       controller.pageDef = { path: '/confirmation' }
@@ -322,25 +309,19 @@ describe('ConfirmationPageController', () => {
       )
       expect(mockH.view).toHaveBeenCalledWith(
         'confirmation-page',
-        expect.objectContaining({ startAnotherApplicationUrl: expected })
+        expect.objectContaining({ manageApplicationsUrl: expected })
       )
     }
   )
 
-  test('hides the create action when the application window is closed', () => {
+  test('shows the manage applications link when the application window is closed', async () => {
     controller.model.def.metadata.allowMultipleApplications = true
-    controller.buildAndRenderConfirmationResponse(
-      null,
-      { referenceNumber: 'REF-1' },
-      controller.model.def,
-      'test-form',
-      mockH,
-      undefined,
-      false
-    )
+    controller.model.def.metadata.applicationWindow = { closesAt: '2000-01-01T00:00:00Z' }
+    vi.spyOn(controller, 'loadConfirmationContent').mockResolvedValue(null)
+    await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
     expect(mockH.view).toHaveBeenCalledWith(
       'confirmation-page',
-      expect.objectContaining({ startAnotherApplicationUrl: undefined })
+      expect.objectContaining({ manageApplicationsUrl: '/test-form/applications' })
     )
   })
 
