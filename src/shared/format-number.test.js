@@ -2,6 +2,9 @@ import { formatThousands } from './format-number.js'
 
 describe('formatThousands', () => {
   test.each([
+    [undefined, ''],
+    [null, ''],
+    [0, '0'],
     [125000.5, '125,000.5'],
     ['125000.50', '125,000.50'],
     ['0', '0'],

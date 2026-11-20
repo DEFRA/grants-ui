@@ -69,7 +69,7 @@ describe('StartClaimPageController', () => {
       redirect: vi.fn()
     }
 
-    strategyCalculatePayment = vi.fn().mockResolvedValue({ payment: {}, totalPence: 0, totalPayment: '£0.00' })
+    strategyCalculatePayment = vi.fn().mockResolvedValue({ payment: {}, totalPence: 0, totalPayment: '£0' })
     vi.mocked(resolveStrategy).mockReset()
     vi.mocked(resolveStrategy).mockReturnValue({ calculatePayment: strategyCalculatePayment })
 
@@ -218,7 +218,7 @@ describe('StartClaimPageController', () => {
     })
 
     it('sets totalClaimAmountPence from the payment strategy result when a paymentStrategy is configured', async () => {
-      strategyCalculatePayment.mockResolvedValueOnce({ payment: {}, totalPence: 425000, totalPayment: '£4,250.00' })
+      strategyCalculatePayment.mockResolvedValueOnce({ payment: {}, totalPence: 425000, totalPayment: '£4,250' })
 
       const controller = buildController({
         dataSources: [{ name: 'claims', items: ['totalEligibleArea', 'unit', 'totalClaimAmountPence'] }],
@@ -256,7 +256,7 @@ describe('StartClaimPageController', () => {
 
   describe('makeGetRouteHandler', () => {
     it('should render the start-claim view with dynamic values injected into Html components', async () => {
-      strategyCalculatePayment.mockResolvedValueOnce({ payment: {}, totalPence: 150000, totalPayment: '£1,500.00' })
+      strategyCalculatePayment.mockResolvedValueOnce({ payment: {}, totalPence: 150000, totalPayment: '£1,500' })
 
       const controller = buildController({
         dataSources: [{ name: 'claims', items: ['totalEligibleArea', 'unit', 'totalClaimAmountPence'] }],
@@ -283,7 +283,7 @@ describe('StartClaimPageController', () => {
       expect(viewModel.unit).toBe('ha')
       expect(viewModel.totalClaimAmountPence).toBe(150000)
       expect(viewModel.components[0].model.content).toBe(
-        '<p>Total eligible area 156.1025 ha, total claim amount £1,500.00</p>'
+        '<p>Total eligible area 156.1025 ha, total claim amount £1,500</p>'
       )
     })
 
@@ -386,7 +386,7 @@ describe('StartClaimPageController', () => {
     })
 
     it('should calculate the claim payment and inject the returned amount into the view', async () => {
-      strategyCalculatePayment.mockResolvedValueOnce({ payment: {}, totalPence: 425000, totalPayment: '£4,250.00' })
+      strategyCalculatePayment.mockResolvedValueOnce({ payment: {}, totalPence: 425000, totalPayment: '£4,250' })
 
       const controller = buildController({
         dataSources: [{ name: 'claims', items: ['totalEligibleArea', 'unit', 'totalClaimAmountPence'] }],
@@ -418,17 +418,19 @@ describe('StartClaimPageController', () => {
       const [, viewModel] = mockResponseToolkit.view.mock.calls[0]
       expect(viewModel.totalClaimAmountPence).toBe(425000)
       expect(viewModel.components[0].model.content).toBe(
-        '<p>Total eligible area 156.1025 ha, total claim amount £4,250.00</p>'
+        '<p>Total eligible area 156.1025 ha, total claim amount £4,250</p>'
       )
     })
 
-    it('should map an area unit abbreviation to a human-readable name via formatAreaUnit', async () => {
+    it('renders the grouped eligible area and the full unit name in claim content', async () => {
+      vi.mocked(getAvailableClaimEntitlements).mockResolvedValueOnce(buildAvailableClaimsResponse(1234.5678))
       QuestionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
         components: [
           {
             type: 'Html',
             model: {
-              content: '<p>Total eligible area {{ totalEligibleArea }} {{ unit | formatAreaUnit }}</p>'
+              content:
+                '<p>Total eligible area {{ totalEligibleArea | formatThousands }} {{ unit | formatAreaUnit }}</p>'
             }
           }
         ]
@@ -442,7 +444,7 @@ describe('StartClaimPageController', () => {
       await handler(mockRequest, mockContext, mockResponseToolkit)
 
       const [, viewModel] = mockResponseToolkit.view.mock.calls[0]
-      expect(viewModel.components[0].model.content).toBe('<p>Total eligible area 156.1025 hectares</p>')
+      expect(viewModel.components[0].model.content).toBe('<p>Total eligible area 1,234.5678 hectares</p>')
     })
 
     it('should map a linear unit abbreviation to a human-readable name via formatLinearUnit', async () => {
@@ -487,7 +489,7 @@ describe('StartClaimPageController', () => {
 
   describe('calculateClaimPayment', () => {
     it('resolves the configured strategy and calls it with the payment context and user context', async () => {
-      strategyCalculatePayment.mockResolvedValueOnce({ payment: {}, totalPence: 425000, totalPayment: '£4,250.00' })
+      strategyCalculatePayment.mockResolvedValueOnce({ payment: {}, totalPence: 425000, totalPayment: '£4,250' })
 
       const controller = buildController({
         dataSources: [{ name: 'claims', items: ['totalEligibleArea', 'unit', 'totalClaimAmountPence'] }],
@@ -514,7 +516,7 @@ describe('StartClaimPageController', () => {
         },
         { defraIdToken: 'defra-id-token', sbi: '123456789' }
       )
-      expect(result).toEqual({ payment: {}, totalPence: 425000, totalPayment: '£4,250.00' })
+      expect(result).toEqual({ payment: {}, totalPence: 425000, totalPayment: '£4,250' })
     })
 
     it('returns undefined and skips the strategy when no paymentStrategy is configured', async () => {

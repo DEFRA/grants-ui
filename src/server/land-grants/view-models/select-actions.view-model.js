@@ -5,6 +5,7 @@
  */
 
 import nunjucks from 'nunjucks'
+import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 import { govukFrontendPath, viewPaths } from '~/src/config/nunjucks/view-paths.js'
 import { getActionChosenAreaDisplayId, getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
@@ -125,6 +126,23 @@ function getStaticAvailability(action) {
 }
 
 /**
+ * @param {Action['availability']} availability
+ * @param {boolean} needsQuantity
+ * @param {number} [chosenArea]
+ */
+function getAvailabilityText(availability, needsQuantity, chosenArea) {
+  const limit = getAvailabilityLimit(availability)
+  if (limit == null && (needsQuantity || chosenArea == null)) {
+    return undefined
+  }
+
+  const unit = availability?.unit
+  return needsQuantity && !isLandAreaUnit(unit)
+    ? `${limit} ${formatUnit(unit)} available`
+    : availableArea(limit ?? 0, unit)
+}
+
+/**
  * Builds the checkbox hint text: payment rate, consent requirement, and any
  * available-area hint. The hint sits beneath the action label so it can be
  * shared by quantity inputs through aria-describedby and refreshed live by the
@@ -138,18 +156,13 @@ function getStaticAvailability(action) {
  */
 function getHintHtml(action, needsQuantity, chosenArea) {
   const requirementText = getConsentRequirementText(getActionConsentKeys(action))
-  const limit = getAvailabilityLimit(action.availability)
-  const availabilityText =
-    needsQuantity && !isLandAreaUnit(action.availability?.unit)
-      ? `${limit} ${formatUnit(action.availability?.unit)} available`
-      : availableArea(limit ?? 0, action.availability?.unit)
   return landGrantsViewEnv.render(ACTION_HINT_TEMPLATE, {
-    rate: String(action.ratePerUnitGbp?.toFixed(2).replace(/\.00$/, '')),
+    rate: action.ratePerUnitGbp == null ? undefined : formatCurrency(action.ratePerUnitGbp),
     rateUnit: action.displayUnit ?? unitAlternativeLabel(action.availability),
-    agreementRate: action.ratePerAgreementPerYearGbp,
+    agreementRate: action.ratePerAgreementPerYearGbp ? formatCurrency(action.ratePerAgreementPerYearGbp) : undefined,
     requirementText,
     hintId: `${getActionQuantityFieldName(action.code)}-hint`,
-    availabilityText: limit != null || (!needsQuantity && chosenArea != null) ? availabilityText : undefined,
+    availabilityText: getAvailabilityText(action.availability, needsQuantity, chosenArea),
     showTotalGuidance: !needsQuantity && isLandAreaUnit(action.availability?.unit)
   })
 }

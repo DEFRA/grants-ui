@@ -4,6 +4,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { resolveStrategy } from '~/src/server/payment/resolve-strategy.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
+import { formatPrice, formatSavedPayment } from '~/src/server/common/utils/payment.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 
 // The page config block may carry keys used by other features, so unknown keys are allowed.
@@ -163,13 +164,13 @@ export default class PaymentPageController extends QuestionPageController {
    * @returns {ResponseObject}
    */
   renderErrorView(h, request, context, errorMessages, parcelItems = [], additionalYearlyPayments = []) {
-    const { state } = context
+    const { totalPayment } = context.state
     return h.view(
       this.viewName,
       this.buildViewModel(
         request,
         context,
-        /** @type {string} */ (state.totalPayment) ?? '£0.00',
+        typeof totalPayment === 'string' ? formatSavedPayment(totalPayment) : formatPrice(0),
         parcelItems,
         additionalYearlyPayments,
         errorMessages

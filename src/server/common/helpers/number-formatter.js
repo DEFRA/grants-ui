@@ -1,4 +1,4 @@
-import { formatThousands } from '~/src/shared/format-number.js'
+import { createCurrencyNumberFormat, formatThousands } from '~/src/shared/format-number.js'
 
 const SUPPORTED_CURRENCIES = new Set(Intl.supportedValuesOf('currency'))
 
@@ -127,8 +127,8 @@ function createDecimalFormatter(args) {
   if (args.length > 1) {
     return undefined
   }
-  const options = withFractionDigits({ style: 'decimal' }, args[0] ?? '2')
-  return options ? createIntlNumberFormatter(options) : undefined
+  const fractionDigits = resolveFractionDigits(args[0] ?? '2')
+  return fractionDigits ? formatFiniteNumber(new Intl.NumberFormat('en-GB', fractionDigits)) : undefined
 }
 
 /**
@@ -145,18 +145,15 @@ function createCurrencyFormatter(args) {
     return undefined
   }
 
-  /** @type {Intl.NumberFormatOptions} */
-  const options = { style: 'currency', currency }
-  const resolvedOptions = args.length === 2 ? withFractionDigits(options, args[1]) : options
-  return resolvedOptions ? createIntlNumberFormatter(resolvedOptions) : undefined
+  const fractionDigits = args.length === 2 ? resolveFractionDigits(args[1]) : {}
+  return fractionDigits ? formatFiniteNumber(createCurrencyNumberFormat('en-GB', currency, fractionDigits)) : undefined
 }
 
 /**
- * @param {Intl.NumberFormatOptions} options
+ * @param {Intl.NumberFormat} formatter
  * @returns {BaseNumberFormatter}
  */
-function createIntlNumberFormatter(options) {
-  const formatter = new Intl.NumberFormat('en-GB', options)
+function formatFiniteNumber(formatter) {
   return (value) => {
     if (typeof value === 'string' && value.trim() === '') {
       return value
@@ -167,14 +164,12 @@ function createIntlNumberFormatter(options) {
 }
 
 /**
- * @param {Intl.NumberFormatOptions} options
  * @param {string} value
- * @returns {Intl.NumberFormatOptions | undefined}
  */
-function withFractionDigits(options, value) {
+function resolveFractionDigits(value) {
   const places = Number(value)
   if (!/^\d+$/.test(value) || places > 100) {
     return undefined
   }
-  return { ...options, minimumFractionDigits: places, maximumFractionDigits: places }
+  return { minimumFractionDigits: places, maximumFractionDigits: places }
 }
