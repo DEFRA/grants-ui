@@ -36,7 +36,7 @@ export function createProgressTracker(action, args = []) {
       if (stopped) return `Journey: stopped at ${stopped[1]} (step ${stopped[2]})`
       if (line.startsWith('[journey-runner] Browser left open')) return 'Journey: close browser when finished'
     }
-    const testCommand = line.match(/▶\s+npm run (test(?::contracts|:acceptance)?)(?:\s|$)/)
+    const testCommand = line.match(/▶\s+npm run (test(?::acceptance)?)(?:\s|$)/)
     if (testCommand) {
       suite = testCommand[1] === 'test' ? 'unit' : testCommand[1].slice(5)
       completedFiles.clear()
@@ -54,7 +54,7 @@ export function createProgressTracker(action, args = []) {
     if (line.includes('pre-pr check summary')) return 'Pre-PR check: preparing results'
     if (line === 'All tests summary:') return 'All tests: preparing results'
 
-    if (suite === 'unit' || suite === 'contracts') {
+    if (suite === 'unit') {
       if (/^RUN\s+v\d/.test(line)) return `${suite}: collecting tests`
       const file = line.match(/^[✓✔❯×]\s+(.+\.(?:test|spec)\.[cm]?[jt]sx?)\s/)
       if (file) {

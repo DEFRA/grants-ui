@@ -33,7 +33,7 @@ COPY --chown=node:node --chmod=755 . .
 RUN npm run build
 
 # Remove src/client after build (webpack needed it, but it's now in .public/)
-# Note: src/__mocks__, src/contracts, and src/shared are excluded via .dockerignore
+# Note: src/__mocks__ and src/shared are excluded via .dockerignore
 RUN rm -rf src/client
 
 FROM defradigital/node:${PARENT_VERSION} AS production

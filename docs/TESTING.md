@@ -24,7 +24,6 @@ The test suite is organized into different categories:
 
 - **Unit Tests**: Fast, isolated tests for individual functions and components (run with `npm run test:unit`)
 - **Integration Tests**: Slower tests that verify interactions between components, external services, or the full server stack
-- **Contract Tests**: Pact-based contract tests that verify API contracts with external services (run with `npm run test:contracts`)
 - **Acceptance Tests**: End-to-end browser tests for complete user journeys (run with `npm run test:acceptance`)
 
 ### Running Tests
@@ -35,9 +34,6 @@ npm test
 
 # Run only unit tests (fast, excludes slow integration tests)
 npm run test:unit
-
-# Run only contract/Pact tests
-npm run test:contracts
 
 # Run acceptance tests
 npm run test:acceptance
@@ -50,11 +46,9 @@ npm run test:watch
 
 - `vitest.config.js` - Main configuration for all tests
 - `vitest.unit.config.js` - Configuration for unit tests only (excludes integration tests)
-- `vitest.contracts.config.js` - Configuration for Pact contract tests only
 
 Integration tests are identified by:
 
-- `**/*.contract.test.js` - Pact contract tests
 - Tests that start the full Hapi server (e.g., `start-server.test.js`)
 - Tests using real timers/delays rather than mocks (e.g., `retry.test.js`)
 
@@ -110,8 +104,6 @@ The mutation score indicates test effectiveness:
 
 - **Neostandard**: Modern JavaScript/Node.js linting configuration that provides opinionated code quality rules
 - **TSX**: Modern Node.js runtime used for development server (better ES module support)
-
-Beyond the standard scripts, the application includes contract testing via `npm run test:contracts` using Vitest.
 
 ## Acceptance Testing
 

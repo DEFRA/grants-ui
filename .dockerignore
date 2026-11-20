@@ -18,9 +18,7 @@ coverage
 
 # Tests and test files
 src/__mocks__
-src/contracts
 **/*.test.js
-**/*.contract.test.js
 **/__tests__
 **/test-helpers
 acceptance/
