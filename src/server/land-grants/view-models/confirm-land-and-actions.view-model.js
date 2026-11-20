@@ -134,8 +134,7 @@ function getQuantityDisplayUnit(quantity, actionState, unit) {
  * The response is rendered as received. Agreement-level items get their own
  * section because they count towards `annualTotalPence` without belonging to any
  * one parcel, and a selected action or parcel the API prices at agreement level,
- * or does not price at all, is a normal response rather than an error. See
- * `src/contracts/v2/land-grants.client.contract.test.js`.
+ * or does not price at all, is a normal response rather than an error.
  *
  * @param {PaymentCalculation} payment - Raw payment calculation from the API
  * @param {LandParcels} [landParcels] - Current state land parcels, used only to order the cards
