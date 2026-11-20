@@ -67,9 +67,11 @@ export function configureFormDefinition(definition) {
   const environment = config.get('cdpEnvironment')
 
   for (const page of definition.pages ?? []) {
+    // Backend definitions can also contain custom controller names.
+    const pageWithController = /** @type {{ controller?: string }} */ (page)
     // Engine built-ins take precedence over the custom controller registry.
-    if (page.controller === 'SummaryPageController') {
-      ;/** @type {{ controller: string }} */ (page).controller = 'GrantsSummaryPageController'
+    if (pageWithController.controller === 'SummaryPageController') {
+      pageWithController.controller = 'GrantsSummaryPageController'
     }
     const url = page.events?.onLoad?.options?.url
     if (url) {

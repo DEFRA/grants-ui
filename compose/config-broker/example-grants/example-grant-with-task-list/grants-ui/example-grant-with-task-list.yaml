@@ -290,10 +290,26 @@ pages:
         id: 4cde50e0-98c7-4b0f-badb-e9ce6e6dac3f
         type: NumberField
         title: Example number field
+        hint: Enter a capacity in cubic metres, for example 150000.50.
         options:
           required: true
-          format: thousands
+          suffix: m³
+          format: 'thousands|suffix'
+        schema:
+          precision: 2
         shortDescription: Number with guidance
+      - name: exampleSuffixOnlyField
+        id: 0f801a79-a27c-43d2-9558-a1af46d17537
+        type: NumberField
+        title: Capacity without number formatting
+        hint: Enter the same capacity to compare the two displays on Check answers.
+        options:
+          required: false
+          suffix: m³
+          format: suffix
+        schema:
+          precision: 2
+        shortDescription: Capacity without number formatting
 
   # Task pages - Example check and submit task
   - title: Check your answers

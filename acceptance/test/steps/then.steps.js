@@ -112,6 +112,12 @@ Then('(the user )should see the following applications', async function (dataTab
   expect(actual).toEqual(expected)
 })
 
+Then('(the user )should see answer {string} for question {string}', async function (answer, question) {
+  const summaryPage = new SummaryPage(this.page)
+  const actualAnswers = await summaryPage.answers()
+  expect(actualAnswers).toContainEqual({ question, answers: [answer] })
+})
+
 Then('(the user )should see the following answers', async function (dataTable) {
   const expectedAnswers = []
   let summaryAnswer = {}
