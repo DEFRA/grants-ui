@@ -8,7 +8,7 @@ Interactive TUI / CLI wrapper for the local dev stack (compose up/down, tests, j
 
 Select **Scoring** in the addon menu or run `gt up --scoring` to include `grants-scoring-api` on port `3013`. This sets Grants UI's `SCORING_SERVICE_URL` to the scoring container and reuses the stack's MongoDB and Floci. Choose `grants-scoring-api` in **local**, or pass `--local-grants-scoring-api` alongside `--scoring`, to use `grants-scoring-api:local`.
 
-Choose **checks ⇢** for format, lint, unit tests, contract tests, acceptance tests, all tests, Sonar, Snyk and pre-PR check. Each check runs directly from this submenu. **All tests** runs all three suites, continues after failures, and includes their output and a summary in one log; it reports the first failing exit code. **Pre-PR check** additionally runs Snyk and a PR-scoped Sonar scan. **Lint** runs `npm run lint`. **Format** runs `npm run format`, updating code and docs with Prettier.
+Choose **checks ⇢** for format, lint, unit tests, acceptance tests, all tests, Sonar, Snyk and pre-PR check. Each check runs directly from this submenu. **All tests** runs both suites, continues after failures, and includes their output and a summary in one log; it reports the first failing exit code. **Pre-PR check** additionally runs Snyk and a PR-scoped Sonar scan. **Lint** runs `npm run lint`. **Format** runs `npm run format`, updating code and docs with Prettier.
 
 In interactive mode, actions run with a white shimmering status message and a disabled menu. Full stdout and stderr are captured to a separate private `grants-tui-*.log` file in the system temporary directory for each run. Completion shows success or failure, including the action's exit code on failure.
 
@@ -18,7 +18,7 @@ Press **l** to inspect the latest output, or choose **output ⇢** to browse ear
 
 Press **Ctrl+C** during an action to cancel it and return to the menu. Cancellation stops the command and its child processes; it does not undo changes already made or stop detached Docker services. Set `NO_COLOR=1` to use a static status message without shimmer. Non-interactive commands continue to print their output directly.
 
-The shimmering status follows progress reported by long-running commands: Docker setup/pulls/health checks, completed unit and contract test files, acceptance setup/browser tests/cleanup, and the current suite or scanner in all-tests and pre-PR runs. These are observed milestones, not estimated percentages. Unrecognised output leaves the current message in place; full output is always retained in the log.
+The shimmering status follows progress reported by long-running commands: Docker setup/pulls/health checks, completed unit test files, acceptance setup/browser tests/cleanup, and the current suite or scanner in all-tests and pre-PR runs. These are observed milestones, not estimated percentages. Unrecognised output leaves the current message in place; full output is always retained in the log.
 
 The checks submenu stays open after each run, showing its result so you can run another check immediately. Press **l** there to view the latest output, then return to checks when you close the viewer. Press **Escape** in checks to return to the main menu.
 
