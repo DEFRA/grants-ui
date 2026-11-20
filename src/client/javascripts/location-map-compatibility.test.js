@@ -125,16 +125,28 @@ afterAll(() => vi.unstubAllGlobals())
 
 describe('location adapter compatibility with the installed forms engine', () => {
   test.each(CASES)(
-    'resolves approximate labels for $type using the installed templates and coordinate conversions',
+    'displays and posts approximate locations for $type using the installed templates and coordinate conversions',
     async ({ type, values, changed }) => {
       vi.useFakeTimers()
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ label: 'London' }) }))
       const field = renderLocation(type, values)
+      const form = document.querySelector('form')
+      form.insertAdjacentHTML(
+        'beforeend',
+        environment.renderString(
+          '{% from "components/hiddenfield.html" import HiddenField %}{{ HiddenField(field) }}',
+          {
+            field: { model: { name: 'locationDescription', value: 'Saved location' } }
+          }
+        )
+      )
+      const readDescription = () => new window.FormData(form).get('locationDescription')
       document.body.insertAdjacentHTML(
         'beforeend',
-        '<div id="component-map-settings"><div data-map-component="location" data-show-approximate-location="true" data-approximate-location-prefix="Selected location:"></div></div>'
+        '<div id="component-map-settings"><div data-map-component="location" data-show-approximate-location="true" data-approximate-location-prefix="Selected location:" data-location-description-field="locationDescription"></div></div>'
       )
       await initialiseComponentMaps()
+      expect(readDescription()).toBe('')
       const fixture = maps.get('map_0')
       fixture.emit(map.EVENTS.mapReady, { map: fixture.provider })
       await vi.advanceTimersByTimeAsync(300)
@@ -142,11 +154,14 @@ describe('location adapter compatibility with the installed forms engine', () =>
       expect(field.querySelector('.map-container').nextElementSibling).toBe(label)
       expect(label.textContent).toBe('Selected location: London')
       expect(label.querySelector('strong').textContent).toBe('Selected location:')
+      expect(readDescription()).toBe('London')
       const inputs = [...field.querySelectorAll('input.govuk-input')]
       expect(inputs.map((input) => input.value)).toEqual(values)
       inputs.forEach((input, index) => {
         input.value = changed[index]
       })
+      inputs[0].dispatchEvent(new window.Event('input'))
+      expect(readDescription()).toBe('')
       inputs[0].dispatchEvent(new window.Event('change'))
       await vi.advanceTimersByTimeAsync(300)
       if (type !== 'LatLongField') {
@@ -155,13 +170,16 @@ describe('location adapter compatibility with the installed forms engine', () =>
           expect.any(Object)
         )
       }
+      vi.mocked(fetch).mockResolvedValueOnce({ ok: true, json: async () => ({ label: 'Westminster' }) })
       fixture.emit(map.EVENTS.interactMarkerChange, { coords: MARKER_CENTER })
+      expect(readDescription()).toBe('')
       await vi.advanceTimersByTimeAsync(300)
       expect(fetch).toHaveBeenLastCalledWith(
         '/api/map/approximate-location?easting=530591&northing=179571',
         expect.any(Object)
       )
-      expect(label.textContent).toBe('Selected location: London')
+      expect(label.textContent).toBe('Selected location: Westminster')
+      expect(readDescription()).toBe('Westminster')
     }
   )
 

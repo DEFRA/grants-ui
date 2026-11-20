@@ -91,18 +91,29 @@ function addHelpPanel(map) {
   })
 }
 
-/** Capture display metadata automatically without adding a forms-engine answer component. */
-function createHintMetadata(location, inputs) {
+/** Update the display metadata and any configured description answer together. */
+function createLocationHintUpdater(location, inputs, descriptionFieldName) {
   const name = inputs[0].name.split('__')[0]
   const metadata = document.createElement('input')
   metadata.type = 'hidden'
   metadata.name = `${MAP_LOCATION_HINT_PREFIX}${name}`
   location.append(metadata)
-  return (text) => {
+  const descriptionInput = descriptionFieldName && inputs[0].form?.elements.namedItem(descriptionFieldName)
+  const hasDescriptionInput =
+    descriptionInput instanceof window.HTMLInputElement &&
+    descriptionInput.type === 'hidden' &&
+    descriptionInput.name === descriptionFieldName
+
+  const updateHint = (text, description) => {
+    if (hasDescriptionInput) {
+      descriptionInput.value = description
+    }
     metadata.value = text
       ? JSON.stringify({ text, answer: Object.fromEntries(inputs.map((input) => [input.name, input.value])) })
       : ''
   }
+  updateHint('', '')
+  return updateHint
 }
 
 /** Initialise and bind a location field using the forms engine's public map helpers. */
@@ -110,7 +121,12 @@ export function processLocation(
   config,
   location,
   index,
-  { hideMapHelpPanel = true, showApproximateLocation = false, approximateLocationPrefix = '' } = {}
+  {
+    hideMapHelpPanel = true,
+    showApproximateLocation = false,
+    approximateLocationPrefix = '',
+    locationDescriptionField = ''
+  } = {}
 ) {
   if (!(location instanceof window.HTMLDivElement)) {
     return
@@ -136,7 +152,11 @@ export function processLocation(
   container.className = 'map-container'
   locationInputs.after(container)
   const updateApproximateLocation = showApproximateLocation
-    ? createApproximateLocation(container, approximateLocationPrefix, createHintMetadata(location, inputs))
+    ? createApproximateLocation(
+        container,
+        approximateLocationPrefix,
+        createLocationHintUpdater(location, inputs, locationDescriptionField)
+      )
     : undefined
   const { map, interactPlugin } = mapHelpers.createMap(container.id, initConfig, config)
   map.on(mapHelpers.EVENTS.mapReady, ({ map: provider }) => {

@@ -192,6 +192,9 @@
           {% if component.approximateLocationPrefix is defined %}
             data-approximate-location-prefix="{{ component.approximateLocationPrefix | escape }}"
           {% endif %}
+          {% if component.locationDescriptionField is defined %}
+            data-location-description-field="{{ component.locationDescriptionField | escape }}"
+          {% endif %}
         ></div>
       {% endfor %}
     </div>
