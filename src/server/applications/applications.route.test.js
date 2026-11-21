@@ -354,7 +354,7 @@ it('uses the scheme short name and configured support email on the selector', as
   expect(h.view).toHaveBeenCalledWith(
     'applications',
     expect.objectContaining({
-      pageTitle: 'Your Water Management grant applications',
+      pageTitle: 'Manage your Water Management grant applications',
       serviceName: 'Water Management grant',
       supportEmail: 'support@example.test'
     })

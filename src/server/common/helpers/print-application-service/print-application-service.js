@@ -2,7 +2,7 @@ import { formatAnswer } from './utils/format-answer.js'
 import { COMPONENT_TYPES } from './constants.js'
 import { shouldDisplayAnswer } from '../answer-components.js'
 import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/view-models/confirm-land-and-actions.view-model.js'
-import { ComponentsRegistry } from '../../../confirmation/services/components.registry.js'
+import { renderConfigurableHtml } from '../render-configurable-html.js'
 import { findPageByPath, normalisePagePath, resolveAdditionalAnswerSections } from '../additional-answers.js'
 import { getSavedLocationHint } from '../../map/location-hints.js'
 import { getNumberFieldInputs } from '../state/persist-formatting.js'
@@ -490,11 +490,5 @@ export function processConfigurablePrintContent(configurablePrintContent, slug) 
     return undefined
   }
 
-  let processedHtml = ComponentsRegistry.replaceComponents(configurablePrintContent.html)
-
-  if (slug) {
-    processedHtml = processedHtml.replaceAll('{{SLUG}}', slug)
-  }
-
-  return { ...configurablePrintContent, html: processedHtml }
+  return { ...configurablePrintContent, html: renderConfigurableHtml(configurablePrintContent.html, slug) }
 }
