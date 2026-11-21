@@ -37,6 +37,32 @@ describe('additional answers', () => {
     expect(sections).toEqual([{ title: 'Other results', items: [] }])
   })
 
+  it.each([
+    ['thousands', 100000, '100,000'],
+    ['thousands', '100000.500', '100,000.500'],
+    ['decimal', 100000, '100,000.00'],
+    ['decimal:4', -100000.5, '-100,000.5000'],
+    ['currency:gbp', 100000, '£100,000.00'],
+    ['currency:gbp,4', 100000.5, '£100,000.5000'],
+    ['currency:gbp', 0, '£0.00'],
+    ['currency:gbp', null, 'Not provided'],
+    ['currency:gbp', undefined, 'Not provided'],
+    ['decimal', '', ''],
+    ['decimal', false, false],
+    ['decimal', '£100,000.00', '£100,000.00'],
+    ['decimal', '0x10', '0x10'],
+    [undefined, 100000, 100000]
+  ])('resolves %s formatting for %s as %s without changing saved values', (format, value, expected) => {
+    const sections = [{ items: [{ title: 'Cost', stateValue: 'additionalAnswers.cost', format }] }]
+    const state = { additionalAnswers: { cost: value } }
+    const originalState = structuredClone(state)
+    const originalSections = structuredClone(sections)
+
+    expect(resolveAdditionalAnswerSections(sections, state)[0].items[0].value).toBe(expected)
+    expect(state).toEqual(originalState)
+    expect(sections).toEqual(originalSections)
+  })
+
   it('matches relevant pages with or without a leading slash', () => {
     const sections = resolveAdditionalAnswerSections(
       additionalSections,

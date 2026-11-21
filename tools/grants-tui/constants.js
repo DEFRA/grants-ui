@@ -47,13 +47,6 @@ export const TEST_TARGETS = [
     needsDocker: false
   },
   {
-    key: 'contracts',
-    label: 'contracts',
-    script: 'test:contracts',
-    description: 'Contract tests (vitest run --config vitest.contracts.config.js)',
-    needsDocker: false
-  },
-  {
     key: 'acceptance',
     label: 'acceptance',
     script: 'test:acceptance',

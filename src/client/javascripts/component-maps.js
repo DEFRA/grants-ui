@@ -101,15 +101,22 @@ function hideInitialHelpPanel(field) {
 function createMapOptionsResolver(settings) {
   const optionsByName = new Map(
     [...(settings?.querySelectorAll('[data-map-component]') ?? [])].map((element) => {
-      const { mapComponent, hideMapHelpPanel, zoomToPostcode, showApproximateLocation, approximateLocationPrefix } =
-        /** @type {HTMLElement} */ (element).dataset
+      const {
+        mapComponent,
+        hideMapHelpPanel,
+        zoomToPostcode,
+        showApproximateLocation,
+        approximateLocationPrefix,
+        locationDescriptionField
+      } = /** @type {HTMLElement} */ (element).dataset
       return [
         mapComponent,
         {
           hideMapHelpPanel: hideMapHelpPanel !== 'false',
           zoomToPostcode: zoomToPostcode !== 'false',
           showApproximateLocation: showApproximateLocation === 'true',
-          approximateLocationPrefix
+          approximateLocationPrefix,
+          ...(locationDescriptionField && { locationDescriptionField })
         }
       ]
     })

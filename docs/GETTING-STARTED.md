@@ -280,8 +280,7 @@ npm run
 - **`lint`** - Run all linting checks (JavaScript, SCSS, and TypeScript types)
 - **`lint:fix`** - Automatically fix ESLint issues
 - **`test`** - Run all tests with Vitest and generate coverage reports
-- **`test:unit`** - Run unit tests only (isolated from integration/contracts)
-- **`test:contracts`** - Run Pact contract tests
+- **`test:unit`** - Run unit tests only (isolated from integration)
 - **`test:acceptance`** - Execute end-to-end journey tests via shell script
 - **`test:watch`** - Run Vitest in interactive watch mode
 - **`test:stryker`** - Run Vitest specifically for Stryker mutation testing

@@ -6,16 +6,25 @@ const MAP_COMPONENT_TYPES = new Set(['OsGridRefField', 'EastingNorthingField', '
  * @param {{ collection?: { fields?: Array<{ type: string, name: string, options?: Record<string, unknown> }> } }} [page]
  */
 export function componentMapOptions(page) {
-  return (page?.collection?.fields ?? [])
+  const fields = page?.collection?.fields ?? []
+  return fields
     .filter((field) => MAP_COMPONENT_TYPES.has(field.type))
-    .map((field) => ({
-      name: field.name,
-      hideMapHelpPanel: field.options?.hideMapHelpPanel !== false,
-      zoomToPostcode: field.options?.zoomToPostcode !== false,
-      showApproximateLocation: field.type !== 'GeospatialField' && field.options?.showApproximateLocation === true,
-      approximateLocationPrefix:
-        typeof field.options?.approximateLocationPrefix === 'string'
-          ? field.options.approximateLocationPrefix
-          : undefined
-    }))
+    .map((field) => {
+      const showApproximateLocation =
+        field.type !== 'GeospatialField' && field.options?.showApproximateLocation === true
+      const descriptionField = showApproximateLocation
+        ? fields.find(({ type, name }) => type === 'HiddenField' && name === `${field.name}Description`)
+        : undefined
+      return {
+        name: field.name,
+        hideMapHelpPanel: field.options?.hideMapHelpPanel !== false,
+        zoomToPostcode: field.options?.zoomToPostcode !== false,
+        showApproximateLocation,
+        approximateLocationPrefix:
+          typeof field.options?.approximateLocationPrefix === 'string'
+            ? field.options.approximateLocationPrefix
+            : undefined,
+        locationDescriptionField: descriptionField?.name
+      }
+    })
 }
