@@ -28,10 +28,10 @@ Feature: Pigs Might Fly
         Then the user should be at URL "what-type-of-pigs"
         And should see heading "What type of pigs?"
         When the user selects the following
-            | Large White       |
-            | British Landrace  |
-            | Berkshire         |
-            | Other             |
+            | Large White      |
+            | British Landrace |
+            | Berkshire        |
+            | Other            |
         And continues
 
         # how-many-white-pigs
@@ -75,10 +75,10 @@ Feature: Pigs Might Fly
 
         # validate Mongo state storage
         And the following application state should be stored for CRN "9000000020" and SBI "800000016" and grant "pigs-might-fly"
-            | FIELD                | VALUE              |
-            | $$__referenceNumber  | {REFERENCE NUMBER} |
-            | applicationStatus    | SUBMITTED          |
-            | submittedBy          | 9000000020         |
+            | FIELD               | VALUE              |
+            | $$__referenceNumber | {REFERENCE NUMBER} |
+            | applicationStatus   | SUBMITTED          |
+            | submittedBy         | 9000000020         |
 
         # validate Mongo submission storage
         And the following application submissions should be stored for CRN "9000000020" and SBI "800000016" and grant "pigs-might-fly"

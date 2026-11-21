@@ -19,9 +19,9 @@ Feature: Action Selection
         Then the user should be at URL "select-actions-for-land-parcel"
         And should see heading "Select actions for this land parcel"
         And should see the following selected land parcel
-            | FIELD             | VALUE           |
-            | Parcel reference  | SK0972 6820     |
-            | Total area        | 0.2774 hectares |
+            | FIELD            | VALUE           |
+            | Parcel reference | SK0972 6820     |
+            | Total area       | 0.2774 hectares |
         And should see the following actions with guidance
             | ACTION   | DESCRIPTION                                              | GUIDANCE                                                         | URL |
             | CSAM3_26 | Herbal leys: CSAM3_26                                    | Payment rate per year: £224/ha                                   | Yes |
@@ -241,9 +241,9 @@ Feature: Action Selection
         And continues
         Then the user should be at URL "select-actions-for-land-parcel"
         And should see the following selected land parcel
-            | FIELD             | VALUE           |
-            | Parcel reference  | SK0971 4561     |
-            | Total area        | 0.0112 hectares |
+            | FIELD            | VALUE           |
+            | Parcel reference | SK0971 4561     |
+            | Total area       | 0.0112 hectares |
         And should see the following actions with guidance
             | ACTION   | DESCRIPTION           | GUIDANCE                       | URL |
             | CSAM3_26 | Herbal leys: CSAM3_26 | Payment rate per year: £224/ha | Yes |
@@ -337,9 +337,9 @@ Feature: Action Selection
         # select-actions-for-land-parcel
         Then the user should be at URL "select-actions-for-land-parcel"
         And should see the following selected land parcel
-            | FIELD             | VALUE             |
-            | Parcel reference  | NY1215 1016       |
-            | Total area        | 308.6793 hectares |
+            | FIELD            | VALUE             |
+            | Parcel reference | NY1215 1016       |
+            | Total area       | 308.6793 hectares |
         And should see the following consent advice
             | Some actions on this parcel need SSSI consent (opens in new tab) and an SFI HEFER (opens in new tab). We’ll show this on those actions. |
         And should see the following actions with guidance
@@ -364,16 +364,16 @@ Feature: Action Selection
         And should see heading "Select a land parcel"
         When the user selects parcel "SD6251 8952" of area "0.7196" hectares on the map
         Then the user should see the following requirements applied to the land parcel
-            | Some actions require:                               |
-            | site of special scientific interest (SSSI) consent  |
+            | Some actions require:                              |
+            | site of special scientific interest (SSSI) consent |
         When the user continues
 
         # select-actions-for-land-parcel, parcel has SSSI intersection
         Then the user should be at URL "select-actions-for-land-parcel"
         And should see the following selected land parcel
-            | FIELD             | VALUE            |
-            | Parcel reference  | SD6251 8952      |
-            | Total area        | 0.7196 hectares  |
+            | FIELD            | VALUE           |
+            | Parcel reference | SD6251 8952     |
+            | Total area       | 0.7196 hectares |
         And should see the following consent advice
             | Some actions on this parcel need SSSI consent (opens in new tab). We’ll show this on those actions. |
         And should see the following actions with guidance
@@ -399,22 +399,22 @@ Feature: Action Selection
         Then the user should be at URL "select-land-parcel"
         When the user selects parcel "NU1514 2607" of area "110.5436" hectares on the map
         Then the user should see the following requirements applied to the land parcel
-            | Some actions require:                                   |
-            | a Historic Environment Farm Environment Record (HEFER)  |
+            | Some actions require:                                  |
+            | a Historic Environment Farm Environment Record (HEFER) |
         When the user continues
 
         # select-actions-for-land-parcel, parcel has HEFER intersection
         Then the user should be at URL "select-actions-for-land-parcel"
         And should see the following selected land parcel
-            | FIELD             | VALUE             |
-            | Parcel reference  | NU1514 2607       |
-            | Total area        | 110.5436 hectares |
+            | FIELD            | VALUE             |
+            | Parcel reference | NU1514 2607       |
+            | Total area       | 110.5436 hectares |
         And should see the following consent advice
             | Some actions on this parcel need an SFI HEFER (opens in new tab). We’ll show this on those actions. |
         And should see the following actions with guidance
-            | ACTION  | DESCRIPTION           | GUIDANCE                        | URL |
+            | ACTION  | DESCRIPTION           | GUIDANCE                         | URL |
             | WBD1_26 | Manage ponds: WBD1_26 | Payment rate per year: £257/pond | Yes |
-            |         |                       | HEFER required                  |     |
+            |         |                       | HEFER required                   |     |
         And should not see the following actions
             | CSAM3_26 |
             | CLIG3_26 |

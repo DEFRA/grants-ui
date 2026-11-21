@@ -32,7 +32,7 @@ Feature: Application Withdrawal
         # checkboxes-field
         Then the user should be at URL "checkboxes-field"
         When the user selects the following
-            | Option two   |
+            | Option two |
         And continues
 
         # declaration-field
@@ -83,22 +83,22 @@ Feature: Application Withdrawal
         # uk-address-field
         Then the user should be at URL "uk-address-field"
         When the user enters the following
-            | FIELD          | VALUE             |
-            | Address line 1 | 1 Example Street  |
-            | Town or city   | Exampleton        |
-            | Postcode       | EX1 1EX           |
+            | FIELD          | VALUE            |
+            | Address line 1 | 1 Example Street |
+            | Town or city   | Exampleton       |
+            | Postcode       | EX1 1EX          |
         And continues
 
         # location-components
         Then the user should be at URL "location-components"
         When the user enters the following
-            | FIELD                       | VALUE          |
-            | Easting                     | 530000         |
-            | Northing                    | 180000         |
-            | OS national grid reference  | ST 678 678     |
-            | National Grid field number  | NG 1234 5678   |
-            | Latitude                    | 51.519450      |
-            | Longitude                   | -0.127758      |
+            | FIELD                      | VALUE        |
+            | Easting                    | 530000       |
+            | Northing                   | 180000       |
+            | OS national grid reference | ST 678 678   |
+            | National Grid field number | NG 1234 5678 |
+            | Latitude                   | 51.519450    |
+            | Longitude                  | -0.127758    |
         And the user adds a point named "Example location" for GeospatialField "GeospatialField"
         And continues
 
@@ -201,8 +201,8 @@ Feature: Application Withdrawal
         # checkboxes-field
         Then the user should be at URL "checkboxes-field"
         When the user selects the following
-            | Option one   |
-            | Option two   |
+            | Option one |
+            | Option two |
         And continues
 
         # declaration-field
@@ -253,22 +253,22 @@ Feature: Application Withdrawal
         # uk-address-field
         Then the user should be at URL "uk-address-field"
         When the user enters the following
-            | FIELD          | VALUE             |
-            | Address line 1 | 1 Example Street  |
-            | Town or city   | Exampleton        |
-            | Postcode       | EX1 1EX           |
+            | FIELD          | VALUE            |
+            | Address line 1 | 1 Example Street |
+            | Town or city   | Exampleton       |
+            | Postcode       | EX1 1EX          |
         And continues
 
         # location-components
         Then the user should be at URL "location-components"
         When the user enters the following
-            | FIELD                       | VALUE          |
-            | Easting                     | 530000         |
-            | Northing                    | 180000         |
-            | OS national grid reference  | ST 678 678     |
-            | National Grid field number  | NG 1234 5678   |
-            | Latitude                    | 51.519450      |
-            | Longitude                   | -0.127758      |
+            | FIELD                      | VALUE        |
+            | Easting                    | 530000       |
+            | Northing                   | 180000       |
+            | OS national grid reference | ST 678 678   |
+            | National Grid field number | NG 1234 5678 |
+            | Latitude                   | 51.519450    |
+            | Longitude                  | -0.127758    |
         And the user adds a point named "Example location" for GeospatialField "GeospatialField"
         And continues
 

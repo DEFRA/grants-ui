@@ -10,6 +10,6 @@ Feature: Footer Links
 
         # footer links
         Then the footer should contain the following links
-            | TEXT                           | URL                                                                                                                   |
-            | Privacy (opens in new tab)     | https://www.gov.uk/government/organisations/rural-payments-agency/about/personal-information-charter                  |
-            | Cookies                        |                                                                                                                       |
+            | TEXT                       | URL                                                                                                  |
+            | Privacy (opens in new tab) | https://www.gov.uk/government/organisations/rural-payments-agency/about/personal-information-charter |
+            | Cookies                    |                                                                                                      |

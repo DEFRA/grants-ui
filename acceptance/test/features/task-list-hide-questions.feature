@@ -107,9 +107,9 @@ Feature: Task Lists Hiding Questions
         Then the user should be back at URL "tasks"
         And the page is analyzed for accessibility
         And should see the following task list without questions with 4 of 9 task pages completed
-          | Example task one                 | Completed        |
-          | Example task two                 | Not started      |
-          | Example check and submit task    | Cannot start yet |
+          | Example task one              | Completed        |
+          | Example task two              | Not started      |
+          | Example check and submit task | Cannot start yet |
         When the user selects task "Example task two"
 
         # compound-component-task-page

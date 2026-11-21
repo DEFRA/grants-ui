@@ -34,17 +34,17 @@ Feature: Task Lists Showing Questions
         And should see heading "Example Task List"
         And the page is analyzed for accessibility
         And should see the following task list with questions with 0 of 8 task pages completed
-            | Example task one                 |                  |
-            | Example multiple components      | Not started      |
-            | Optional choice                  | Cannot start yet |
-            | Single component                 | Cannot start yet |
-            | Example task two                 |                  |
-            | Compound component               | Cannot start yet |
-            | Land parcels                     | Cannot start yet |
-            | Example with guidance            | Cannot start yet |
-            | Example check and submit task    |                  |
-            | Check your answers               | Cannot start yet |
-            | Confirm and send                 | Cannot start yet |
+            | Example task one              |                  |
+            | Example multiple components   | Not started      |
+            | Optional choice               | Cannot start yet |
+            | Single component              | Cannot start yet |
+            | Example task two              |                  |
+            | Compound component            | Cannot start yet |
+            | Land parcels                  | Cannot start yet |
+            | Example with guidance         | Cannot start yet |
+            | Example check and submit task |                  |
+            | Check your answers            | Cannot start yet |
+            | Confirm and send              | Cannot start yet |
         When the user selects task "Example multiple components"
 
         # multiple-components-task-page
@@ -79,17 +79,17 @@ Feature: Task Lists Showing Questions
         Then the user should be back at URL "tasks"
         And the page is analyzed for accessibility
         And should see the following task list with questions with 3 of 8 task pages completed
-          | Example task one                 |                  |
-          | Example multiple components      | Completed        |
-          | Optional choice                  | Completed        |
-          | Single component                 | Completed        |
-          | Example task two                 |                  |
-          | Compound component               | Not started      |
-          | Land parcels                     | Cannot start yet |
-          | Example with guidance            | Cannot start yet |
-          | Example check and submit task    |                  |
-          | Check your answers               | Cannot start yet |
-          | Confirm and send                 | Cannot start yet |
+          | Example task one              |                  |
+          | Example multiple components   | Completed        |
+          | Optional choice               | Completed        |
+          | Single component              | Completed        |
+          | Example task two              |                  |
+          | Compound component            | Not started      |
+          | Land parcels                  | Cannot start yet |
+          | Example with guidance         | Cannot start yet |
+          | Example check and submit task |                  |
+          | Check your answers            | Cannot start yet |
+          | Confirm and send              | Cannot start yet |
         When the user selects task "Compound component"
 
         # compound-component-task-page
@@ -126,17 +126,17 @@ Feature: Task Lists Showing Questions
         Then the user should be back at URL "tasks"
         And the page is analyzed for accessibility
         And should see the following task list with questions with 6 of 8 task pages completed
-          | Example task one                 |                  |
-          | Example multiple components      | Completed        |
-          | Optional choice                  | Completed        |
-          | Single component                 | Completed        |
-          | Example task two                 |                  |
-          | Compound component               | Completed        |
-          | Land parcels                     | Completed        |
-          | Example with guidance            | Completed        |
-          | Example check and submit task    |                  |
-          | Check your answers               | Not started      |
-          | Confirm and send                 | Cannot start yet |
+          | Example task one              |                  |
+          | Example multiple components   | Completed        |
+          | Optional choice               | Completed        |
+          | Single component              | Completed        |
+          | Example task two              |                  |
+          | Compound component            | Completed        |
+          | Land parcels                  | Completed        |
+          | Example with guidance         | Completed        |
+          | Example check and submit task |                  |
+          | Check your answers            | Not started      |
+          | Confirm and send              | Cannot start yet |
 
         # revisit a task
         When the user selects task "Example with guidance"
@@ -151,17 +151,17 @@ Feature: Task Lists Showing Questions
         Then the user should be back at URL "tasks"
         And the page is analyzed for accessibility
         And should see the following task list with questions with 6 of 8 task pages completed
-        | Example task one                 |                  |
-        | Example multiple components      | Completed        |
-        | Optional choice                  | Completed        |
-        | Single component                 | Completed        |
-        | Example task two                 |                  |
-        | Compound component               | Completed        |
-        | Land parcels                     | Completed        |
-        | Example with guidance            | Completed        |
-        | Example check and submit task    |                  |
-        | Check your answers               | Not started      |
-        | Confirm and send                 | Cannot start yet |
+        | Example task one              |                  |
+        | Example multiple components   | Completed        |
+        | Optional choice               | Completed        |
+        | Single component              | Completed        |
+        | Example task two              |                  |
+        | Compound component            | Completed        |
+        | Land parcels                  | Completed        |
+        | Example with guidance         | Completed        |
+        | Example check and submit task |                  |
+        | Check your answers            | Not started      |
+        | Confirm and send              | Cannot start yet |
         When the user selects task "Check your answers"
 
         # summary
