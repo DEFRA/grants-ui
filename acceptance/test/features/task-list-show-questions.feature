@@ -183,3 +183,16 @@ Feature: Task Lists Showing Questions
         And should see heading "Details submitted"
         And the page is analyzed for accessibility
         And should see an "EGWT" reference number for their application
+        When the user clicks on "View / Print submitted application (opens in new tab)"
+        Then a new tab should be opened at URL "print-submitted-application" and closed by the user
+
+        # print-submitted-application
+        Given the user navigates to "/example-grant-with-task-list/print-submitted-application"
+        Then the user should see heading "Example grant with task list application"
+        And the page is analyzed for accessibility
+        Then the user should see the following submitted application details
+            | Application number                  | {REFERENCE NUMBER} |
+            | Submitted answers                   |                    |
+            | Number with guidance                | 200,000.50m³       |
+            | Capacity without number formatting  | 200000.50m³        |
+        And should see button "Print this page"

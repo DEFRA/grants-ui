@@ -70,6 +70,7 @@ metadata:
         gasStatus: default
         toGrantsStatus: SUBMITTED
         toPath: /confirmation
+    excludedPaths: ['print-submitted-application']
   permissions:
     enforce: false
 sections:
@@ -345,6 +346,8 @@ pages:
             <li>the Rural Payments Agency confirms your start date</li>
           </ul>
 
+          <p class="govuk-body"><a class="govuk-link" href="/{{SLUG}}/print-submitted-application" target="_blank">View / Print submitted application (opens in new tab)</a></p>
+
           <details class="govuk-details" data-module="govuk-details">
             <summary class="govuk-details__summary">
               <span class="govuk-details__summary-text">
@@ -360,6 +363,11 @@ pages:
               <p class="govuk-body">Email: <a class="govuk-link" href="mailto:ruralpayments@defra.gov.uk">ruralpayments@defra.gov.uk</a></p>
             </div>
           </details>
+
+  - title: PrintSubmittedApplication
+    path: /print-submitted-application
+    controller: PrintSubmittedApplicationController
+    id: 6b1f4c2e-8d3a-4e7b-9c05-2a7e1d9f3b84
 
 conditions:
   - id: fe427aee-bb72-4fb6-99a0-8b2092605efd
