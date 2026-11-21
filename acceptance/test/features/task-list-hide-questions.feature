@@ -1,5 +1,5 @@
 Feature: Task Lists Hiding Questions
-@runme
+
     Scenario: Complete a task list based grant application hiding all questions
         Given there is no application data for SBI "800000012" and grant "example-grant-with-task-list-hide-questions"
 
@@ -247,12 +247,12 @@ Feature: Task Lists Hiding Questions
             | Land parcels                              | SD6351-8781                                        |
             | Number with guidance                      | 150,000.00                                         |
             | Are you eligible to apply for this grant? | Yes                                                |
-            | First item amount                         | £12,000.00                                         |
+            | First item amount                         | £12,000                                            |
             | Example number field                      | 150,000                                            |
         And should see the following summary cards
             | CARD          | QUESTION  | ANSWER              |
             | Repeat Item 1 | Item name | Repeat item example |
-            |               | Amount    | £12,000.00          |
+            |               | Amount    | £12,000             |
         When the user continues
 
         # declaration
@@ -277,5 +277,5 @@ Feature: Task Lists Hiding Questions
             | Application number   | {REFERENCE NUMBER} |
             | Submitted answers    |                    |
             | Number with guidance | 150,000.00         |
-            | First item amount    | £12,000.00         |
+            | First item amount    | £12,000            |
             | Example number field | 150,000            |

@@ -191,8 +191,8 @@ Feature: Task Lists Showing Questions
         Then the user should see heading "Example grant with task list application"
         And the page is analyzed for accessibility
         Then the user should see the following submitted application details
-            | Application number                  | {REFERENCE NUMBER} |
-            | Submitted answers                   |                    |
-            | Number with guidance                | 200,000.50m³       |
-            | Capacity without number formatting  | 200000.50m³        |
+            | Application number                 | {REFERENCE NUMBER} |
+            | Submitted answers                  |                    |
+            | Number with guidance               | 200,000.50m³       |
+            | Capacity without number formatting | 200000.50m³        |
         And should see button "Print this page"
