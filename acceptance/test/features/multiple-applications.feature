@@ -48,6 +48,9 @@ Feature: Multiple Applications
 
         # applications
         Then the user should be at URL "applications"
+        And should see configurable heading "Your applications for this example grant"
+        And should see the following configurable copy
+            | Your business can have multiple applications for this grant. You can continue a draft application, view a submitted application or start a new application. |
         And should see the following applications
             | REFERENCE                 | STATUS    | ACTION               |
             | {FIRST REFERENCE NUMBER}  | Submitted | View application     |
