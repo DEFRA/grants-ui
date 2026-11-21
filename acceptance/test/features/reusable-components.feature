@@ -207,7 +207,7 @@ Feature: Reusable Components
             | FIELD               | VALUE               |
             | Project name        | Test project        |
             | Project description | Project description |
-            | Project budget      | 50,000              |
+            | Project budget      | 50,000.50              |
         And continues
 
         # repeat-page (item entry)
