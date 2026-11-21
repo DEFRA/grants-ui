@@ -43,10 +43,16 @@ describe('getNumberFormatter', () => {
     ['decimal', 125000.5, '125,000.50'],
     ['decimal:0', 125000.5, '125,001'],
     ['decimal:4', 125000.5, '125,000.5000'],
+    ['currency:gbp', 125000, '£125,000'],
+    ['currency:gbp', '125000.00', '£125,000'],
+    ['currency:gbp', 0, '£0'],
+    ['currency:gbp', -125000, '-£125,000'],
     ['currency:gbp', 125000.5, '£125,000.50'],
     ['currency:gbp', -1.005, '-£1.01'],
     ['currency:gbp,0', 125000.5, '£125,001'],
     ['currency:jpy', 125000.5, 'JP¥125,001'],
+    ['currency:gbp,2', 125000, '£125,000'],
+    ['currency:gbp,4', '125000.0000', '£125,000'],
     [' currency: gbp , 4 ', 125000.5, '£125,000.5000']
   ])('formats %s', (format, value, expected) => {
     expect(getNumberFormatter(format)(value)).toBe(expected)
@@ -86,6 +92,7 @@ describe('formatNumberAnswer', () => {
     ['decimal|suffix', 125000.5, 'm³', '125,000.50m³'],
     ['decimal:4|suffix', -125000.5, 'm³', '-125,000.5000m³'],
     ['currency:gbp,2|suffix', 125000.5, ' per year', '£125,000.50 per year'],
+    ['currency:gbp,2|suffix', '125000.00', ' per year', '£125,000 per year'],
     [' thousands | suffix ', 0, 'm³', '0m³'],
     ['thousands|suffix', 100000, undefined, '100,000'],
     ['thousands|suffix', 100000, '', '100,000'],

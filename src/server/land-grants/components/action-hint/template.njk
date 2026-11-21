@@ -1,6 +1,8 @@
 {% if requirementText %}<span class="select-actions-requirement">{{ requirementText }}</span>{% endif -%}
-<span>Payment rate per year: £{{ rate }}/{{ rateUnit or "ha" }}
-{%- if agreementRate %} and <strong>£{{ agreementRate }}</strong> per agreement{% endif -%}
+{% if rate or agreementRate -%}
+<span>Payment rate per year: {% if rate %}{{ rate }}/{{ rateUnit or "ha" }}{% endif -%}
+{%- if agreementRate %}{% if rate %} and {% endif %}<strong>{{ agreementRate }}</strong> per agreement{% endif -%}
 </span>
+{%- endif -%}
 {%- if availabilityText %}<span id="{{ hintId }}">{{ availabilityText }}</span>{% endif -%}
 {%- if showTotalGuidance %}<span class="select-actions-guidance">This action will use all the available area on this land parcel.</span>{% endif -%}

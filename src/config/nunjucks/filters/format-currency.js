@@ -1,3 +1,5 @@
+import { createCurrencyNumberFormat } from '~/src/shared/format-number.js'
+
 /**
  * @param {Parameters<Intl.NumberFormat['format']>[0]} value
  * @param {Intl.LocalesArgument} locale
@@ -13,15 +15,9 @@ export function formatCurrency(
   maximumFractionDigits = 2,
   style = 'currency'
 ) {
-  /** @type {Intl.NumberFormatOptions} */
-  const options = {
-    style,
-    maximumFractionDigits
-  }
-
-  if (style === 'currency') {
-    options.currency = currency
-  }
-
-  return new Intl.NumberFormat(locale, options).format(value)
+  const formatter =
+    style === 'currency'
+      ? createCurrencyNumberFormat(locale, currency, { maximumFractionDigits })
+      : new Intl.NumberFormat(locale, { style, maximumFractionDigits })
+  return formatter.format(value)
 }

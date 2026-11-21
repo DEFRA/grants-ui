@@ -1,4 +1,5 @@
 import { resolvePath } from './path-utils.js'
+import { formatSavedPayment } from '~/src/server/common/utils/payment.js'
 import { getNumberFormatter } from './number-formatter.js'
 import { isDecimalString } from '~/src/shared/format-number.js'
 
@@ -23,6 +24,19 @@ export function normalisePagePath(path) {
  */
 export function findPageByPath(pages, path) {
   return pages?.find((page) => normalisePagePath(page.path) === normalisePagePath(path))
+}
+
+/**
+ * @param {AdditionalSectionItem} item
+ * @param {unknown} value
+ */
+function formatItemValue(item, value) {
+  if (item.stateValue === 'totalPayment' && typeof value === 'string') {
+    return formatSavedPayment(value)
+  }
+
+  const formatter = getNumberFormatter(item.format)
+  return formatter && (typeof value === 'number' || isDecimalString(value)) ? formatter(value) : value
 }
 
 /**
@@ -61,11 +75,7 @@ export function resolveAdditionalAnswerSections(
         ...section,
         items: items.map((item) => {
           const value = resolvePath(state, item.stateValue) ?? 'Not provided'
-          const formatter = getNumberFormatter(item.format)
-          return {
-            ...item,
-            value: formatter && (typeof value === 'number' || isDecimalString(value)) ? formatter(value) : value
-          }
+          return { ...item, value: formatItemValue(item, value) }
         })
       }
     ]

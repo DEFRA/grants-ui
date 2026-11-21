@@ -546,9 +546,9 @@ describe('print-submitted-application.html view', () => {
         .get()
     ).toEqual(['Action', 'Quantity', 'Yearly payment'])
     expect(normalise(parcelCard.find('tbody tr').first().text())).toBe(
-      'Action description (CLIG3) SSSI consent required 2.0000 ha £100.00'
+      'Action description (CLIG3) SSSI consent required 2.0000 ha £100'
     )
-    expect(normalise(parcelCard.find('tbody tr').last().text())).toBe('Subtotal £100.00')
+    expect(normalise(parcelCard.find('tbody tr').last().text())).toBe('Subtotal £100')
     expect($('.govuk-summary-card a')).toHaveLength(0)
     expect(content).toContain('Project name Test project')
     expect(content).toContain('Submitted answers')
@@ -571,10 +571,10 @@ describe('print-submitted-application.html view', () => {
         .map((_, row) => normalise($(row).text()))
         .get()
     ).toEqual([
-      'Assess moorland (CMOR1) £272.00',
-      'Total yearly payment £372.00',
+      'Assess moorland (CMOR1) £272',
+      'Total yearly payment £372',
       'Agreement duration 3 years',
-      'Estimated payment over 3 years £1,116.00'
+      'Estimated payment over 3 years £1,116'
     ])
   })
 
@@ -601,7 +601,7 @@ describe('print-submitted-application.html view', () => {
     )
 
     expect($('.govuk-summary-card')).toHaveLength(1)
-    expect(normalise($('.govuk-summary-card').text())).toContain('Estimated payment over 3 years £816.00')
+    expect(normalise($('.govuk-summary-card').text())).toContain('Estimated payment over 3 years £816')
     expect(normalise($('main').text())).toContain('Selected parcels SD1234-5678')
     expect(normalise($('main').text())).toContain('Land parcels ["SD1234-5678"]')
   })
