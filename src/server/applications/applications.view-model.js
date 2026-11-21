@@ -4,6 +4,7 @@ import { isApplicationWindowOpen } from '../common/helpers/application-window.js
 import { findRedirectRule, isWithdrawal } from '../common/request-pipeline/redirects/forms-status-redirect.js'
 import agreements from '~/src/config/agreements.js'
 import { buildFeedbackSurveyUrl } from '../common/helpers/feedback-survey.js'
+import { renderConfigurableHtml } from '../common/helpers/render-configurable-html.js'
 import { buildNavigation } from '~/src/config/nunjucks/context/build-navigation.js'
 
 const SUBMITTED_ROW = {
@@ -50,8 +51,14 @@ export function buildApplicationsViewModel(
   { gasStatuses = new Map(), postSubmissionRules = new Map() } = {}
 ) {
   const schemeName = definition.metadata?.shortName ?? definition.name
+  const { title, content } = definition.metadata?.applicationsPage ?? {}
+  const configuredTitle = typeof title === 'string' ? title.trim() : ''
+  const html = typeof content === 'string' ? content : content?.html
+
   return {
-    pageTitle: `Your ${schemeName} applications`,
+    pageTitle: configuredTitle || `Manage your ${schemeName} applications`,
+    applicationsContentHtml:
+      typeof html === 'string' && html.trim() ? renderConfigurableHtml(html, request.params.slug) : undefined,
     schemeName,
     serviceName: schemeName,
     serviceUrl: `/${request.params.slug}`,

@@ -6,6 +6,11 @@ metadata:
   phase: public-beta
   enabledInProd: false
   allowMultipleApplications: true
+  applicationsPage:
+    title: Your applications for this example grant
+    content:
+      html: |
+        <p class="govuk-body">Your business can have <strong>multiple applications</strong> for this grant. You can continue a draft application, view a submitted application or start a new application.</p>
   grantRedirectRules:
     excludedPaths: ['print-submitted-application']
   permissions:
