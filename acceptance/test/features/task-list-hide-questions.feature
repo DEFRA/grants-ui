@@ -1,5 +1,5 @@
 Feature: Task Lists Hiding Questions
-
+@runme
     Scenario: Complete a task list based grant application hiding all questions
         Given there is no application data for SBI "800000012" and grant "example-grant-with-task-list-hide-questions"
 
@@ -231,6 +231,28 @@ Feature: Task Lists Hiding Questions
         And should see task title "Example check and submit task"
         And should see heading "Check your answers"
         And the page is analyzed for accessibility
+        And should see the following answers
+            | QUESTION                                  | ANSWER                                             |
+            | First name                                | James                                              |
+            | Middle name (optional)                    | Joseph                                             |
+            | Last name                                 | Test-Farmer                                        |
+            | Optional choice                           | Yes                                                |
+            | Conditional question                      | No                                                 |
+            | Single component                          | cl-defra-gae-test-applicant-email@equalexperts.com |
+            | Compound component                        | Test Farm                                          |
+            |                                           | Cogenhoe                                           |
+            |                                           | Northampton                                        |
+            |                                           | Northamptonshire                                   |
+            |                                           | NN7 1NN                                            |
+            | Land parcels                              | SD6351-8781                                        |
+            | Number with guidance                      | 150,000.00                                         |
+            | Are you eligible to apply for this grant? | Yes                                                |
+            | First item amount                         | £12,000.00                                         |
+            | Example number field                      | 150,000                                            |
+        And should see the following summary cards
+            | CARD          | QUESTION  | ANSWER              |
+            | Repeat Item 1 | Item name | Repeat item example |
+            |               | Amount    | £12,000.00          |
         When the user continues
 
         # declaration
@@ -245,3 +267,15 @@ Feature: Task Lists Hiding Questions
         And should see heading "Details submitted"
         And the page is analyzed for accessibility
         And should see an "EGWTHQ" reference number for their application
+        When the user clicks on "View / Print submitted application (opens in new tab)"
+        Then a new tab should be opened at URL "print-submitted-application" and closed by the user
+
+        # print-submitted-application
+        Given the user navigates to "/example-grant-with-task-list-hide-questions/print-submitted-application"
+        Then the page is analyzed for accessibility
+        And the user should see the following submitted application details
+            | Application number   | {REFERENCE NUMBER} |
+            | Submitted answers    |                    |
+            | Number with guidance | 150,000.00         |
+            | First item amount    | £12,000.00         |
+            | Example number field | 150,000            |
