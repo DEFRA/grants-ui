@@ -1,7 +1,9 @@
 import { resolvePath } from './path-utils.js'
+import { getNumberFormatter } from './number-formatter.js'
+import { isDecimalString } from '~/src/shared/format-number.js'
 
 /**
- * @typedef {{ title: string, stateValue: string }} AdditionalSectionItem
+ * @typedef {{ title: string, stateValue: string, format?: string }} AdditionalSectionItem
  * @typedef {object} AdditionalSection
  * @property {string} [title] - Separate section heading; omit to use the owning page's section
  * @property {string} [page] - Owning page path, also used to filter excluded pages
@@ -57,7 +59,14 @@ export function resolveAdditionalAnswerSections(
     return [
       {
         ...section,
-        items: items.map((item) => ({ ...item, value: resolvePath(state, item.stateValue) ?? 'Not provided' }))
+        items: items.map((item) => {
+          const value = resolvePath(state, item.stateValue) ?? 'Not provided'
+          const formatter = getNumberFormatter(item.format)
+          return {
+            ...item,
+            value: formatter && (typeof value === 'number' || isDecimalString(value)) ? formatter(value) : value
+          }
+        })
       }
     ]
   })
