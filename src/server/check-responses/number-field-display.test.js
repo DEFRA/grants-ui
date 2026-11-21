@@ -12,6 +12,14 @@ import DeclarationPageController from '../declaration/declaration-page.controlle
 import MapSubmissionPageController from '../common/map/map-submission-page.controller.js'
 import { enableRepeatPageItemNames } from '../common/helpers/repeat-page-item-names.js'
 import { enableRepeatNumberFormatting } from '../common/helpers/repeat-page-number-formatting.js'
+import { createPageRenderer } from '../common/test-helpers/component-helpers.js'
+
+const renderCheckAnswers = createPageRenderer(import.meta.url, 'check-responses-page.html', {}, [
+  'src/server/check-responses/views'
+])
+const renderPrint = createPageRenderer(import.meta.url, 'print-submitted-application.html', {}, [
+  'src/server/print-submitted-application/views'
+])
 
 vi.unmock('@defra/forms-model')
 vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
@@ -22,7 +30,10 @@ function getRowText({ value }) {
   return value.text ?? load(value.html).text()
 }
 
-function createJourney(format, { controller = 'CheckResponsesPageController', view, repeat = false, components } = {}) {
+function createJourney(
+  format,
+  { controller = 'CheckResponsesPageController', view, repeat = false, components, additionalSections } = {}
+) {
   const model = new FormModel(
     configureFormDefinition({
       name: 'Number display formatting',
@@ -30,7 +41,7 @@ function createJourney(format, { controller = 'CheckResponsesPageController', vi
       startPage: '/amount',
       sections: [],
       lists: [],
-      metadata: { tasklist: {} },
+      metadata: { tasklist: {}, pageConfig: { '/summary': { additionalSections } } },
       conditions: [],
       pages: [
         {
@@ -227,6 +238,44 @@ describe('number display formatting', () => {
     expect(summary.viewModel.checkAnswers[0].summaryList.rows.map(getRowText)).toEqual(['125,000.5', '125000'])
     expect(journey.print().sections[0].questions.map((question) => question.answer)).toEqual(['125,000.5', '125000'])
     expect(summary.viewModel.context.relevantState).toEqual({ capacity: 125000.5, sbi: 125000 })
+  })
+})
+
+describe('additional answer display formatting', () => {
+  it.each([
+    ['thousands', 100000, '100,000'],
+    ['decimal', 100000, '100,000.00'],
+    ['decimal:4', -100000.5, '-100,000.5000'],
+    ['currency:gbp', 100000, '£100,000.00'],
+    ['currency:gbp,4', '100000.500', '£100,000.5000'],
+    ['currency:gbp', 0, '£0.00'],
+    ['thousands', null, 'Not provided'],
+    ['thousands', undefined, 'Not provided'],
+    [undefined, 100000, '100000']
+  ])('renders %s formatting for derived value %s on Check answers and print', async (format, value, expected) => {
+    const journey = createJourney('thousands', {
+      additionalSections: [
+        {
+          title: 'Calculated results',
+          items: [{ title: 'Calculated cost', stateValue: 'additionalAnswers.cost', format }]
+        }
+      ]
+    })
+    await journey.dispatch('amount', { action: 'validate', capacity: '100000', sbi: '125000' })
+    journey.state().additionalAnswers = { cost: value }
+    const originalState = structuredClone(journey.state())
+
+    const summary = await journey.dispatch('summary')
+    const checkAnswers = renderCheckAnswers(summary.viewModel)
+    const print = renderPrint(journey.print())
+    for (const $ of [checkAnswers, print]) {
+      const row = $('.govuk-summary-list__row').filter((_, element) =>
+        $(element).find('.govuk-summary-list__key').text().includes('Calculated cost')
+      )
+      expect(row).toHaveLength(1)
+      expect(row.find('.govuk-summary-list__value').text().trim()).toBe(expected)
+    }
+    expect(journey.state()).toEqual(originalState)
   })
 })
 
