@@ -70,6 +70,7 @@ metadata:
         gasStatus: default
         toGrantsStatus: SUBMITTED
         toPath: /confirmation
+    excludedPaths: ['print-submitted-application']
   permissions:
     enforce: false
   options:
@@ -405,6 +406,13 @@ pages:
               <p class="govuk-body">Email: <a class="govuk-link" href="mailto:ruralpayments@defra.gov.uk">ruralpayments@defra.gov.uk</a></p>
             </div>
           </details>
+
+          <p class="govuk-body"><a class="govuk-link" href="/{{SLUG}}/print-submitted-application" target="_blank">View / Print submitted application (opens in new tab)</a></p>
+
+  - title: PrintSubmittedApplication
+    path: /print-submitted-application
+    controller: PrintSubmittedApplicationController
+    id: 6b2f8c1e-4a7d-4e93-b5c0-2d9e7f13a8c4
 
   # Off-journey page: never reached by the default V2 page walk because it is
   # positioned after the final journey page. It is only entered via a direct
