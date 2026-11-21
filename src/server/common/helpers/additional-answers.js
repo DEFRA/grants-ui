@@ -63,7 +63,7 @@ export function resolveAdditionalAnswerSections(
         items: items.map((item) => {
           const value = resolvePath(state, item.stateValue) ?? 'Not provided'
 
-          if(item.stateValue === 'totalPayment' && typeof value === 'string') {
+          if (item.stateValue === 'totalPayment' && typeof value === 'string') {
             return {
               ...item,
               value: formatSavedPayment(value)
