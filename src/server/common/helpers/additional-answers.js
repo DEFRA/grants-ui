@@ -27,6 +27,19 @@ export function findPageByPath(pages, path) {
 }
 
 /**
+ * @param {AdditionalSectionItem} item
+ * @param {unknown} value
+ */
+function formatItemValue(item, value) {
+  if (item.stateValue === 'totalPayment' && typeof value === 'string') {
+    return formatSavedPayment(value)
+  }
+
+  const formatter = getNumberFormatter(item.format)
+  return formatter && (typeof value === 'number' || isDecimalString(value)) ? formatter(value) : value
+}
+
+/**
  * Resolves configured additional answers without calculating or changing state.
  * Callers place the sections and adapt the values to their own view models.
  * @param {AdditionalSection[] | undefined} additionalSections
@@ -62,19 +75,7 @@ export function resolveAdditionalAnswerSections(
         ...section,
         items: items.map((item) => {
           const value = resolvePath(state, item.stateValue) ?? 'Not provided'
-
-          if (item.stateValue === 'totalPayment' && typeof value === 'string') {
-            return {
-              ...item,
-              value: formatSavedPayment(value)
-            }
-          }
-          const formatter = getNumberFormatter(item.format)
-
-          return {
-            ...item,
-            value: formatter && (typeof value === 'number' || isDecimalString(value)) ? formatter(value) : value
-          }
+          return { ...item, value: formatItemValue(item, value) }
         })
       }
     ]
