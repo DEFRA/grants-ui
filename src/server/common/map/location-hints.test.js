@@ -183,6 +183,60 @@ describe('shared saved map hints', () => {
     expect(JSON.stringify(submission)).not.toContain('mapLocationHint')
   })
 
+  test('saves an opted-in description and includes it in the GAS application answers', async () => {
+    const form = journey({
+      summaryController: 'CheckResponsesPageController',
+      components: [
+        {
+          name: 'location',
+          type: 'EastingNorthingField',
+          title: 'Project location',
+          options: { showApproximateLocation: true, approximateLocationPrefix: 'Nearby location:' }
+        },
+        {
+          name: 'locationDescription',
+          type: 'HiddenField',
+          title: 'Project location description',
+          options: { required: false }
+        }
+      ]
+    })
+    const description = 'NE38, Washington'
+    const hint = `Nearby location: ${description}`
+    const result = await form.dispatch('/location', {
+      method: 'post',
+      payload: { ...payload(metadata(hint)), locationDescription: description }
+    })
+    expect(result.location).toBe('/test-grant/summary')
+    expect(form.state().locationDescription).toBe(description)
+
+    const summary = await form.dispatch('/summary')
+    expect(form.context().relevantState.locationDescription).toBe(description)
+    const rows = renderCustom(summary.source.context)('.govuk-summary-list__row')
+    expect(rows).toHaveLength(1)
+    expect(rows.first().text()).toContain(hint)
+
+    const controller = new DeclarationPageController(form.model, { path: '/declaration', title: 'Declaration' })
+    const submission = controller.buildApplicationData(form.request(), {
+      ...form.context(),
+      payload: { declaration: true }
+    })
+    expect(submission.answers).toEqual({
+      referenceNumber: 'TEST-REFERENCE',
+      location__easting: 432100,
+      location__northing: 556200,
+      locationDescription: description,
+      declaration: true
+    })
+
+    const cleared = await form.dispatch('/location', {
+      method: 'post',
+      payload: { ...payload('', { ...ANSWER, location__easting: '432101' }), locationDescription: '' }
+    })
+    expect(cleared.location).toBe('/test-grant/summary')
+    expect(form.state().locationDescription).toBeNull()
+  })
+
   test('shows the saved full hint alongside coordinates in the view/print application page without a lookup', async () => {
     const form = journey()
     await form.dispatch('/location', { method: 'post', payload: payload() })

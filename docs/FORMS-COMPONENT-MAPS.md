@@ -49,7 +49,7 @@ components:
       approximateLocationPrefix: 'Nearby location:' # Optional; defaults to 'Approximate location:'
 ```
 
-This option defaults to `false` and is ignored for `GeospatialField`. The label describes the selected answer, for example “Approximate location: LS8, Leeds”. It shows a saved answer once the map is ready, and updates when coordinate inputs change or a marker is placed. If the map does not initialise, no label is shown. Panning, zooming and postcode search alone do not update it. It is display-only metadata: the full prefix and location text are saved with the answer in Grants UI Backend, but are not submitted to GAS.
+This option defaults to `false` and is ignored for `GeospatialField`. The label describes the selected answer, for example “Approximate location: LS8, Leeds”. It shows a saved answer once the map is ready, and updates when coordinate inputs change or a marker is placed. If the map does not initialise, no label is shown. Panning, zooming and postcode search alone do not update it.
 
 `options.approximateLocationPrefix` configures the prefix independently for each component. Omitted, blank or non-string values use “Approximate location:”. Include any punctuation in the configured text; a space separates it from the location. The prefix renders as plain text inside a semantic `<strong>` element, and the message uses `govuk-!-margin-top-1` spacing.
 
@@ -59,9 +59,25 @@ The nearest feature's postcode district and populated place supply the label, wi
 
 Updates are debounced by 300 ms. Each change clears the previous label, cancels pending requests and ignores late responses. The OS request times out after two seconds, and the browser request after three seconds. Empty or invalid answers, missing matches and lookup failures leave the label empty without interrupting the map or form submission. Upstream failures are logged once on the server; the endpoint returns 503 for lookup failures and 200 with a null label for no match. Responses use `Cache-Control: no-store`. The label renders as text in a polite live region for assistive technology.
 
+### Submitting the description to GAS
+
+To submit the description as an answer, add a `HiddenField` on the same page named after the map component with `Description` appended. Component names can only contain letters. For the `projectLocation` map above, add:
+
+```yaml
+  - name: projectLocationDescription
+    title: Project location description
+    type: HiddenField
+    options:
+      required: false
+```
+
+Forms engine requires a non-empty `title` for validation. The hidden input renders without a visible label. Set `required: false` so users can continue if the lookup is pending or unsuccessful.
+
+The browser fills the field with the location text, for example `LS8, Leeds`, and clears it immediately when the point changes. Forms engine saves the description with the other answers in Grants UI Backend. The standard application submission includes it at `answers.projectLocationDescription`. GAS configuration must accept the additional answer, and any grant-specific answer mapper must retain the key.
+
 ### Saved hints on Check answers and view/print application
 
-For point fields with `showApproximateLocation: true`, the shared map adapter automatically creates an internal hidden input containing the full displayed text and the coordinate input values it describes. Each location change immediately clears the hidden value, including while typing, and only a successful current lookup repopulates it. Continuing before a lookup completes saves the answer without a hint; the hint never blocks submission.
+For point fields with `showApproximateLocation: true`, the shared map adapter automatically creates an internal hidden input containing the full displayed text and the coordinate input values it describes. Each location change immediately clears the hidden value, including while typing, and only a successful current lookup repopulates it. Continuing before a lookup completes saves the answer without a hint; the hint never blocks submission. The saved display hint is auxiliary state and GAS receives the description only when the form defines the matching answer field.
 
 A shared `onPreHandler` hook removes this transport metadata before forms-engine validation. After redirect and permission checks, the forms request pipeline accepts bounded metadata only for opted-in point components on the resolved page and only when its coordinate values match the validated answer. It creates a new `context.state.mapLocationHints` object for the normal page POST to persist through the existing state helpers. Invalid metadata is ignored, changed or removed answers clear the old hint, and hints belonging to other pages are retained.
 

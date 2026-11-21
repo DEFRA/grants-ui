@@ -84,11 +84,13 @@ describe('index.html view page-level config', () => {
                 name: 'coordinates',
                 options: { hideMapHelpPanel: false, showApproximateLocation: true }
               },
+              { type: 'HiddenField', name: 'coordinatesDescription' },
               {
                 type: 'GeospatialField',
                 name: 'boundary',
                 options: { zoomToPostcode: false, showApproximateLocation: true }
               },
+              { type: 'HiddenField', name: 'boundaryDescription' },
               { type: 'TextField', name: 'description', options: { hideMapHelpPanel: false } }
             ]
           }
@@ -104,6 +106,10 @@ describe('index.html view page-level config', () => {
       expect($('[data-map-component="location"]').attr('data-show-approximate-location')).toBe('false')
       expect($('[data-map-component="coordinates"]').attr('data-show-approximate-location')).toBe('true')
       expect($('[data-map-component="boundary"]').attr('data-show-approximate-location')).toBe('false')
+      expect($('[data-map-component="coordinates"]').attr('data-location-description-field')).toBe(
+        'coordinatesDescription'
+      )
+      expect($('[data-map-component="boundary"]').attr('data-location-description-field')).toBeUndefined()
     })
 
     it('escapes component names in the settings markup', () => {
