@@ -1,6 +1,7 @@
+import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const componentPath = fileURLToPath(new URL('./components/', import.meta.url))
+const componentPath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'components')
 
 export const templatePaths = [componentPath]
 export const sassPaths = [componentPath]

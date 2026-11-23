@@ -78,7 +78,9 @@ npx vitest run --coverage.enabled=false \
   src/server/common/templates \
   src/server/details-page/views \
   src/server/home/views/home.test.js \
-  src/server/common/map/views/map-select-parcel.template.test.js
+  src/server/common/map/views/map-select-parcel.template.test.js \
+  src/client/javascripts/land-grants/select-actions-page.template.test.js \
+  src/client/javascripts/parcel-map/parcel-view-toggle.test.js
 ```
 
 Run the dependency-policy checks with:
