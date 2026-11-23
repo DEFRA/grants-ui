@@ -61,6 +61,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Pattern matching for various phone formats
   - Autocomplete support
   - Custom validation messages
+  - Native `options.format` validation: `uk` for UK numbers or `international` for non-UK numbers
 - **Example**: [Example Grant – Multi Field Form (/multi-field-form)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – mobile number with regex pattern validation
 
 ### Selection Components
@@ -113,6 +114,15 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Conditional navigation to terminal pages
 - **Example**: [Example Grant – Yes/No page (/yes-no-field)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – eligibility confirmation that can route to a terminal page
 
+#### DeclarationField
+
+- **Purpose**: Single checkbox the applicant ticks to confirm a statement
+- **Use Cases**: Confirming they have read guidance or meet conditions, usually at the bottom of an information page
+- **Features**:
+  - Configurable confirmation label (`declarationConfirmationLabel`), shown on Check answers and the View / Print page
+  - Required/optional configuration
+- **Example**: [Example Grant – Declaration page (/declaration-field)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – "I confirm I have read and understood this guidance" declaration under some guidance
+
 ### Numeric Components
 
 #### NumberField
@@ -125,6 +135,49 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Currency prefix support
   - Custom validation messages
 - **Example**: [Example Grant – Number field page (/number-field)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – project cost entry with £ prefix and range validation
+
+Set `options.format` on a `NumberField` to format answers on Check answers and print pages.
+
+| `options.format` | Input      | Display         |
+| ---------------- | ---------- | --------------- |
+| `thousands`      | `125000.5` | `125,000.5`     |
+| `decimal`        | `125000.5` | `125,000.50`    |
+| `decimal:4`      | `125000.5` | `125,000.5000`  |
+| `currency:gbp`   | `125000.5` | `£125,000.50`   |
+| `currency:gbp,4` | `125000.5` | `£125,000.5000` |
+
+Currency formatting omits zero-only decimal places for whole amounts, including when precision is configured. For example,
+`125000.00` displays as `£125,000` with `currency:gbp` on Check answers, repeat item lists and print pages.
+
+Use `format: suffix` to append `options.suffix` without grouping digits or rounding the answer:
+
+```yaml
+options:
+  suffix: ' m³'
+  format: suffix
+```
+
+This displays `100000` as `100000 m³` and preserves entered decimal places, for example `125000.50 m³`.
+
+Append `|suffix` to `thousands`, `decimal` or `currency` formatting to combine number formatting with the component's
+existing `options.suffix`. For example:
+
+```yaml
+options:
+  suffix: m³
+  format: 'thousands|suffix'
+```
+
+This displays `100000` as `100,000m³` on Check answers, repeat item lists and print pages. The suffix is appended exactly
+as configured, without adding a space. For example, `decimal:2|suffix` with `suffix: ' m³'` displays `100,000.00 m³`.
+If `suffix` is missing or empty, nothing is appended. Unanswered values remain unanswered. Other formats without
+`|suffix` keep their existing behaviour. Input values and saved answers remain numeric and do not include the suffix.
+Only one trailing `|suffix` modifier is supported on a base number format; `suffix|suffix`, unknown modifiers and repeated
+modifiers are rejected when the form definition is loaded. Configure these options in the form definitions served by
+Grants UI Backend.
+
+The [Example grant with task list](../compose/config-broker/example-grants/example-grant-with-task-list/grants-ui/example-grant-with-task-list.yaml)
+demonstrates `suffix` and `thousands|suffix` together on `/example-task-with-guidance`.
 
 ### Date Components
 
@@ -200,12 +253,25 @@ form state. These values can come from custom pages or integrations; they do not
         items:
           - title: Score
             stateValue: additionalAnswers.scoreResults
+      - page: /total-estimated-cost
+        items:
+          - title: Total estimated cost (£)
+            stateValue: additionalAnswers.totalEstimatedCost
+            format: thousands
 ```
 
 The form-definition loader exposes the page's `config:` block as `metadata.pageConfig[path]` at runtime.
 
 - `items[].title` labels the row; `items[].stateValue` is a dot-separated path into form state. Missing or null values
   display as `Not provided`; zero values are preserved. Rows do not add Change links.
+- Optional `items[].format` formats numeric values on both Check answers and print pages, using the same formats as
+  `NumberField.options.format`: `thousands`, `decimal`, `decimal:4`, `currency:gbp`, or `currency:gbp,4` (see the
+  [number formatting table](#numberfield)). For example, `format: thousands` displays `100000` as `100,000`;
+  `format: currency:gbp` displays it as `£100,000.00`. Omit `format` to preserve the existing display. Numeric strings
+  are supported, while empty strings, booleans and non-numeric text retain their existing values. Missing or null values
+  still display as `Not provided`. Formatting changes only the display; saved values used for calculations and submission
+  remain unchanged. Unsupported formats are rejected when the form definition is loaded. Configure this property in the
+  form definitions served by Grants UI Backend.
 - `title` creates a separate summary section. Without a title, supply `page` to append rows to that page's owning section,
   creating the section in form-section order if needed. Unknown pages or section references are ignored in this case.
 - `page` optionally ties visibility to a page in the engine's `context.relevantPages`. Rows for excluded pages are omitted,

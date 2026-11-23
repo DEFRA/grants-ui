@@ -52,7 +52,7 @@ Then('the page is analyzed for accessibility', async function () {
   await analyzeAccessibility(this.page)
 })
 
-Then('(the user )should see heading {string}', async function (text) {
+Then('(the user )should see (configurable )heading {string}', async function (text) {
   const truncated = text.indexOf("'") > -1 ? text.substring(0, text.indexOf("'")) : text
   await expect(this.page.locator(`//h1[contains(normalize-space(.),'${truncated}')]`)).toBeVisible()
 })
@@ -103,14 +103,19 @@ Then('(the user )should see the following applications', async function (dataTab
   const actual = await rows.evaluateAll((trs) =>
     trs.map((tr) => {
       const reference = tr.querySelector('th').textContent.trim()
-      return {
-        reference: reference.toUpperCase(),
-        status: tr.querySelector('.govuk-tag').textContent.trim(),
-        action: tr.querySelector('a').textContent.replace(reference, '').trim()
-      }
+      const status = tr.querySelector('.govuk-tag').textContent.trim()
+      // Only a withdrawn application offers no action; every other row must link.
+      const action = status === 'Withdrawn' ? '' : tr.querySelector('a').textContent.replace(reference, '').trim()
+      return { reference: reference.toUpperCase(), status, action }
     })
   )
   expect(actual).toEqual(expected)
+})
+
+Then('(the user )should see answer {string} for question {string}', async function (answer, question) {
+  const summaryPage = new SummaryPage(this.page)
+  const actualAnswers = await summaryPage.answers()
+  expect(actualAnswers).toContainEqual({ question, answers: [answer] })
 })
 
 Then('(the user )should see the following answers', async function (dataTable) {
@@ -134,6 +139,11 @@ Then('(the user )should see the following answers', async function (dataTable) {
   const summaryPage = new SummaryPage(this.page)
   const actualAnswers = await summaryPage.answers()
   expect(actualAnswers).toEqual(expectedAnswers)
+})
+
+Then('(the user )should not see an answer labelled {string}', async function (label) {
+  const labels = await this.page.locator('main .govuk-summary-list__key').allTextContents()
+  expect(labels.map((text) => text.trim())).not.toContain(label)
 })
 
 Then('(the user )should see the following summary cards', async function (dataTable) {
@@ -228,6 +238,12 @@ Then('(the user )should see the following configurable content', async function 
   for (const [text] of dataTable.rows()) {
     const hasContent = await printPage.hasConfigurableContent(text)
     expect(hasContent).toBe(true)
+  }
+})
+
+Then('(the user )should see the following configurable copy', async function (dataTable) {
+  for (const [text] of dataTable.raw()) {
+    await expect(this.page.getByText(text, { exact: false }).first()).toBeVisible()
   }
 })
 

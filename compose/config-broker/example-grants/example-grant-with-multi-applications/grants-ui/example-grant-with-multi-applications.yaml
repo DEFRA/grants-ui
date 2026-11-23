@@ -3,8 +3,14 @@ name: Example Grant With Multiple Applications
 metadata:
   id: 53f61c80-64c1-492d-81be-4d031d5eead9
   surveyLabel: Example grant with multiple applications
+  phase: public-beta
   enabledInProd: false
   allowMultipleApplications: true
+  applicationsPage:
+    title: Your applications for this example grant
+    content:
+      html: |
+        <p class="govuk-body">Your business can have <strong>multiple applications</strong> for this grant. You can continue a draft application, view a submitted application or start a new application.</p>
   grantRedirectRules:
     excludedPaths: ['print-submitted-application']
   permissions:

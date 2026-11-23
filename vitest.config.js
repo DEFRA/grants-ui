@@ -6,7 +6,7 @@ export default {
     environment: 'node',
     setupFiles: ['./.vitest/setup-file.js'],
     include: ['**/src/**/*.test.js', '**/scripts/**/*.test.js', '**/tools/**/*.test.js'],
-    exclude: ['**/node_modules/**', '**/.stryker-tmp/**', '**/*.contract.test.js', '**/.claude/**'],
+    exclude: ['**/node_modules/**', '**/.stryker-tmp/**', '**/.claude/**'],
     env: {
       // Personal TUI themes must not affect tests; theme tests select their own files.
       GT_THEME: 'default',

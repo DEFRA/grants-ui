@@ -19,19 +19,19 @@ const model = {
         {
           action: 'Action description (CLIG3)',
           area: '2.0000 ha',
-          yearlyPayment: '£10.00',
+          yearlyPayment: '£10',
           changeHref:
             'select-actions-for-land-parcel?parcelId=SD1234-5678&origin=confirm-land-and-actions&changeActions=true'
         },
         {
           action: 'Another action (CSAM3)',
           area: '4.0000 ha',
-          yearlyPayment: '£20.00',
+          yearlyPayment: '£20',
           changeHref:
             'select-actions-for-land-parcel?parcelId=SD1234-5678&origin=confirm-land-and-actions&changeActions=true'
         }
       ],
-      yearlyPayment: '£30.00'
+      yearlyPayment: '£30'
     },
     {
       reference: 'CD9999 1111',
@@ -42,19 +42,19 @@ const model = {
         {
           action: 'Third action (SCR2)',
           area: '1.0000 ha',
-          yearlyPayment: '£3.00',
+          yearlyPayment: '£3',
           changeHref:
             'select-actions-for-land-parcel?parcelId=CD9999-1111&origin=confirm-land-and-actions&changeActions=true'
         }
       ],
-      yearlyPayment: '£3.00'
+      yearlyPayment: '£3'
     }
   ],
   additionalYearlyPayments: [],
-  applicationYearlyPayment: '£1,234.00',
+  applicationYearlyPayment: '£1,234',
   agreementDuration: '3 years',
   agreementDurationYears: 3,
-  agreementTotalPayment: '£3,702.00',
+  agreementTotalPayment: '£3,702',
   hasCalculationError: false
 }
 
@@ -165,11 +165,11 @@ describe('confirm-land-and-actions.html view', () => {
     const $ = renderPage(model)
 
     expect(rowsOf($, 0)).toEqual([
-      'Action description (CLIG3)|2.0000 ha|£10.00',
-      'Another action (CSAM3)|4.0000 ha|£20.00',
-      'Subtotal||£30.00'
+      'Action description (CLIG3)|2.0000 ha|£10',
+      'Another action (CSAM3)|4.0000 ha|£20',
+      'Subtotal||£30'
     ])
-    expect(rowsOf($, 1)).toEqual(['Third action (SCR2)|1.0000 ha|£3.00', 'Subtotal||£3.00'])
+    expect(rowsOf($, 1)).toEqual(['Third action (SCR2)|1.0000 ha|£3', 'Subtotal||£3'])
   })
 
   it('leaves the quantity cell empty when the API priced an action without an area', () => {
@@ -178,7 +178,7 @@ describe('confirm-land-and-actions.html view', () => {
       parcels: [{ ...model.parcels[0], actions: [{ ...model.parcels[0].actions[0], area: '' }] }]
     })
 
-    expect(rowsOf($, 0)).toEqual(['Action description (CLIG3)||£10.00', 'Subtotal||£30.00'])
+    expect(rowsOf($, 0)).toEqual(['Action description (CLIG3)||£10', 'Subtotal||£30'])
   })
 
   it('names every row with a scoped row header so each value is associated', () => {
@@ -265,7 +265,7 @@ describe('confirm-land-and-actions.html view', () => {
       const row = cards($).eq(0).find('.govuk-table__body .govuk-table__row').eq(0)
 
       expect(normalise(row.find('.govuk-table__cell').eq(0).text())).toBe('2.0000 ha')
-      expect(normalise(row.find('.govuk-table__cell').eq(1).text())).toBe('£10.00')
+      expect(normalise(row.find('.govuk-table__cell').eq(1).text())).toBe('£10')
       expect(normalise(row.find('a').text())).toBe('Change Action description (CLIG3)')
       expect(row.find('.govuk-table__cell .land-parcel-summary__action-hint')).toHaveLength(0)
     })
@@ -306,7 +306,7 @@ describe('confirm-land-and-actions.html view', () => {
   it('renders agreement-level items as payment summary rows above the total', () => {
     const $ = renderPage({
       ...model,
-      additionalYearlyPayments: [{ action: 'Assess moorland (CMOR1)', yearlyPayment: '£272.00' }]
+      additionalYearlyPayments: [{ action: 'Assess moorland (CMOR1)', yearlyPayment: '£272' }]
     })
     const summary = cards($).last()
 
@@ -322,10 +322,10 @@ describe('confirm-land-and-actions.html view', () => {
         )
         .get()
     ).toEqual([
-      'Assess moorland (CMOR1)|£272.00',
-      'Total yearly payment|£1,234.00',
+      'Assess moorland (CMOR1)|£272',
+      'Total yearly payment|£1,234',
       'Agreement duration|3 years',
-      'Estimated payment over 3 years|£3,702.00'
+      'Estimated payment over 3 years|£3,702'
     ])
   })
 
@@ -340,9 +340,9 @@ describe('confirm-land-and-actions.html view', () => {
     const $ = renderPage(model)
     const text = bodyText($)
     expect(text).toContain('Subtotal')
-    expect(text).toContain('£30.00')
+    expect(text).toContain('£30')
     expect(text).toContain('Total yearly payment')
-    expect(text).toContain('£1,234.00')
+    expect(text).toContain('£1,234')
   })
 
   it('keeps the application total in its own card, outside every parcel card', () => {

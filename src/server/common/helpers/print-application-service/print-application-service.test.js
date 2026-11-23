@@ -4,7 +4,7 @@ import {
   processConfigurablePrintContent
 } from './print-application-service.js'
 import { ComponentsRegistry } from '../../../confirmation/services/components.registry.js'
-import { MOCK_FORM_ENTRIES, MOCK_DISPLAY_ONLY_COMPONENTS } from '~/src/__test-fixtures__/mock-forms-cache.js'
+import { MOCK_DISPLAY_ONLY_COMPONENTS, MOCK_FORM_ENTRIES } from '~/src/__test-fixtures__/mock-forms-cache.js'
 import { MOCK_PAYMENT } from '~/src/__test-fixtures__/mock-payment.js'
 
 vi.mock('../../../confirmation/services/components.registry.js', () => ({
@@ -12,11 +12,6 @@ vi.mock('../../../confirmation/services/components.registry.js', () => ({
     replaceComponents: vi.fn((html) => html)
   }
 }))
-
-vi.mock('~/src/config/nunjucks/filters/filters.js', async () => {
-  const { mockFilters } = await import('~/src/__mocks__')
-  return mockFilters()
-})
 
 describe('print-application-service', () => {
   describe('buildPrintViewModel', () => {
@@ -164,7 +159,7 @@ describe('print-application-service', () => {
       expect(result.sections[0].questions).toEqual([{ label: 'Visible field', answer: 'shown' }])
     })
 
-    test('should skip questions with null or undefined answers', () => {
+    test('should skip null or undefined answers while preserving falsy answers', () => {
       const result = buildPrintViewModel({
         ...baseParams,
         definition: {
@@ -174,15 +169,30 @@ describe('print-application-service', () => {
               components: [
                 { type: 'TextField', name: 'answered', title: 'Answered' },
                 { type: 'TextField', name: 'unanswered', title: 'Unanswered' },
-                { type: 'TextField', name: 'nullAnswer', title: 'Null' }
+                { type: 'TextField', name: 'nullAnswer', title: 'Null' },
+                { type: 'TextField', name: 'falseAnswer', title: 'False' },
+                { type: 'NumberField', name: 'zeroAnswer', title: 'Zero' },
+                { type: 'TextField', name: 'emptyAnswer', title: 'Empty' }
               ]
             }
           ]
         },
-        answers: { answered: 'yes', unanswered: undefined, nullAnswer: null }
+        answers: {
+          answered: 'yes',
+          unanswered: undefined,
+          nullAnswer: null,
+          falseAnswer: false,
+          zeroAnswer: 0,
+          emptyAnswer: ''
+        }
       })
 
-      expect(result.sections[0].questions).toEqual([{ label: 'Answered', answer: 'yes' }])
+      expect(result.sections[0].questions).toEqual([
+        { label: 'Answered', answer: 'yes' },
+        { label: 'False', answer: 'false' },
+        { label: 'Zero', answer: '0' },
+        { label: 'Empty', answer: '' }
+      ])
     })
 
     test('should prefer shortDescription over title for question labels', () => {
@@ -239,6 +249,31 @@ describe('print-application-service', () => {
       })
 
       expect(result.sections).toEqual([])
+    })
+
+    describe('declarations', () => {
+      const definition = {
+        pages: [
+          {
+            title: 'Estimated cost',
+            components: [
+              {
+                type: 'DeclarationField',
+                name: 'understandNoGuarantee',
+                title: 'Understand no guaranteed success',
+                options: { declarationConfirmationLabel: 'I understand there is no guarantee' }
+              }
+            ]
+          }
+        ]
+      }
+      test('shows the confirmation label instead of the saved boolean', () => {
+        const result = buildPrintViewModel({ ...baseParams, definition, answers: { understandNoGuarantee: true } })
+
+        expect(result.sections[0].questions).toEqual([
+          { label: 'Understand no guaranteed success', answer: 'I understand there is no guarantee' }
+        ])
+      })
     })
 
     describe('saved additional answers', () => {
@@ -336,6 +371,22 @@ describe('print-application-service', () => {
         ])
       })
 
+      test('formats a saved payment total in an additional section', () => {
+        const paymentDefinition = structuredClone(definition)
+        paymentDefinition.metadata.pageConfig['/summary'].additionalSections = [
+          { title: 'Payment', items: [{ title: 'Annual payment', stateValue: 'totalPayment' }] }
+        ]
+        const result = buildPrintViewModel({
+          ...baseParams,
+          definition: paymentDefinition,
+          savedState: { totalPayment: '£1,500.00' }
+        })
+
+        expect(result.sections).toEqual([
+          { title: 'Payment', questions: [{ label: 'Annual payment', answer: '£1,500' }] }
+        ])
+      })
+
       test('renders a value only once when multiple Check answers pages configure it', () => {
         const repeatedDefinition = structuredClone(definition)
         repeatedDefinition.pages.push({
@@ -359,7 +410,7 @@ describe('print-application-service', () => {
         const result = buildPrintViewModel({
           ...baseParams,
           definition: invalidDefinition,
-          savedState: { ...savedState, totalPayment: '£1500.00', payment: MOCK_PAYMENT }
+          savedState: { ...savedState, totalPayment: '£1,500', payment: MOCK_PAYMENT }
         })
 
         expect(result.sections).toEqual([])
@@ -499,10 +550,10 @@ describe('print-application-service', () => {
         }
       })
 
-      expect(result.landAndActionsSummary.applicationYearlyPayment).toBe('£1500.00')
+      expect(result.landAndActionsSummary.applicationYearlyPayment).toBe('£1,500')
       expect(result.landAndActionsSummary.parcels).toHaveLength(2)
       expect(result.landAndActionsSummary.parcels[0].reference).toBe('AB1234 0001')
-      expect(result.landAndActionsSummary.parcels[0].yearlyPayment).toBe('£1300.00')
+      expect(result.landAndActionsSummary.parcels[0].yearlyPayment).toBe('£1,300')
     })
 
     test('should render an annual payment of zero', () => {
@@ -511,7 +562,7 @@ describe('print-application-service', () => {
         savedState: { payment: { annualTotalPence: 0, parcelItems: {}, agreementLevelItems: {} } }
       })
 
-      expect(result.landAndActionsSummary.applicationYearlyPayment).toBe('£0.00')
+      expect(result.landAndActionsSummary.applicationYearlyPayment).toBe('£0')
     })
 
     test.each([null, -1, 1.5, '100'])('should reject a malformed annual total of %s', (annualTotalPence) => {

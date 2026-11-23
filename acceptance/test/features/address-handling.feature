@@ -43,6 +43,11 @@ Feature: Address Handling
             | Option two |
         And continues
 
+        # declaration-field
+        Then the user should be at URL "declaration-field"
+        When the user selects "I confirm I have read and understood this guidance"
+        And continues
+
         # number-field-validation
         Then the user should be at URL "number-field-validation"
         When the user enters "100000" for "Enter amount"
@@ -95,13 +100,13 @@ Feature: Address Handling
         # location-components
         Then the user should be at URL "location-components"
         When the user enters the following
-            | FIELD                       | VALUE          |
-            | Easting                     | 530000         |
-            | Northing                    | 180000         |
-            | OS national grid reference  | ST 678 678     |
-            | National Grid field number  | NG 1234 5678   |
-            | Latitude                    | 51.519450      |
-            | Longitude                   | -0.127758      |
+            | FIELD                      | VALUE        |
+            | Easting                    | 530000       |
+            | Northing                   | 180000       |
+            | OS national grid reference | ST 678 678   |
+            | National Grid field number | NG 1234 5678 |
+            | Latitude                   | 51.519450    |
+            | Longitude                  | -0.127758    |
         And the user adds a point named "Example location" for GeospatialField "GeospatialField"
         And continues
 
@@ -195,6 +200,11 @@ Feature: Address Handling
             | Option two |
         And continues
 
+        # declaration-field
+        Then the user should be at URL "declaration-field"
+        When the user selects "I confirm I have read and understood this guidance"
+        And continues
+
         # number-field-validation
         Then the user should be at URL "number-field-validation"
         When the user enters "100000" for "Enter amount"
@@ -247,13 +257,13 @@ Feature: Address Handling
         # location-components
         Then the user should be at URL "location-components"
         When the user enters the following
-            | FIELD                       | VALUE          |
-            | Easting                     | 530000         |
-            | Northing                    | 180000         |
-            | OS national grid reference  | ST 678 678     |
-            | National Grid field number  | NG 1234 5678   |
-            | Latitude                    | 51.519450      |
-            | Longitude                   | -0.127758      |
+            | FIELD                      | VALUE        |
+            | Easting                    | 530000       |
+            | Northing                   | 180000       |
+            | OS national grid reference | ST 678 678   |
+            | National Grid field number | NG 1234 5678 |
+            | Latitude                   | 51.519450    |
+            | Longitude                  | -0.127758    |
         And the user adds a point named "Example location" for GeospatialField "GeospatialField"
         And continues
 

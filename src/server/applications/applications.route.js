@@ -1,3 +1,4 @@
+import { APPLICATIONS_PATH } from '../common/constants/applications-path.js'
 import { ApplicationsController } from './applications.controller.js'
 
 const applicationsController = new ApplicationsController()
@@ -5,7 +6,7 @@ const applicationsController = new ApplicationsController()
 /** @satisfies {ServerRoute} */
 export const listApplicationsRoute = {
   method: 'GET',
-  path: '/{slug}/applications',
+  path: `/{slug}${APPLICATIONS_PATH}`,
   options: { app: { definitionOnly: true } },
   handler: applicationsController.list
 }
@@ -13,7 +14,7 @@ export const listApplicationsRoute = {
 /** @satisfies {ServerRoute} */
 export const startApplicationRoute = {
   method: 'POST',
-  path: '/{slug}/applications',
+  path: `/{slug}${APPLICATIONS_PATH}`,
   options: { app: { definitionOnly: true } },
   handler: applicationsController.start
 }

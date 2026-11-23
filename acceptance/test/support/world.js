@@ -17,6 +17,11 @@ const HEADLESS = process.env.HEADLESS === 'true'
 // times out and dispatches parcel-map:error, which disables Continue mid-scenario.
 const PARCEL_MAP_BUNDLE = /\/javascripts\/parcel-map(\.[0-9a-f]+(\.min)?)?\.js(\?.*)?$/
 
+// The approximate location hint calls OS Names when FORMS_MAPS_API_KEY is real (as locally), but not in CI
+// (dummy key). A completed lookup saves a hint with the answer, so answers would depend on the key and on
+// timing. Answer as the unavailable endpoint does, so no hint is ever saved.
+const APPROXIMATE_LOCATION_LOOKUP = /\/api\/map\/approximate-location(\?.*)?$/
+
 class GrantsUiWorld {
   async init() {
     this.browser = await chromium.launch({
@@ -31,6 +36,14 @@ class GrantsUiWorld {
     })
     await this.context.route(PARCEL_MAP_BUNDLE, (route) =>
       route.fulfill({ status: 200, contentType: 'text/javascript', body: '' })
+    )
+    await this.context.route(APPROXIMATE_LOCATION_LOOKUP, (route) =>
+      route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        headers: { 'Cache-Control': 'no-store' },
+        body: JSON.stringify({ label: null })
+      })
     )
     this.page = await this.context.newPage()
     this.page.setDefaultTimeout(PLAYWRIGHT_PAGE_TIMEOUT_MS)

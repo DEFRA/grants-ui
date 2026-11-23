@@ -1,3 +1,5 @@
+import { DeclarationField } from '@defra/forms-engine-plugin/engine/components/DeclarationField.js'
+import { formatNumberAnswer } from '~/src/server/common/helpers/number-formatter.js'
 import { compareParcelReferences } from '~/src/shared/format-parcel.js'
 import { COMPONENT_TYPES, MONTH_NAMES } from '~/src/server/common/helpers/print-application-service/constants.js'
 
@@ -132,6 +134,21 @@ function formatGeospatial(_component, value) {
 }
 
 /**
+ * Reuses the forms engine's Check answers text: the confirmation label (or engine default) or 'Not provided'.
+ * @param {Component} component
+ * @param {boolean} value
+ * @returns {string}
+ */
+function formatDeclaration(component, value) {
+  const def = /** @type {DeclarationFieldComponent} */ ({ ...component, options: component.options ?? {} })
+  // No page or model is needed: the constructor only reads props.page?.pageDef and the
+  // display methods read only the state and label.
+  const props = /** @type {ConstructorParameters<typeof DeclarationField>[1]} */ ({})
+  const field = new DeclarationField(def, props)
+  return field.getDisplayStringFromState({ [field.name]: value })
+}
+
+/**
  * @param {Component} _component
  * @param {unknown} value
  * @returns {string}
@@ -140,10 +157,11 @@ function formatStringValue(_component, value) {
   return stringifyValue(value)
 }
 
-/** @type {Record<string, (component: Component, value: any) => string>} */
+/** @type {Record<string, (component: Component, value: any) => string | undefined>} */
 const FORMATTERS = {
   [COMPONENT_TYPES.YesNoField]: formatYesNo,
   [COMPONENT_TYPES.CheckboxesField]: formatCheckboxes,
+  [COMPONENT_TYPES.DeclarationField]: formatDeclaration,
   [COMPONENT_TYPES.DatePartsField]: formatDateParts,
   [COMPONENT_TYPES.MonthYearField]: formatMonthYear,
   [COMPONENT_TYPES.RadiosField]: formatItemLookup,
@@ -154,7 +172,7 @@ const FORMATTERS = {
   [COMPONENT_TYPES.LatLongField]: formatLatLong,
   [COMPONENT_TYPES.GeospatialField]: formatGeospatial,
   [COMPONENT_TYPES.TextField]: formatStringValue,
-  [COMPONENT_TYPES.NumberField]: formatStringValue,
+  [COMPONENT_TYPES.NumberField]: formatNumberAnswer,
   [COMPONENT_TYPES.EmailAddressField]: formatStringValue,
   [COMPONENT_TYPES.TelephoneNumberField]: formatStringValue,
   [COMPONENT_TYPES.MultilineTextField]: formatStringValue,
@@ -175,10 +193,11 @@ export function formatAnswer(component, value) {
   }
 
   const formatter = FORMATTERS[component.type]
-  return formatter ? formatter(component, value) : stringifyValue(value)
+  return formatter?.(component, value) ?? stringifyValue(value)
 }
 
 /**
+ * @import { DeclarationFieldComponent } from '@defra/forms-model'
  * @typedef {{ text?: string, value?: unknown }} ListItem
- * @typedef {{ type: string, name?: string, items?: ListItem[], list?: string | { items?: ListItem[] } }} Component
+ * @typedef {{ type: string, name?: string, options?: { format?: string }, items?: ListItem[], list?: string | { items?: ListItem[] } }} Component
  */

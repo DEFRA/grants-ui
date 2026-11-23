@@ -39,7 +39,12 @@ Feature: Application Lifecycle
         # checkboxes-field
         Then the user should be at URL "checkboxes-field"
         When the user selects the following
-            | Option two   |
+            | Option two |
+        And continues
+
+        # declaration-field
+        Then the user should be at URL "declaration-field"
+        When the user selects "I confirm I have read and understood this guidance"
         And continues
 
         # number-field-validation
@@ -85,22 +90,22 @@ Feature: Application Lifecycle
         # uk-address-field
         Then the user should be at URL "uk-address-field"
         When the user enters the following
-            | FIELD          | VALUE             |
-            | Address line 1 | 1 Example Street  |
-            | Town or city   | Exampleton        |
-            | Postcode       | EX1 1EX           |
+            | FIELD          | VALUE            |
+            | Address line 1 | 1 Example Street |
+            | Town or city   | Exampleton       |
+            | Postcode       | EX1 1EX          |
         And continues
 
         # location-components
         Then the user should be at URL "location-components"
         When the user enters the following
-            | FIELD                       | VALUE          |
-            | Easting                     | 530000         |
-            | Northing                    | 180000         |
-            | OS national grid reference  | ST 678 678     |
-            | National Grid field number  | NG 1234 5678   |
-            | Latitude                    | 51.519450      |
-            | Longitude                   | -0.127758      |
+            | FIELD                      | VALUE        |
+            | Easting                    | 530000       |
+            | Northing                   | 180000       |
+            | OS national grid reference | ST 678 678   |
+            | National Grid field number | NG 1234 5678 |
+            | Latitude                   | 51.519450    |
+            | Longitude                  | -0.127758    |
         And the user adds a point named "Example location" for GeospatialField "GeospatialField"
         And continues
 
@@ -185,10 +190,10 @@ Feature: Application Lifecycle
         Then the user should be at URL "agreement"
         And the grants-ui application status for CRN "9000000022" and SBI "800000018" and grant "example-grant-with-auth" should still be "SUBMITTED"
         And the agreements service should have been called with an x-encrypted-auth header JWT containing the following values
-            | CRN              | 9000000022               |
-            | SBI              | 800000018                |
-            | GRANT CODE       | example-grant-with-auth  |
-            | CLIENT REFERENCE | {REFERENCE NUMBER}       |
+            | CRN              | 9000000022              |
+            | SBI              | 800000018               |
+            | GRANT CODE       | example-grant-with-auth |
+            | CLIENT REFERENCE | {REFERENCE NUMBER}      |
 
         # SUBMITTED application with GAS status of OFFER_ACCEPTED is redirected to confirmation
         Given the application status in GAS is now "OFFER_ACCEPTED"

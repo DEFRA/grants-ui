@@ -11,6 +11,7 @@ import {
   getStateWithDefinition,
   resolveVersion
 } from '~/src/server/common/helpers/state/state-with-definition-context.js'
+import { validateNumberFormats } from '../validate-number-formats.js'
 
 /** @type {Promise<SharedRedirectRules> | null} */
 let sharedRedirectRules = null
@@ -62,9 +63,16 @@ async function readSharedRedirectRules() {
  * @returns {FormDefinition}
  */
 export function configureFormDefinition(definition) {
+  validateNumberFormats(definition)
   const environment = config.get('cdpEnvironment')
 
   for (const page of definition.pages ?? []) {
+    // Backend definitions can also contain custom controller names.
+    const pageWithController = /** @type {{ controller?: string }} */ (page)
+    // Engine built-ins take precedence over the custom controller registry.
+    if (pageWithController.controller === 'SummaryPageController') {
+      pageWithController.controller = 'GrantsSummaryPageController'
+    }
     const url = page.events?.onLoad?.options?.url
     if (url) {
       if (environment !== 'local') {

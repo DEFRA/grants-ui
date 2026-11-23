@@ -1,8 +1,44 @@
 import { RepeatPageController } from '@defra/forms-engine-plugin/controllers/RepeatPageController.js'
+import {
+  CheckboxesField,
+  EastingNorthingField,
+  FileUploadField,
+  LatLongField,
+  MultilineTextField,
+  UkAddressField
+} from '@defra/forms-engine-plugin/components'
 import { ItemField } from '@defra/forms-engine-plugin/engine/models/SummaryViewModel.js'
 import { evaluateTemplate, redirectPath } from '@defra/forms-engine-plugin/engine/helpers.js'
 import { getAnswerMarkdown, markdown } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
-import escapeHtml from 'lodash/escape.js'
+import { escapeText } from 'entities'
+import { shouldDisplayAnswer } from '../common/helpers/answer-components.js'
+import { formatNumberAnswer, getNumberFormatter } from '../common/helpers/number-formatter.js'
+import { getNumberDisplayValue } from '../common/helpers/number-display-value.js'
+import { getNumberFieldInputs } from '../common/helpers/state/persist-formatting.js'
+
+const NOT_PROVIDED = 'Not provided'
+
+function renderAnswerValue(field, itemState) {
+  if (field instanceof CheckboxesField || field instanceof FileUploadField) {
+    const html = markdown.parse(escapeText(getAnswerMarkdown(field, itemState)), { async: false }).trim()
+    return html ? { html } : { text: NOT_PROVIDED }
+  }
+
+  if (field instanceof UkAddressField) {
+    return renderMultilineAnswer(field.getContextValueFromState(itemState)?.join('\n'))
+  }
+
+  if (field instanceof EastingNorthingField || field instanceof LatLongField) {
+    return renderMultilineAnswer(field.getContextValueFromState(itemState))
+  }
+
+  const text = field.getDisplayStringFromState(itemState)
+  return field instanceof MultilineTextField ? renderMultilineAnswer(text) : { text: text || NOT_PROVIDED }
+}
+
+function renderMultilineAnswer(text) {
+  return text?.trim() ? { html: escapeText(text).replace(/\r?\n/g, '<br>') } : { text: NOT_PROVIDED }
+}
 
 /**
  * Associates each repeat answer row with cards built from relevant item state.
@@ -22,9 +58,15 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
         return
       }
 
+      const fields = page.collection.fields.filter(shouldDisplayAnswer)
+      if (page.collection.fields.length && !fields.length) {
+        cardsByRow.set(row, [])
+        return
+      }
+
       const list = page.getListFromState(context.relevantState)
       if (!list.length) {
-        row.value = { text: 'Not provided' }
+        row.value = { text: NOT_PROVIDED }
         return
       }
 
@@ -33,6 +75,7 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
         list.map((itemState, index) => {
           const itemContext = { ...context, relevantState: { ...context.relevantState, ...itemState } }
           const title = `${evaluateTemplate(page.repeat.options.title, itemContext)} ${index + 1}`
+          const inputs = getNumberFieldInputs(context.state, page.repeat.options.name, itemState.itemId)
           return {
             card: {
               title: { text: title },
@@ -48,12 +91,22 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
                     ]
               }
             },
-            rows: page.collection.fields.map((field) => {
+            rows: fields.map((field) => {
               const answer = ItemField(page, itemState, field, { path: page.path })
-              const value = markdown.parse(escapeHtml(getAnswerMarkdown(field, itemState)), { async: false }).trim()
+              const component = /** @type {{ type: string, options?: { format?: string } } | undefined} */ (
+                context.componentDefMap.get(field.name)
+              )
+              const rawValue = itemState[field.name]
+              const displayValue =
+                component?.type === 'NumberField' && getNumberFormatter(component.options?.format)
+                  ? getNumberDisplayValue(rawValue, inputs?.[field.name])
+                  : rawValue
+              const formatted = formatNumberAnswer(component, displayValue)
+              const value =
+                formatted === undefined ? renderAnswerValue(field, itemState) : { text: formatted || NOT_PROVIDED }
               return {
                 key: { text: evaluateTemplate(answer.title, itemContext) },
-                value: { html: value || 'Not provided', classes: 'app-prose-scope' }
+                value: { ...value, classes: 'app-prose-scope' }
               }
             })
           }

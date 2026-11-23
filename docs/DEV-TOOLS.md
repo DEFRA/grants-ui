@@ -296,8 +296,23 @@ Each step requires:
 | `multilineText` | Fills a textarea                                                                                                                                                                                                                               | `fieldName`, `value`                                                                                                                                   |
 | `dateParts`     | Fills day/month/year inputs with today                                                                                                                                                                                                         | `fieldName`, `offsetDays` (optional, shifts date)                                                                                                      |
 | `monthYear`     | Fills month/year inputs with current                                                                                                                                                                                                           | `fieldName`                                                                                                                                            |
-| `textFields`    | Fills multiple text inputs at once                                                                                                                                                                                                             | `fields` (object of `{ name: value }` pairs)                                                                                                           |
-| `clickLink`     | Clicks a link by its href suffix                                                                                                                                                                                                               | `linkSlug`                                                                                                                                             |
+| `textFields`    | Fills multiple text inputs at once; a named checkbox (e.g. a declaration on the same page) is ticked instead                                                                                                                                   | `fields` (object of `{ name: value }` pairs)                                                                                                           |
+| `clickLink`     | Clicks a link by its href suffix (also matches the link with the current `?ref=` on multiple-application grants)                                                                                                                               | `linkSlug`                                                                                                                                             |
+| `fields`        | Fills each component on a page that mixes field types, then submits once. If any entry cannot be filled, the step fails without submitting                                                                                                     | `fields` (array of entries, see below)                                                                                                                 |
+
+Each `fields` entry has a `type` and a `fieldName`. The `type` is `text` (fills an input or textarea with `value`), `checkbox` (leaves the box ticked, or unticked with `"checked": false`; `value` picks one box in a group) or one of the single-field step types above (`yesNo`, `radios`, `checkboxes`, `numberField`, `selectField`, `multilineText`, `dateParts`, `monthYear`), taking the same extra fields as that step:
+
+```json
+{
+  "slug": "application-declaration",
+  "name": "Complete declaration",
+  "type": "fields",
+  "fields": [
+    { "type": "text", "fieldName": "fullName", "value": "Test Applicant" },
+    { "type": "checkbox", "fieldName": "declaration", "checked": true }
+  ]
+}
+```
 
 ### Existing journeys
 
@@ -324,13 +339,13 @@ Grants without a journey definition: `example-grant-with-task-list-hide-question
 
 ### Example grant with auth
 
-The `example-grant-with-auth` journey is the canonical demo of every form component. Use the step numbers below with `runJourney(N)` to stop on a specific page. For example, `runJourney(8)` fills in and submits steps 1–7, then lands on the `number-field-validation` page without filling it in. Handy when iterating on a single component.
+The `example-grant-with-auth` journey is the canonical demo of every form component. Use the step numbers below with `runJourney(N)` to stop on a specific page. For example, `runJourney(9)` fills in and submits steps 1–8, then lands on the `number-field-validation` page without filling it in. Handy when iterating on a single component.
 
-There are two `NumberField` demos because the engine treats validation and conditional routing as separate concerns: step 8 (`/number-field-validation`) demonstrates schema-level `min`/`max` rejection (you cannot leave the page until the value is in range), while step 9 (`/number-field-routing`) demonstrates an `is more than` condition that diverts the journey when the value exceeds £100,000 (the value is accepted; only the next page changes).
+There are two `NumberField` demos because the engine treats validation and conditional routing as separate concerns: step 9 (`/number-field-validation`) demonstrates schema-level `min`/`max` rejection (you cannot leave the page until the value is in range), while step 10 (`/number-field-routing`) demonstrates an `is more than` condition that diverts the journey when the value exceeds £100,000 (the value is accepted; only the next page changes).
 
-Steps 20 and 21 traverse a `RepeatPageController`: the engine renders one URL per item (`/repeat-page/{itemId}`, where `{itemId}` is a UUID) plus a list-summary URL (`/repeat-page/summary`), so the runner needs two steps — the first uses `matchMode: "prefix"` to match the per-item URL by UUID, the second uses the literal slug `"repeat-page/summary"` to match the summary URL exactly. See the `matchMode` row above.
+Steps 21 and 22 traverse a `RepeatPageController`: the engine renders one URL per item (`/repeat-page/{itemId}`, where `{itemId}` is a UUID) plus a list-summary URL (`/repeat-page/summary`), so the runner needs two steps — the first uses `matchMode: "prefix"` to match the per-item URL by UUID, the second uses the literal slug `"repeat-page/summary"` to match the summary URL exactly. See the `matchMode` row above.
 
-Step 17 (`/location-components`) groups five location field types on a single page (`EastingNorthingField`, `OsGridRefField`, `NationalGridFieldNumberField`, `LatLongField`, `GeospatialField`); the runner submits valid values for all five (the `GeospatialField` textarea is filled with a single-feature GeoJSON example). Step 18 (`/hidden-field`) demonstrates a `HiddenField` rendered with no visible input — the runner just submits the page.
+Step 18 (`/location-components`) groups five location field types on a single page (`EastingNorthingField`, `OsGridRefField`, `NationalGridFieldNumberField`, `LatLongField`, `GeospatialField`); the runner submits valid values for all five (the `GeospatialField` textarea is filled with a single-feature GeoJSON example). Step 19 (`/hidden-field`) demonstrates a `HiddenField` rendered with no visible input — the runner just submits the page.
 
 | Step | Page slug                        | Component / purpose                                                                                                           |
 | ---- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -341,25 +356,26 @@ Step 17 (`/location-components`) groups five location field types on a single pa
 | 5    | `radios-field`                   | `RadiosField`                                                                                                                 |
 | 6    | `conditional-page`               | Conditional page (reached when radios option one is chosen)                                                                   |
 | 7    | `checkboxes-field`               | `CheckboxesField`                                                                                                             |
-| 8    | `number-field-validation`        | `NumberField` with schema `min`/`max` validation                                                                              |
-| 9    | `number-field-routing`           | `NumberField` driving an `is more than` condition (routing demo)                                                              |
-| 10   | `date-parts-field`               | `DatePartsField`                                                                                                              |
-| 11   | `month-year-field`               | `MonthYearField`                                                                                                              |
-| 12   | `select-field`                   | `SelectField`                                                                                                                 |
-| 13   | `multiline-text-field`           | `MultilineTextField`                                                                                                          |
-| 14   | `email-address-field`            | `EmailAddressField`                                                                                                           |
-| 15   | `telephone-number-field`         | `TelephoneNumberField`                                                                                                        |
-| 16   | `uk-address-field`               | `UkAddressField` (compound)                                                                                                   |
-| 17   | `location-components`            | `EastingNorthingField`, `OsGridRefField`, `NationalGridFieldNumberField`, `LatLongField`, `GeospatialField` (all on one page) |
-| 18   | `hidden-field`                   | `HiddenField` (rendered as `<input type="hidden">`; no visible control)                                                       |
-| 19   | `multi-field-form`               | Multiple components on one page (`TextField` + others)                                                                        |
-| 20   | `repeat-page/{itemId}`           | `RepeatPageController` item entry (one item filled in)                                                                        |
-| 21   | `repeat-page/summary`            | `RepeatPageController` list summary — submit to continue                                                                      |
-| 22   | `select-land-parcel`             | Map-based parcel selection (`MapSelectPageController`)                                                                        |
-| 23   | `select-actions-for-land-parcel` | Land grant action selection (`SelectActionsPageController`)                                                                   |
-| 24   | `confirm-land-and-actions`       | Selected land and actions review (`ConfirmLandAndActionsPageController`)                                                      |
-| 25   | `summary`                        | Check answers (`CheckResponsesPageController`)                                                                                |
-| 26   | `declaration`                    | Declaration / submit (`DeclarationPageController`)                                                                            |
+| 8    | `declaration-field`              | `DeclarationField` (confirmation label shown on Check answers and View / Print)                                               |
+| 9    | `number-field-validation`        | `NumberField` with schema `min`/`max` validation                                                                              |
+| 10   | `number-field-routing`           | `NumberField` driving an `is more than` condition (routing demo)                                                              |
+| 11   | `date-parts-field`               | `DatePartsField`                                                                                                              |
+| 12   | `month-year-field`               | `MonthYearField`                                                                                                              |
+| 13   | `select-field`                   | `SelectField`                                                                                                                 |
+| 14   | `multiline-text-field`           | `MultilineTextField`                                                                                                          |
+| 15   | `email-address-field`            | `EmailAddressField`                                                                                                           |
+| 16   | `telephone-number-field`         | `TelephoneNumberField`                                                                                                        |
+| 17   | `uk-address-field`               | `UkAddressField` (compound)                                                                                                   |
+| 18   | `location-components`            | `EastingNorthingField`, `OsGridRefField`, `NationalGridFieldNumberField`, `LatLongField`, `GeospatialField` (all on one page) |
+| 19   | `hidden-field`                   | `HiddenField` (rendered as `<input type="hidden">`; no visible control)                                                       |
+| 20   | `multi-field-form`               | Multiple components on one page (`TextField` + others)                                                                        |
+| 21   | `repeat-page/{itemId}`           | `RepeatPageController` item entry (one item filled in)                                                                        |
+| 22   | `repeat-page/summary`            | `RepeatPageController` list summary — submit to continue                                                                      |
+| 23   | `select-land-parcel`             | Map-based parcel selection (`MapSelectPageController`)                                                                        |
+| 24   | `select-actions-for-land-parcel` | Land grant action selection (`SelectActionsPageController`)                                                                   |
+| 25   | `confirm-land-and-actions`       | Selected land and actions review (`ConfirmLandAndActionsPageController`)                                                      |
+| 26   | `summary`                        | Check answers (`CheckResponsesPageController`)                                                                                |
+| 27   | `declaration`                    | Declaration / submit (`DeclarationPageController`)                                                                            |
 
 A few pages are reached only when their conditions match and are skipped by `runJourney()` during a normal traversal. Each one demonstrates a different condition operator:
 

@@ -1,5 +1,6 @@
 import { multiApplicationRedirect } from '../../request-pipeline/redirects/multi-application-redirect.js'
 import { REDIRECTION_MAX, REDIRECTION_MIN } from '../../request-pipeline/redirects/service-root-redirect.js'
+import { applicationsSelectorPath } from '../../constants/applications-path.js'
 import { getReferenceNumber, REFERENCE_NUMBER_PATTERN, withReferenceNumber } from '../state/get-cache-key-helper.js'
 
 // The plugin's registered name: Hapi records it on every route the plugin registers.
@@ -68,13 +69,18 @@ const hideReferenceNumberFromFormsEngine = (request, h) => {
 }
 
 /**
- * Relative and inside this grant (`//` would be protocol-relative).
+ * Relative and inside this grant (`//` would be protocol-relative), excluding
+ * the applications list, which is not scoped to an individual application.
  *
  * @param {string} slug
  * @param {string} location
  * @returns {boolean}
  */
-const staysInJourney = (slug, location) => location.startsWith(`/${slug}/`) || location === `/${slug}`
+const staysInJourney = (slug, location) => {
+  const path = location.split(/[?#]/, 1)[0]
+
+  return path !== `/${slug}/applications` && (location.startsWith(`/${slug}/`) || location === `/${slug}`)
+}
 
 /**
  * Puts `?ref=` back on every same-grant redirect, the plugin's own included.
@@ -136,7 +142,12 @@ const isSameGrantLink = (slug, pageUrl, link) => {
   try {
     const resolved = new URL(link, pageUrl)
 
-    return resolved.origin === pageUrl.origin && staysInJourney(slug, resolved.pathname)
+    // The applications selector sits above any single application, so it never carries a ref.
+    return (
+      resolved.origin === pageUrl.origin &&
+      staysInJourney(slug, resolved.pathname) &&
+      resolved.pathname !== applicationsSelectorPath(slug)
+    )
   } catch {
     // Unparsable (e.g. user-entered) link: left as it is rather than failing the page.
     return false

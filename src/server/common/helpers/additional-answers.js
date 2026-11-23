@@ -1,7 +1,10 @@
 import { resolvePath } from './path-utils.js'
+import { formatSavedPayment } from '~/src/server/common/utils/payment.js'
+import { getNumberFormatter } from './number-formatter.js'
+import { isDecimalString } from '~/src/shared/format-number.js'
 
 /**
- * @typedef {{ title: string, stateValue: string }} AdditionalSectionItem
+ * @typedef {{ title: string, stateValue: string, format?: string }} AdditionalSectionItem
  * @typedef {object} AdditionalSection
  * @property {string} [title] - Separate section heading; omit to use the owning page's section
  * @property {string} [page] - Owning page path, also used to filter excluded pages
@@ -21,6 +24,19 @@ export function normalisePagePath(path) {
  */
 export function findPageByPath(pages, path) {
   return pages?.find((page) => normalisePagePath(page.path) === normalisePagePath(path))
+}
+
+/**
+ * @param {AdditionalSectionItem} item
+ * @param {unknown} value
+ */
+function formatItemValue(item, value) {
+  if (item.stateValue === 'totalPayment' && typeof value === 'string') {
+    return formatSavedPayment(value)
+  }
+
+  const formatter = getNumberFormatter(item.format)
+  return formatter && (typeof value === 'number' || isDecimalString(value)) ? formatter(value) : value
 }
 
 /**
@@ -57,7 +73,10 @@ export function resolveAdditionalAnswerSections(
     return [
       {
         ...section,
-        items: items.map((item) => ({ ...item, value: resolvePath(state, item.stateValue) ?? 'Not provided' }))
+        items: items.map((item) => {
+          const value = resolvePath(state, item.stateValue) ?? 'Not provided'
+          return { ...item, value: formatItemValue(item, value) }
+        })
       }
     ]
   })

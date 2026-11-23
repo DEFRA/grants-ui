@@ -1,4 +1,3 @@
-import { isApplicationWindowOpen } from '../common/helpers/application-window.js'
 import nunjucks from 'nunjucks'
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
 import { config } from '~/src/config/config.js'
@@ -10,6 +9,7 @@ import { ComponentsRegistry } from './services/components.registry.js'
 import { isBoom } from '@hapi/boom'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { statusCodes } from '../common/constants/status-codes.js'
+import { applicationsSelectorPath } from '../common/constants/applications-path.js'
 
 /**
  * Selects which reference the confirmation panel displays. Set via the
@@ -154,18 +154,9 @@ export default class ConfirmationPageController extends StatusPageController {
    * @param {string} slug - Form slug
    * @param {Pick<ResponseToolkit, 'view'>} h - Hapi response toolkit
    * @param {object[]} [components] - Rendered page components for the confirmation body
-   * @param {boolean} [applicationWindowOpen] - Whether new applications can be started.
    * @returns {ResponseObject} Hapi response
    */
-  buildAndRenderConfirmationResponse(
-    confirmationContent,
-    sessionData,
-    form,
-    slug,
-    h,
-    components,
-    applicationWindowOpen = true
-  ) {
+  buildAndRenderConfirmationResponse(confirmationContent, sessionData, form, slug, h, components) {
     const viewModel = ConfirmationService.buildViewModel({
       referenceNumber: sessionData.referenceNumber,
       businessName: sessionData.businessName,
@@ -179,11 +170,10 @@ export default class ConfirmationPageController extends StatusPageController {
 
     return h.view('confirmation-page', {
       ...viewModel,
-      startAnotherApplicationUrl:
+      manageApplicationsUrl:
         this.confirmationType === ConfirmationType.APPLICATION &&
-        this.model.def.metadata?.allowMultipleApplications === true &&
-        applicationWindowOpen
-          ? `/${slug}/applications`
+        this.model.def.metadata?.allowMultipleApplications === true
+          ? applicationsSelectorPath(slug)
           : undefined
     })
   }
@@ -236,8 +226,7 @@ export default class ConfirmationPageController extends StatusPageController {
           this.model.def,
           slug,
           h,
-          components,
-          isApplicationWindowOpen(request, this.model.def)
+          components
         )
       } catch (error) {
         return this.handleError(

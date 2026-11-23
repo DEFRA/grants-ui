@@ -1,4 +1,5 @@
 import { primeApplicationContext } from './common/request-pipeline/prime-application-context.js'
+import { normaliseNumberInputs } from './common/request-pipeline/normalise-number-inputs.js'
 import { captureLocationHints, renderLocationHints } from './common/map/location-hints.js'
 import plugin from '@defra/forms-engine-plugin'
 import Bell from '@hapi/bell'
@@ -7,7 +8,7 @@ import crumb from '@hapi/crumb'
 import h2o2 from '@hapi/h2o2'
 import hapi from '@hapi/hapi'
 
-import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
+import { GrantsSummaryPageController } from '~/src/server/common/controllers/summary-page.controller.js'
 import path from 'node:path'
 import { config } from '~/src/config/config.js'
 import { context } from '~/src/config/nunjucks/context/context.js'
@@ -47,6 +48,7 @@ import ConfirmLandAndActionsPageController from '~/src/server/land-grants/contro
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { formatDate } from '../config/nunjucks/filters/format-date.js'
+import { formatThousands } from '../shared/format-number.js'
 import { gridColumnClass } from '../config/nunjucks/grid-column.js'
 import { pageHideBackLink, pageRpaDetails } from '../config/nunjucks/page-config.js'
 import { componentMapOptions } from '../config/nunjucks/component-map-options.js'
@@ -145,7 +147,8 @@ const registerFormsPlugin = async (server, prefix = '') => {
       ...(config.get('maps.forms.apiSecret') && { ordnanceSurveyApiSecret: config.get('maps.forms.apiSecret') }),
       filters: {
         formatCurrency,
-        formatDate
+        formatDate,
+        formatThousands
       },
       globals: {
         gridColumnClass,
@@ -175,7 +178,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
         ConfirmLandAndActionsPageController,
         ConsentPageController,
         PotentialFundingController,
-        SummaryPageController,
+        GrantsSummaryPageController,
         CheckResponsesPageController,
         StartClaimPageController,
         ConfirmMethaneDetailsController,
@@ -295,6 +298,7 @@ export async function createServer() {
   })
 
   server.ext('onPostAuth', primeApplicationContext)
+  server.ext('onPreHandler', normaliseNumberInputs)
   server.ext('onPreHandler', captureLocationHints)
   server.ext('onPreResponse', renderLocationHints)
 

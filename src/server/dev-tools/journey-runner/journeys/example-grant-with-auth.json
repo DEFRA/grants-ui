@@ -17,6 +17,7 @@
   { "slug": "radios-field", "name": "RadiosField", "type": "radios", "fieldName": "radiosField" },
   { "slug": "conditional-page", "name": "ConditionalPage", "type": "submitOnly" },
   { "slug": "checkboxes-field", "name": "CheckboxesField", "type": "checkboxes", "fieldName": "checkboxesField" },
+  { "slug": "declaration-field", "name": "DeclarationField", "type": "checkboxes", "fieldName": "declarationField" },
   {
     "slug": "number-field-validation",
     "name": "NumberField (validation)",

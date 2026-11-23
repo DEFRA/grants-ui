@@ -193,6 +193,18 @@ describe('multiApplication plugin - reattaching the ref to redirects', () => {
     expect(request.response.headers.location).toBe('/test-grant/next?ref=REF-OTHER')
   })
 
+  it.each(['/test-grant/applications', '/test-grant/applications?page=2#list'])(
+    'does not attach an application ref to the applications list redirect %s',
+    (location) => {
+      const handler = registerAndGetPreResponse(server)
+      const request = makeRequest({ location })
+
+      handler(request, h)
+
+      expect(request.response.headers.location).toBe(location)
+    }
+  )
+
   it('does nothing when the request has no ref', () => {
     const handler = registerAndGetPreResponse(server)
     const request = makeRequest({ ref: null })
@@ -474,6 +486,26 @@ describe('multiApplication plugin - reattaching the ref to rendered links', () =
     )
   })
 
+  it.each([
+    '/test-grant/applications',
+    '/test-grant/applications?page=2#list',
+    'applications',
+    './applications',
+    'http://localhost:3000/test-grant/applications'
+  ])('does not attach an application ref to the applications list link or form action %s', async (url) => {
+    const originalHtml = `<a href="${url}">Manage your applications</a><form action="${url}"></form>`
+
+    const { html } = await render(makeViewRequest({ html: originalHtml }))
+
+    expect(html).toBe(originalHtml)
+  })
+
+  it('still attaches the ref to application-specific paths with a similar name', async () => {
+    const { html } = await render(makeViewRequest({ html: '<a href="/test-grant/applications-summary">Summary</a>' }))
+
+    expect(html).toBe('<a href="/test-grant/applications-summary?ref=REF-1">Summary</a>')
+  })
+
   it('appends to an existing, HTML-escaped query string without re-encoding it', async () => {
     const request = makeViewRequest({
       html: '<a href="/test-grant/page?returnUrl=%2Ftest-grant%2Fsummary&amp;page=2">x</a>'
@@ -538,6 +570,14 @@ describe('multiApplication plugin - reattaching the ref to rendered links', () =
 
     const root = '<a href="tasks">a</a>'
     expect((await render(makeViewRequest({ html: root, path: '/test-grant' }))).html).toBe(root)
+  })
+
+  it('leaves the applications selector link without a ref', async () => {
+    const html = '<a href="/test-grant/applications">manage</a><a href="/test-grant/tasks">tasks</a>'
+
+    expect((await render(makeViewRequest({ html }))).html).toBe(
+      '<a href="/test-grant/applications">manage</a><a href="/test-grant/tasks?ref=REF-1">tasks</a>'
+    )
   })
 
   it('does not leak the ref to links outside the grant journey', async () => {

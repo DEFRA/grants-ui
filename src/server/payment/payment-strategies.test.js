@@ -2,20 +2,17 @@ import { vi } from 'vitest'
 import * as landGrantsService from '~/src/server/land-grants/services/land-grants.service.js'
 import * as woodlandService from '~/src/server/woodland/woodland.service.js'
 import * as paymentViewModel from '~/src/server/land-grants/view-models/payment.view-model.js'
-import * as paymentUtils from '~/src/server/common/utils/payment.js'
 import { paymentStrategies } from './payment-strategies.js'
 
 vi.mock('~/src/server/land-grants/services/land-grants.service.js')
 vi.mock('~/src/server/woodland/woodland.service.js')
 vi.mock('~/src/server/land-grants/view-models/payment.view-model.js')
-vi.mock('~/src/server/common/utils/payment.js')
 
 describe('paymentStrategies', () => {
   const userContext = { defraIdToken: 'defra-id-token', sbi: '123456789' }
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(paymentUtils.formatPrice).mockImplementation((pence) => `£${(pence / 100).toFixed(2)}`)
   })
 
   describe('multiAction.calculatePayment', () => {
@@ -46,7 +43,7 @@ describe('paymentStrategies', () => {
 
       expect(result).toEqual({
         totalPence: 5000,
-        totalPayment: '£50.00',
+        totalPayment: '£50',
         payment: mockPayment,
         parcelItems: mockParcelItems,
         additionalYearlyPayments: mockAdditionalPayments
@@ -115,7 +112,7 @@ describe('paymentStrategies', () => {
 
       expect(result).toEqual({
         totalPence: 12000,
-        totalPayment: '£120.00',
+        totalPayment: '£120',
         payment: mockPayment
       })
     })
@@ -194,7 +191,7 @@ describe('paymentStrategies', () => {
 
       expect(result).toEqual({
         totalPence: 375000,
-        totalPayment: '£3750.00',
+        totalPayment: '£3,750',
         payment: mockPayment
       })
     })

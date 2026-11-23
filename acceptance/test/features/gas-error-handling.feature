@@ -34,7 +34,12 @@ Feature: GAS Error-Handling
         # checkboxes-field
         Then the user should be at URL "checkboxes-field"
         When the user selects the following
-            | Option two   |
+            | Option two |
+        And continues
+
+        # declaration-field
+        Then the user should be at URL "declaration-field"
+        When the user selects "I confirm I have read and understood this guidance"
         And continues
 
         # number-field-validation
@@ -89,13 +94,13 @@ Feature: GAS Error-Handling
         # location-components
         Then the user should be at URL "location-components"
         When the user enters the following
-            | FIELD                       | VALUE          |
-            | Easting                     | 530000         |
-            | Northing                    | 180000         |
-            | OS national grid reference  | ST 678 678     |
-            | National Grid field number  | NG 1234 5678   |
-            | Latitude                    | 51.519450      |
-            | Longitude                   | -0.127758      |
+            | FIELD                      | VALUE        |
+            | Easting                    | 530000       |
+            | Northing                   | 180000       |
+            | OS national grid reference | ST 678 678   |
+            | National Grid field number | NG 1234 5678 |
+            | Latitude                   | 51.519450    |
+            | Longitude                  | -0.127758    |
         And the user adds a point named "Example location" for GeospatialField "GeospatialField"
         And continues
 
