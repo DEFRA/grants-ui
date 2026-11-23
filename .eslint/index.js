@@ -1,9 +1,9 @@
 import tryCatchAllowedFunctions from './try-catch-allowed-functions.js'
-import layerBoundaries from './layer-boundaries.js'
+import sharedComponentBoundaries from './shared-component-boundaries.js'
 
 export default {
   rules: {
     'try-catch-allowed-functions': tryCatchAllowedFunctions,
-    'layer-boundaries': layerBoundaries
+    'shared-component-boundaries': sharedComponentBoundaries
   }
 }
