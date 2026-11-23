@@ -86,6 +86,7 @@ Run the dependency-policy checks with:
 ```sh
 npx vitest run --coverage.enabled=false tools/extended-forms-engine-isolation.test.js
 npx eslint src/extended-forms-engine
+npm run lint:types
 ```
 
 The policy test also runs through the existing `tools/**/*.test.js` discovery in `npm test`; no separate test

@@ -39,7 +39,7 @@ describe('extended forms engine JavaScript isolation', () => {
       filePath: path.join(moduleRoot, 'test-helpers/isolation.test.js')
     })
     expect(result.fatalErrorCount).toBe(0)
-    expect(result.messages.filter(({ ruleId }) => boundaryRules.includes(ruleId))).toEqual([])
+    expect(result.messages.filter(({ ruleId }) => ruleId !== null && boundaryRules.includes(ruleId))).toEqual([])
   })
 
   it.each([
@@ -87,7 +87,7 @@ describe('extended forms engine JavaScript isolation', () => {
   ])('allows consumers to use the public interface: %s', async (source) => {
     const [result] = await eslint.lintText(source, { filePath: applicationFile })
     expect(result.fatalErrorCount).toBe(0)
-    expect(result.messages.filter(({ ruleId }) => boundaryRules.includes(ruleId))).toEqual([])
+    expect(result.messages.filter(({ ruleId }) => ruleId !== null && boundaryRules.includes(ruleId))).toEqual([])
   })
 
   it.each([
