@@ -5,6 +5,7 @@ import { load } from 'cheerio'
 import * as filters from '~/src/config/nunjucks/filters/filters.js'
 import * as globals from '~/src/config/nunjucks/globals.js'
 import { buildNavigation } from '~/src/config/nunjucks/context/build-navigation.js'
+import { templatePaths } from '~/src/extended-forms-engine/index.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 const projectRoot = path.resolve(dirname, '../../../../..')
@@ -14,7 +15,7 @@ const env = nunjucks.configure(
     path.join(projectRoot, 'node_modules/govuk-frontend/dist/'),
     path.normalize(path.resolve(dirname, '..')),
     path.normalize(path.join(projectRoot, 'src/server/common/components')),
-    path.normalize(path.join(projectRoot, 'src/extended-forms-engine/components'))
+    ...templatePaths
   ],
   {
     trimBlocks: true,

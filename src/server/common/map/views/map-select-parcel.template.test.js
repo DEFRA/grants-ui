@@ -18,7 +18,7 @@ describe('parcel view before the page modules load', () => {
   beforeAll(async () => {
     css = (
       await compileAsync('src/client/stylesheets/components/_map-select-parcel.scss', {
-        loadPaths: ['src/client/stylesheets', 'src/extended-forms-engine/stylesheets'],
+        loadPaths: ['src/client/stylesheets'],
         importers: [new NodePackageImporter()],
         quietDeps: true
       })

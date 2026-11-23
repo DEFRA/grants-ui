@@ -4,6 +4,7 @@ import nunjucks from 'nunjucks'
 import { load } from 'cheerio'
 import * as filters from '~/src/config/nunjucks/filters/filters.js'
 import * as globals from '~/src/config/nunjucks/globals.js'
+import { templatePaths } from '~/src/extended-forms-engine/index.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 const projectRoot = path.resolve(dirname, '../../../..')
@@ -37,7 +38,7 @@ export function createComponentRenderer(callerMetaUrl, macroName) {
       path.join(projectRoot, 'node_modules/govuk-frontend/dist/'),
       path.normalize(path.resolve(testDir, '../')),
       path.normalize(path.join(projectRoot, 'src/server/common/components')),
-      path.normalize(path.join(projectRoot, 'src/extended-forms-engine/components')),
+      ...templatePaths,
       path.normalize(path.join(projectRoot, 'src/server/common/templates'))
     ],
     {
@@ -82,7 +83,7 @@ export function createPageRenderer(callerMetaUrl, template, defaults = {}, extra
       testDir,
       ...extraViewPaths.map((viewPath) => path.join(projectRoot, viewPath)),
       path.join(projectRoot, 'src/server/common/components'),
-      path.join(projectRoot, 'src/extended-forms-engine/components'),
+      ...templatePaths,
       path.join(projectRoot, 'src/server/common/templates'),
       path.join(projectRoot, 'src/server/land-grants/components')
     ],

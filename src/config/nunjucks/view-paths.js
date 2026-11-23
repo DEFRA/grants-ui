@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { templatePaths } from '../../extended-forms-engine/index.js'
 
 /**
  * Directories nunjucks resolves templates/components against. Kept in its own
@@ -18,7 +19,7 @@ export const viewPaths = (() => {
     path.join(serverDir, 'claims/views'),
     path.join(serverDir, 'details-page/views'),
     path.join(serverDir, 'common/components'),
-    path.resolve(process.cwd(), 'src/extended-forms-engine/components'),
+    ...templatePaths,
     path.join(serverDir, 'common/templates'),
     path.join(serverDir, 'confirmation/views'),
     path.join(serverDir, 'cookies/views'),

@@ -2,11 +2,6 @@ import neostandard from 'neostandard'
 import prettier from 'eslint-config-prettier'
 import vitestPlugin from '@vitest/eslint-plugin'
 import grantsUiPlugin from './.eslint/index.js'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-
-const projectRoot = path.dirname(fileURLToPath(import.meta.url))
-const moduleRoot = path.join(projectRoot, 'src/extended-forms-engine')
 
 export default [
   {
@@ -25,6 +20,7 @@ export default [
     },
     rules: {
       'no-console': 'error',
+      'grants-ui/layer-boundaries': 'error',
       curly: ['error', 'all'],
       '@stylistic/space-before-function-paren': 'off',
       '@stylistic/quotes': 'off',
@@ -89,24 +85,7 @@ export default [
   },
   {
     files: ['src/extended-forms-engine/**/*.{js,mjs,cjs}'],
-    settings: {
-      n: {
-        resolverConfig: {
-          alias: { '~': projectRoot },
-          symlinks: false
-        }
-      }
-    },
     rules: {
-      'n/no-restricted-import': [
-        'error',
-        [
-          {
-            name: ['/**', '!/**/node_modules/**', `!${moduleRoot}/**`, '~', '~/**', 'module', 'node:module'],
-            message: 'Keep extended-forms-engine independent of application sources.'
-          }
-        ]
-      ],
       'no-restricted-syntax': [
         'error',
         { selector: 'ImportExpression[source.type!="Literal"]', message: 'Use literal module imports.' },

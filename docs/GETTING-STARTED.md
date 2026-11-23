@@ -36,7 +36,10 @@ nvm use
 The repository has been structured to follow a feature-based structure, where each feature is organized into its own directory with all related components (controllers, views, tests, and utilities).
 
 Reusable form components and their dependency rules are documented in the
-[extended forms engine module](../src/extended-forms-engine/README.md).
+[extended forms engine module](../src/extended-forms-engine/README.md), the initial reusable slice of
+[LDR-003](https://github.com/DEFRA/farming-grants-docs/blob/5338bbb070b245e0861603216e2b2bd313c0169f/docs/projects/grants-ui/decision-records/ldr-003-modular-structure-by-reuse-and-lifecycle-phase.md).
+Import its template and Sass integration paths through `src/extended-forms-engine/index.js`; keep service routes and
+application configuration outside the module. The wider lifecycle-based reorganisation is separate work.
 
 ### Feature Organization
 

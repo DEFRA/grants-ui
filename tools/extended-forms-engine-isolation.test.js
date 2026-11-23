@@ -5,22 +5,24 @@ import { ESLint } from 'eslint'
 import nunjucks from 'nunjucks'
 import { compileAsync, compileStringAsync, NodePackageImporter } from 'sass-embedded'
 import stylelint from 'stylelint'
+import { sassPaths, templatePaths } from '../src/extended-forms-engine/index.js'
+import { viewPaths } from '../src/config/nunjucks/view-paths.js'
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url))
 const moduleRoot = path.join(projectRoot, 'src/extended-forms-engine')
-const componentRoot = path.join(moduleRoot, 'components')
+const [componentRoot] = templatePaths
 const nodeModules = path.join(projectRoot, 'node_modules')
 const govukRoot = path.join(nodeModules, 'govuk-frontend/dist/govuk')
 const canonicalModuleRoot = await fs.realpath(moduleRoot)
 const canonicalNodeModules = await fs.realpath(nodeModules)
 const canonicalGovukRoot = await fs.realpath(govukRoot)
 const eslint = new ESLint({ cwd: projectRoot, cache: false })
-const boundaryRules = ['n/no-restricted-import', 'no-restricted-syntax']
+const boundaryRules = ['grants-ui/layer-boundaries', 'no-restricted-syntax']
 const templateTypes = [nunjucks.nodes.Include, nunjucks.nodes.Import, nunjucks.nodes.FromImport, nunjucks.nodes.Extends]
 const templateFile = path.join(componentRoot, 'heading/macro.njk')
 const applicationFile = path.join(projectRoot, 'src/config/nunjucks/view-paths.js')
 const sassOptions = {
-  loadPaths: [path.join(moduleRoot, 'stylesheets'), componentRoot, nodeModules],
+  loadPaths: [...sassPaths, nodeModules],
   importers: [new NodePackageImporter(projectRoot)],
   quietDeps: true
 }
@@ -41,21 +43,21 @@ describe('extended forms engine JavaScript isolation', () => {
   })
 
   it.each([
-    ['relative escape', "import '../../config/nunjucks/view-paths.js'", 'n/no-restricted-import'],
-    ['absolute application import', `import '${applicationFile}'`, 'n/no-restricted-import'],
-    ['application alias', "import '~/src/config/nunjucks/view-paths.js'", 'n/no-restricted-import'],
-    ['root file', "export { default } from '../../../eslint.config.js'", 'n/no-restricted-import'],
-    ['external re-export', "export * from '../../config/nunjucks/view-paths.js'", 'n/no-restricted-import'],
-    ['lookalike directory', "import '../../extended-forms-engine-other/helper.js'", 'n/no-restricted-import'],
-    ['dynamic escape', "import('../../config/nunjucks/view-paths.js')", 'n/no-restricted-import'],
+    ['relative escape', "import '../../config/nunjucks/view-paths.js'", 'grants-ui/layer-boundaries'],
+    ['absolute application import', `import '${applicationFile}'`, 'grants-ui/layer-boundaries'],
+    ['application alias', "import '~/src/config/nunjucks/view-paths.js'", 'grants-ui/layer-boundaries'],
+    ['root file', "export { default } from '../../../eslint.config.js'", 'grants-ui/layer-boundaries'],
+    ['external re-export', "export * from '../../config/nunjucks/view-paths.js'", 'grants-ui/layer-boundaries'],
+    ['lookalike directory', "import '../../extended-forms-engine-other/helper.js'", 'grants-ui/layer-boundaries'],
+    ['dynamic escape', "import('../../config/nunjucks/view-paths.js')", 'grants-ui/layer-boundaries'],
     ['computed import', 'import(name)', 'no-restricted-syntax'],
     ['template literal import', `import(\`./\${name}.js\`)`, 'no-restricted-syntax'],
     ['CommonJS require', "require('node:fs')", 'no-restricted-syntax'],
     ['aliased require', "const load = require; load('node:fs')", 'no-restricted-syntax'],
     ['module require', "module.require('node:fs')", 'no-restricted-syntax'],
     ['computed require', "module['require']('node:fs')", 'no-restricted-syntax'],
-    ['loader factory', "import { createRequire as load } from 'node:module'", 'n/no-restricted-import'],
-    ['bare loader factory', "import { createRequire } from 'module'", 'n/no-restricted-import'],
+    ['loader factory', "import { createRequire as load } from 'node:module'", 'grants-ui/layer-boundaries'],
+    ['bare loader factory', "import { createRequire } from 'module'", 'grants-ui/layer-boundaries'],
     ['file URL', `import '${pathToFileURL(applicationFile).href}'`, 'no-restricted-syntax'],
     ['data URL', "import 'data:text/javascript,export default 1'", 'no-restricted-syntax'],
     ['HTTP URL', "import 'http://example.test/module.js'", 'no-restricted-syntax'],
@@ -69,6 +71,31 @@ describe('extended forms engine JavaScript isolation', () => {
       expect(result.messages.map((message) => message.ruleId)).toContain(ruleId)
     }
   })
+
+  it.each([
+    "import { templatePaths } from '~/src/extended-forms-engine/index.js'",
+    "export { templatePaths } from '../../extended-forms-engine/index.js'",
+    "import('../../extended-forms-engine/index.js')"
+  ])('allows consumers to use the public interface: %s', async (source) => {
+    const [result] = await eslint.lintText(source, { filePath: applicationFile })
+    expect(result.fatalErrorCount).toBe(0)
+    expect(result.messages.filter(({ ruleId }) => boundaryRules.includes(ruleId))).toEqual([])
+  })
+
+  it.each([
+    "import '~/src/extended-forms-engine/test-helpers/component-helpers.js'",
+    "export * from '../../extended-forms-engine/test-helpers/component-helpers.js'",
+    "import('../../extended-forms-engine/test-helpers/component-helpers.js')",
+    `import '${path.join(moduleRoot, 'test-helpers/component-helpers.js')}'`,
+    `import '${pathToFileURL(path.join(moduleRoot, 'test-helpers/component-helpers.js')).href}'`,
+    "require('../../extended-forms-engine/test-helpers/component-helpers.js')"
+  ])('rejects consumer deep imports: %s', async (source) => {
+    for (const filePath of [applicationFile, applicationFile.replace('.js', '.test.js')]) {
+      const [result] = await eslint.lintText(source, { filePath })
+      expect(result.fatalErrorCount).toBe(0)
+      expect(result.messages.map(({ ruleId }) => ruleId)).toContain('grants-ui/layer-boundaries')
+    }
+  })
 })
 
 describe('extended forms engine template isolation', () => {
@@ -79,6 +106,27 @@ describe('extended forms engine template isolation', () => {
       await inspectTemplate(file, visited)
     }
     expect([...visited].sort()).toEqual((await Promise.all(files.map((file) => fs.realpath(file)))).sort())
+  })
+
+  it('keeps module template names unique across application search paths', async () => {
+    const templates = await walk(componentRoot, (file) => /\.(njk|html)$/.test(file))
+    const applicationPaths = viewPaths.filter((directory) => !templatePaths.includes(directory))
+    const collisions = []
+    for (const template of templates) {
+      const name = path.relative(componentRoot, template)
+      for (const directory of applicationPaths) {
+        const candidate = path.join(directory, name)
+        if (
+          await fs.stat(candidate).then(
+            () => true,
+            () => false
+          )
+        ) {
+          collisions.push(candidate)
+        }
+      }
+    }
+    expect(collisions).toEqual([])
   })
 
   it.each([
