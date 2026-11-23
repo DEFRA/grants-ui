@@ -15,8 +15,8 @@ Feature: Application Amendment
         When the user selects "Yes"
         And continues
         Then a navigate audit event should be published for grant "example-grant-with-auth" and entityId "check-details" with CRN "9000000020" and SBI "800000016" with the following answers
-            | FIELD             | VALUE |
-            | detailsConfirmed  | true  |
+            | FIELD            | VALUE |
+            | detailsConfirmed | true  |
 
         # yes-no-field
         Then the user should be at URL "yes-no-field"
@@ -39,7 +39,7 @@ Feature: Application Amendment
         # checkboxes-field
         Then the user should be at URL "checkboxes-field"
         When the user selects the following
-            | Option two   |
+            | Option two |
         And continues
 
         # declaration-field
@@ -99,13 +99,13 @@ Feature: Application Amendment
         # location-components
         Then the user should be at URL "location-components"
         When the user enters the following
-            | FIELD                       | VALUE          |
-            | Easting                     | 530000         |
-            | Northing                    | 180000         |
-            | OS national grid reference  | ST 678 678     |
-            | National Grid field number  | NG 1234 5678   |
-            | Latitude                    | 51.519450      |
-            | Longitude                   | -0.127758      |
+            | FIELD                      | VALUE        |
+            | Easting                    | 530000       |
+            | Northing                   | 180000       |
+            | OS national grid reference | ST 678 678   |
+            | National Grid field number | NG 1234 5678 |
+            | Latitude                   | 51.519450    |
+            | Longitude                  | -0.127758    |
         And the user adds a point named "Example location" for GeospatialField "GeospatialField"
         And continues
 
@@ -148,8 +148,8 @@ Feature: Application Amendment
             | Radio option               | Option two                                         |
             | Checkbox options           | Option two                                         |
             | Guidance declaration       | I confirm I have read and understood this guidance |
-            |Enter amount                   | £100,000                |
-            | Routing amount                 | £50,000                                            |
+            | Enter amount               | £100,000                                           |
+            | Routing amount             | £50,000                                            |
             | Date                       | {DATE IN A WEEK}                                   |
             | Month and year             | August 2025                                        |
             | Select option              | Option two                                         |
@@ -166,9 +166,9 @@ Feature: Application Amendment
             | Latitude and longitude     | Latitude: 51.51945                                 |
             |                            | Longitude: -0.127758                               |
             | GeospatialField            | Added 1 location                                   |
-            | Project name                   | Test project            |
-            | Project description            | Project description     |
-            | Project budget                 | £50,000                                            |
+            | Project name               | Test project                                       |
+            | Project description        | Project description                                |
+            | Project budget             | £50,000                                            |
             | Select land parcels        | SD6351-8781                                        |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER              |
@@ -255,8 +255,8 @@ Feature: Application Amendment
             | Radio option               | Option two                                         |
             | Checkbox options           | Option two                                         |
             | Guidance declaration       | I confirm I have read and understood this guidance |
-            |Enter amount                   | £100,000                |
-            | Routing amount                 | £50,000                                            |
+            | Enter amount               | £100,000                                           |
+            | Routing amount             | £50,000                                            |
             | Date                       | {DATE IN A WEEK}                                   |
             | Month and year             | August 2025                                        |
             | Select option              | Option two                                         |
@@ -273,9 +273,9 @@ Feature: Application Amendment
             | Latitude and longitude     | Latitude: 51.51945                                 |
             |                            | Longitude: -0.127758                               |
             | GeospatialField            | Added 1 location                                   |
-            | Project name                   | Test project            |
-            | Project description            | Project description     |
-            | Project budget                 | £50,000                                            |
+            | Project name               | Test project                                       |
+            | Project description        | Project description                                |
+            | Project budget             | £50,000                                            |
             | Select land parcels        | SD6351-8781                                        |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER              |
@@ -354,8 +354,8 @@ Feature: Application Amendment
             | Radio option               | Option two                                         |
             | Checkbox options           | Option two                                         |
             | Guidance declaration       | I confirm I have read and understood this guidance |
-            |Enter amount                   | £100,000                |
-            | Routing amount                 | £50,000                                            |
+            | Enter amount               | £100,000                                           |
+            | Routing amount             | £50,000                                            |
             | Date                       | {DATE IN A WEEK}                                   |
             | Month and year             | August 2025                                        |
             | Select option              | Option two                                         |
@@ -372,9 +372,9 @@ Feature: Application Amendment
             | Latitude and longitude     | Latitude: 51.51945                                 |
             |                            | Longitude: -0.127758                               |
             | GeospatialField            | Added 1 location                                   |
-            | Project name                   | Test project            |
-            | Project description            | Project description     |
-            | Project budget                 | £50,000                                            |
+            | Project name               | Test project                                       |
+            | Project description        | Project description                                |
+            | Project budget             | £50,000                                            |
             | Select land parcels        | SD6351-8781                                        |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER              |

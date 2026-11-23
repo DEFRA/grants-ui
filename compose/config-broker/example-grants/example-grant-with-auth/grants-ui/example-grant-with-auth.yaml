@@ -723,6 +723,13 @@ pages:
         shortDescription: Easting and northing
         id: 9e3b7d5a-4c4f-4d7e-9f2a-ab8c9d5e6f70
         schema: {}
+      - name: eastingNorthingFieldDescription
+        title: Easting and northing description
+        type: HiddenField
+        options:
+          required: false
+        id: 3f1a2b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b
+        schema: {}
       - name: osGridRefField
         title: OS national grid reference
         hint: Two letters and 6, 8 or 10 digits, for example ST 678 678 or SO 12345 12345.
