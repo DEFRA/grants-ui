@@ -37,6 +37,12 @@ export class StatePersistenceService extends CacheService {
    * backend resolves the active grant version, which is recorded on
    * `request.app.grantVersion` for downstream save/clear flows.
    *
+   * Each call returns a deep copy of the stashed state. The forms engine merges
+   * the submitted payload into the object it is given (`Hoek.merge` mutates its
+   * target), so handing out the shared stashed object would leak unsaved answers
+   * into every later read in the same request, e.g. a controller comparing the
+   * new answer with the previously saved one would only ever see the new one.
+   *
    * @param {AnyRequest} request
    * @returns {Promise<object>} resolved state or empty object
    */
@@ -62,7 +68,8 @@ export class StatePersistenceService extends CacheService {
       const body = await getStateWithDefinition(request)
       const app = /** @type {{ grantVersion?: unknown }} */ (request.app)
       app.grantVersion = resolveVersion(body)
-      return /** @type {Record<string, unknown>} */ (body?.state?.state) ?? {}
+      const state = /** @type {Record<string, unknown> | undefined} */ (body?.state?.state)
+      return state ? structuredClone(state) : {}
     } catch (err) {
       debug(
         LogCodes.SYSTEM.SESSION_STATE_FETCH_FAILED,
@@ -98,6 +105,7 @@ export class StatePersistenceService extends CacheService {
     const grantVersion = await this._resolveActiveGrantVersion(request)
     const lockToken = this._buildLockToken(request, grantVersion)
     await persistStateToApi(state, key, { lockToken, grantVersion, ...options })
+    await this._refreshStashedState(request, state)
 
     // A brand-new application of a multi-application grant: scope the creating request to the
     // reference the forms engine just minted, so this very response's links and redirects carry it.
@@ -111,6 +119,25 @@ export class StatePersistenceService extends CacheService {
     }
 
     return state
+  }
+
+  /**
+   * Keeps the per-request stash in step with what was just saved, so later
+   * {@link getState} calls in the same request see the persisted answers.
+   * Stores a detached JSON copy (the shape the backend would return) so the
+   * caller's object, which the forms engine may keep mutating, is not shared.
+   *
+   * @param {AnyRequest} request
+   * @param {FormSubmissionState} state
+   * @returns {Promise<void>}
+   */
+  async _refreshStashedState(request, state) {
+    const stash = /** @type {{ stateWithDefinition?: Promise<StateWithDefinitionEnvelope | null> }} */ (request.app)
+      .stateWithDefinition
+    const body = await stash?.catch(() => null)
+    if (body?.state && state) {
+      body.state.state = JSON.parse(JSON.stringify(state))
+    }
   }
 
   /**
@@ -277,4 +304,5 @@ export class StatePersistenceService extends CacheService {
 /**
  * @import { AnyRequest, AnyFormRequest, FormSubmissionState } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { Request, Server } from '@hapi/hapi'
+ * @import { StateWithDefinitionEnvelope } from '../../helpers/state/fetch-saved-state-helper.js'
  */

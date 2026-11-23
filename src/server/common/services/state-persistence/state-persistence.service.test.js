@@ -94,6 +94,54 @@ describe('StatePersistenceService', () => {
     expect(fakeRequest.app.grantVersion).toBeUndefined()
   })
 
+  test('getState returns a detached copy so mutating it does not leak into later reads in the request', async () => {
+    // The forms engine merges the submitted payload into the state object it is given (Hoek.merge mutates its
+    // target). Later reads in the same request (e.g. a controller comparing against the saved answers) must
+    // still see the saved state, not the unsaved submission.
+    const envelope = { state: { state: { landParcels: ['A'], nested: { value: 1 } } } }
+    contextModule.getStateWithDefinition.mockResolvedValue(envelope)
+    const request = { ...fakeRequest, app: {} }
+
+    const first = await service.getState(request)
+    first.landParcels = ['A', 'B']
+    first.nested.value = 2
+
+    const second = await service.getState(request)
+    expect(second).toEqual({ landParcels: ['A'], nested: { value: 1 } })
+    expect(second).not.toBe(first)
+    expect(envelope.state.state).toEqual({ landParcels: ['A'], nested: { value: 1 } })
+  })
+
+  test('getState sees state saved earlier in the same request, detached from the saved object', async () => {
+    const envelope = { state: { state: { landParcels: ['A'] } } }
+    contextModule.getStateWithDefinition.mockResolvedValue(envelope)
+    const request = { ...fakeRequest, app: { grantVersion: 1, stateWithDefinition: Promise.resolve(envelope) } }
+
+    const saved = { landParcels: ['A', 'B'], hiddenParam: 'x' }
+    await service.setState(request, saved)
+    saved.landParcels.push('C')
+
+    expect(await service.getState(request)).toEqual({ landParcels: ['A', 'B'], hiddenParam: 'x' })
+  })
+
+  test('setState leaves the stash alone when there is no saved state document', async () => {
+    const envelope = { state: null }
+    const request = { ...fakeRequest, app: { grantVersion: 1, stateWithDefinition: Promise.resolve(envelope) } }
+
+    await service.setState(request, { foo: 'bar' })
+
+    expect(envelope.state).toBeNull()
+  })
+
+  test('setState still persists when the stashed read failed', async () => {
+    const stash = Promise.reject(new Error('backend down'))
+    stash.catch(() => {})
+    const request = { ...fakeRequest, app: { grantVersion: 1, stateWithDefinition: stash } }
+
+    await expect(service.setState(request, { foo: 'bar' })).resolves.toEqual({ foo: 'bar' })
+    expect(persistModule.persistStateToApi).toHaveBeenCalledWith({ foo: 'bar' }, SESSION_KEY, persistOptions(1))
+  })
+
   test('getState logs SESSION_STATE_KEY_PARSE_FAILED when key parsing fails', async () => {
     const parseError = new Error('bad key')
     getCacheKey.mockImplementation(() => {
