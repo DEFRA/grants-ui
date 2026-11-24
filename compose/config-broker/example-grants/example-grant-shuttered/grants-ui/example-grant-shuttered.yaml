@@ -1,0 +1,24 @@
+engine: V2
+name: Example Grant Shuttered
+metadata:
+  id: d1fbaf45-74da-4e58-b1c3-cc3fbbcdf4a2
+  surveyLabel: Example grant shuttered
+  referenceNumberPrefix: EGS
+  grantRedirectRules: null
+  permissions:
+    enforce: false
+pages:
+  - title: Example Grant Shuttered
+    path: /start
+    controller: TerminalPageController
+    components:
+      - name: startInfo
+        title: Html
+        type: Html
+        content: <p class="govuk-body">If you see this page, this grant is not shuttered.</p>
+        id: 1e568a6b-d7b9-4734-9c71-9e5d329c0797
+    id: 72a1eff6-b7e6-4548-acb5-90fcd18e9660
+sections: []
+lists: []
+conditions: []
+schema: 2

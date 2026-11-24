@@ -207,6 +207,8 @@ which is formatted as a GUID string.
 | `COOKIE_CONSENT_EXPIRY_DAYS`                 | Days before cookie consent expires                                                                              | `365`                                        |
 | `DEV_TOOLS_ENABLED`                          | Enable development tools and routes                                                                             | `true` (dev only)                            |
 | `NOTIFICATION_BANNER_EXCLUDED_PATH_SUFFIXES` | Comma-separated page path suffixes where the [notification banner](./FEATURES.md#notification-banner) is hidden | `/confirmation,/print-submitted-application` |
+| `SHUTTER_ENABLED_SLUGS`                      | Comma-separated slugs of [shuttered](./FEATURES.md#shutter) grants                                              | empty                                        |
+| `SHUTTER_ENABLED_CONTENT_{SLUG}`             | Optional HTML on a shuttered grant's page, e.g. `SHUTTER_ENABLED_CONTENT_WATER_MANAGEMENT`                      | empty                                        |
 
 #### Defra ID Additional Settings
 
