@@ -40,18 +40,77 @@ The aligned suite has three import-time suite failures as well as its 28 failing
 
 ### Concrete migration work exposed
 
-| Area                  | Observed impact                                                                                                                                        | Required change                                                                                                                                                      |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dependencies          | Fresh engine-only installation did not expose the application's undeclared forms-model import at the root. Joi majors also differed.                   | Declare forms-model directly and align application schemas with Joi 18. Review the existing Dependabot Joi-major restriction.                                        |
-| Browser maps          | The engine's new interactive-map dependency pulls optional Esri/OpenLayers imports into `shared.js`.                                                   | Apply the documented webpack exclusions; do not install unused GIS frameworks merely to satisfy the bundler.                                                         |
-| Map worker            | The application did not copy the documented MapLibre worker. Its custom map initialiser passes `apiPath` and `assetPath`, but not `workerPath`.        | Serve the worker at the chosen public path and pass that path through the custom point/geospatial initialisers. Verify both forms maps and parcel maps in a browser. |
-| Map versions          | Application and engine resolve different interactive-map alpha versions.                                                                               | Agree and pin a compatible common version after testing the application customisations; do not force an unverified override.                                         |
-| Map tests/types       | Three tests import MapLibre private source paths that v6 no longer exports. `parcel-map/selection.js` has one expression-tuple type error.             | Move tests to supported interfaces and type the actual expression correctly, without `ts-ignore` or weakened assertions.                                             |
-| Nunjucks              | Application-owned template environments fail with `Unable to call t, which is undefined or falsey`. This affects form partials and repeater rendering. | Call the public `prepareNunjucksEnvironment` for every environment that renders engine templates, including integration-test renderers and application routes.       |
-| Declaration printing  | `format-answer.js` constructs a `DeclarationField` with empty props; v5 display code needs a model translator and throws on `createTranslator`.        | Supply the real rendering/translation context or use the supported display interface. This is an application implementation failure, not merely a test mock issue.   |
-| Repeat answer display | The custom Check answers card code receives `351000, 530000` rather than separate labelled coordinate lines.                                           | Adapt the custom presentation path while preserving the intended accessible labels and stored coordinate representation.                                             |
-| Model titles          | The guide removes `setPageTitles`; absent titles are resolved at render time instead of being written into `model.def`.                                | Audit task-list, print and custom title readers; use the rendered/translated title rather than assuming the definition was mutated.                                  |
-| Rendering interfaces  | Components and component collections now use a `RenderContext` object; additional translator arguments are optional on page-controller interfaces.     | Audit direct engine/internal calls. Do not mechanically rewrite all custom page controllers.                                                                         |
+#### Dependencies
+
+Installing the engine alone left the application's undeclared `@defra/forms-model` import unavailable at the root.
+The application and engine also used different Joi majors.
+
+Declare forms-model directly and align application schemas with Joi 18. Review the existing Dependabot Joi-major
+restriction.
+
+#### Browser maps
+
+The engine's new interactive-map dependency pulls optional Esri/OpenLayers imports into `shared.js`.
+
+Apply the documented webpack exclusions. Do not install unused GIS frameworks merely to satisfy the bundler.
+
+#### Map worker
+
+The application did not copy the documented MapLibre worker. Its custom map initialiser passes `apiPath` and
+`assetPath`, but not `workerPath`.
+
+Serve the worker at the chosen public path and pass that path through the custom point/geospatial initialisers.
+Verify both forms maps and parcel maps in a browser.
+
+#### Map versions
+
+The application and engine resolve different interactive-map alpha versions.
+
+Agree and pin a compatible common version after testing the application customisations. Do not force an unverified
+override.
+
+#### Map tests and types
+
+Three tests import MapLibre private source paths that v6 no longer exports. `parcel-map/selection.js` also has an
+expression-tuple type error.
+
+Move tests to supported interfaces and type the actual expression correctly, without `ts-ignore` or weakened assertions.
+
+#### Nunjucks
+
+Application-owned template environments fail with `Unable to call t, which is undefined or falsey`. This affects form
+partials and repeater rendering.
+
+Call the public `prepareNunjucksEnvironment` for every environment that renders engine templates, including
+integration-test renderers and application routes.
+
+#### Declaration printing
+
+`format-answer.js` constructs a `DeclarationField` with empty props. The v5 display code needs a model translator and
+throws on `createTranslator`.
+
+Supply the real rendering/translation context or use the supported display interface. This is an application
+implementation failure, not merely a test mock issue.
+
+#### Repeat answer display
+
+The custom Check answers card code receives `351000, 530000` rather than separate labelled coordinate lines.
+
+Adapt the custom presentation path while preserving the intended accessible labels and stored coordinate representation.
+
+#### Model titles
+
+The guide removes `setPageTitles`. Absent titles are resolved at render time instead of being written into `model.def`.
+
+Audit task-list, print and custom title readers. Use the rendered/translated title rather than assuming the definition
+was mutated.
+
+#### Rendering interfaces
+
+Components and component collections now use a `RenderContext` object. Additional translator arguments are optional
+on page-controller interfaces.
+
+Audit direct engine/internal calls. Do not mechanically rewrite all custom page controllers.
 
 Relevant application seams include `src/config/nunjucks/nunjucks.js`, `src/server/common/test-helpers/component-helpers.js`, `src/server/common/templates/index.test.js`, `src/server/common/helpers/repeat-page-item-names.js`, `src/server/common/helpers/print-application-service/utils/format-answer.js`, `src/server/check-responses/repeat-answers.js`, `src/client/javascripts/component-maps.js` and `src/client/javascripts/parcel-map/selection.js`.
 
