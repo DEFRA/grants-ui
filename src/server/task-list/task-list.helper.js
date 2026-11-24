@@ -177,10 +177,11 @@ function isMapSelectPageCompleted(pageDef, state, formModel) {
 function emptyComponentsStatus(pageDef, formModel) {
   const page = formModel.pageMap.get(pageDef.path)
   const configured = formModel.def?.metadata?.pageConfig?.[pageDef.path]
+  const hasOnlyOptionalQuestions = (page?.collection.fields.length ?? 0) > 0
   const isExcluded =
     configured?.excludeFromTaskCompletion === true ||
     page?.excludeFromTaskCompletion === true ||
-    (page?.collection.fields.length ?? 0) > 0 ||
+    hasOnlyOptionalQuestions ||
     (!pageDef.controller && (pageDef.components?.length ?? 0) > 0)
   return isExcluded ? null : false
 }
