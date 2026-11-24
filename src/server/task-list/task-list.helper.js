@@ -76,6 +76,17 @@ function evaluateCondition(formModel, conditionName, state) {
 }
 
 /**
+ * Engine HiddenField discards its options, so optional components are read from the definition.
+ * @param {object} pageDef - The page definition from YAML
+ * @returns {Set<string>}
+ */
+function getOptionalComponentNames(pageDef) {
+  return new Set(
+    (pageDef.components ?? []).filter(({ options }) => options?.required === false).map(({ name }) => name)
+  )
+}
+
+/**
  * Gets the names of all required question components on a page
  * @param {object} pageDef - The page definition from YAML
  * @param {object} formModel - The form model
@@ -86,7 +97,8 @@ function getPageComponentNames(pageDef, formModel) {
   if (!page) {
     return []
   }
-  return page.collection.fields.filter((field) => field.options?.required !== false).map((field) => field.name)
+  const optionalNames = getOptionalComponentNames(pageDef)
+  return page.collection.fields.map((field) => field.name).filter((name) => !optionalNames.has(name))
 }
 
 /**
@@ -217,7 +229,10 @@ function isRepeatPageCompleted(pageDef, state, formModel) {
 
   const { name } = pageDef.repeat.options
   const page = formModel.pageMap.get(pageDef.path)
-  const componentNames = getRequiredRepeatFieldNames(page.collection.fields)
+  const optionalNames = getOptionalComponentNames(pageDef)
+  const componentNames = getRequiredRepeatFieldNames(
+    page.collection.fields.filter((field) => !optionalNames.has(field.name))
+  )
   const { error } = page.collection.stateSchema.validate({ [name]: state[name] })
   return (
     !error &&
