@@ -367,6 +367,17 @@ describe('repeat task completion with the forms engine', () => {
     expect(getCompletionStats(journey.taskViewModel, journey.model, journey.state()).isComplete).toBe(true)
   })
 
+  it('completes an item with a blank optional hidden field', () => {
+    const journey = createJourney({
+      components: [
+        { type: 'TextField', name: 'itemName', title: 'Item name' },
+        { type: 'HiddenField', name: 'itemDescription', title: 'Item description', options: { required: false } }
+      ]
+    })
+    journey.state().items = [{ itemId: randomUUID(), itemName: 'Item', itemDescription: null }]
+    expect(getCompletionStats(journey.taskViewModel, journey.model, journey.state()).isComplete).toBe(true)
+  })
+
   it('excludes a repeat task when its condition is false', () => {
     const journey = createJourney()
     journey.page.pageDef.condition = 'includeItems'
