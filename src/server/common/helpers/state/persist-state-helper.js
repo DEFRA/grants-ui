@@ -43,14 +43,14 @@ function createPersistenceError(reason, status) {
  * @param {Record<string, unknown>} state - The state object to persist. Can include form/session data.
  * @param {string} key - The cache/session key to identify this state.
  * @param {{grantVersion?: unknown, lockToken?: string, failOnError?: boolean, createdAt?: string}} [options] - Optional grant version, lock token to identify who is locking the state, and the creation date to record if this save creates the document.
- * @returns {Promise<void>} Resolves once the state is sent to the backend.
+ * @returns {Promise<boolean>} True only when the backend confirms a successful save; false for a handled failure.
  */
 export async function persistStateToApi(state, key, { lockToken, grantVersion, failOnError = false, createdAt } = {}) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     if (failOnError) {
       throw createPersistenceError('Backend endpoint is not configured', statusCodes.serviceUnavailable)
     }
-    return
+    return false
   }
 
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
@@ -86,7 +86,9 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion, f
         identity: key,
         errorMessage: `${response.status} - ${response.statusText}`
       })
+      return false
     }
+    return true
   } catch (err) {
     if (failOnError) {
       if (err instanceof SessionError) {
@@ -100,7 +102,6 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion, f
       identity: key,
       errorMessage: /** @type {Error} */ (err).message
     })
-    // NOSONAR TODO: See TGC-873
-    // throw err
+    return false
   }
 }
