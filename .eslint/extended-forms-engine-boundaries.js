@@ -1,6 +1,12 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+// From this file, not context.cwd: ESLint run from a subfolder would otherwise skip every check.
+const repoRoot = fileURLToPath(new URL('..', import.meta.url))
+const moduleRoot = path.join(repoRoot, 'src/extended-forms-engine')
+const publicEntry = path.join(moduleRoot, 'index.js')
+const nodeModules = path.join(repoRoot, 'node_modules')
+
 /** @type {import('eslint').Rule.RuleModule} */
 export default {
   meta: {
@@ -12,9 +18,6 @@ export default {
     }
   },
   create(context) {
-    const root = context.cwd
-    const moduleRoot = path.join(root, 'src/extended-forms-engine')
-    const publicEntry = path.join(moduleRoot, 'index.js')
     const importer = context.filename
     const insideModule = isWithin(importer, moduleRoot)
 
@@ -28,11 +31,11 @@ export default {
         context.report({ node: source, messageId: 'isolated' })
         return
       }
-      const target = resolveSource(specifier, importer, root)
+      const target = resolveSource(specifier, importer)
       if (!target) {
         return
       }
-      if (insideModule && !isWithin(target, moduleRoot) && !isWithin(target, path.join(root, 'node_modules'))) {
+      if (insideModule && !isWithin(target, moduleRoot) && !isWithin(target, nodeModules)) {
         context.report({ node: source, messageId: 'isolated' })
       } else if (!insideModule && isWithin(target, moduleRoot) && target !== publicEntry) {
         context.report({ node: source, messageId: 'publicInterface' })
@@ -56,10 +59,10 @@ export default {
   }
 }
 
-/** @param {string} specifier @param {string} importer @param {string} root */
-function resolveSource(specifier, importer, root) {
+/** @param {string} specifier @param {string} importer */
+function resolveSource(specifier, importer) {
   if (specifier.startsWith('~/')) {
-    return path.resolve(root, specifier.slice(2))
+    return path.resolve(repoRoot, specifier.slice(2))
   }
   if (specifier.startsWith('file:')) {
     return fileURLToPath(specifier)

@@ -17,6 +17,7 @@ const canonicalModuleRoot = await fs.realpath(moduleRoot)
 const canonicalNodeModules = await fs.realpath(nodeModules)
 const canonicalGovukRoot = await fs.realpath(govukRoot)
 const eslint = new ESLint({ cwd: projectRoot, cache: false })
+const subdirectoryEslint = new ESLint({ cwd: path.join(projectRoot, 'src'), cache: false })
 const boundaryRule = 'grants-ui/extended-forms-engine-boundaries'
 const boundaryRules = [boundaryRule, 'no-restricted-syntax']
 const templateTypes = [nunjucks.nodes.Include, nunjucks.nodes.Import, nunjucks.nodes.FromImport, nunjucks.nodes.Extends]
@@ -96,6 +97,19 @@ describe('extended forms engine JavaScript isolation', () => {
       expect(result.fatalErrorCount).toBe(0)
       expect(result.messages.map(({ ruleId }) => ruleId)).toContain(boundaryRule)
     }
+  })
+
+  it.each([
+    ['consumer deep import', applicationFile, "import '../../extended-forms-engine/test-helpers/component-helpers.js'"],
+    [
+      'module escape',
+      path.join(moduleRoot, 'test-helpers/isolation.js'),
+      "import '../../config/nunjucks/view-paths.js'"
+    ]
+  ])('enforces the boundary when ESLint runs from a subdirectory: %s', async (_name, filePath, source) => {
+    const [result] = await subdirectoryEslint.lintText(source, { filePath })
+    expect(result.fatalErrorCount).toBe(0)
+    expect(result.messages.map(({ ruleId }) => ruleId)).toContain(boundaryRule)
   })
 })
 
