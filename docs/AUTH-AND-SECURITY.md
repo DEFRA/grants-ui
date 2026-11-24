@@ -77,15 +77,7 @@ Defra ID returns the user to `/auth/sign-out-oidc`, which verifies `state` and t
 
 ## Rate Limiting
 
-CDP provides platform-level rate limiting and a web application firewall (WAF) for deployed Grants UI services.
-Grants UI does not run an additional in-service rate limiter or emit its former `X-RateLimit-*` headers.
-Direct local requests do not pass through CDP's protections.
-
-Authentication, permissions, CSRF protection and audit events remain application responsibilities.
-Audit events continue to use the first `X-Forwarded-For` address, falling back to the connection's remote address.
-
-The former `RATE_LIMIT_*` environment variables are no longer read and can be removed from deployment configuration.
-Configure rate limits and WAF rules through CDP, not through Grants UI.
+CDP provides rate limiting and WAF protection; Grants UI does not apply in-service rate limiting.
 
 ## Agreements System
 
