@@ -66,7 +66,7 @@ describe('persistStateToApi', () => {
     it('persists state successfully when response is ok', async () => {
       fetch.mockResolvedValue(createMockFetchResponse())
 
-      await persistStateToApi(testState, key)
+      await expect(persistStateToApi(testState, key)).resolves.toBe(true)
 
       const expectedBody = JSON.stringify({
         sbi: TEST_USER_IDS.ORGANISATION_ID,
@@ -123,14 +123,14 @@ describe('persistStateToApi', () => {
 
     it('resolves a successful strict save', async () => {
       fetch.mockResolvedValue(createMockFetchResponse())
-      await expect(persistStateToApi(testState, key, { failOnError: true })).resolves.toBeUndefined()
+      await expect(persistStateToApi(testState, key, { failOnError: true })).resolves.toBe(true)
     })
 
     it('logs error when response is not ok', async () => {
       const failedResponse = createMockFetchResponse({ ok: false, status: 500, statusText: 'Internal Server Error' })
       fetch.mockResolvedValue(failedResponse)
 
-      await persistStateToApi(testState, key)
+      await expect(persistStateToApi(testState, key)).resolves.toBe(false)
 
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(log).toHaveBeenCalledWith(
@@ -147,7 +147,7 @@ describe('persistStateToApi', () => {
       const networkError = new Error(ERROR_MESSAGES.NETWORK_ERROR)
       fetch.mockRejectedValue(networkError)
 
-      await persistStateToApi(testState, key)
+      await expect(persistStateToApi(testState, key)).resolves.toBe(false)
 
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(debug).toHaveBeenCalledWith(
@@ -270,7 +270,7 @@ describe('persistStateToApi', () => {
     it('should return early when backend endpoint is not configured', async () => {
       const testState = MOCK_STATE_DATA.WITH_STEP
 
-      await persistStateToApi(testState, key)
+      await expect(persistStateToApi(testState, key)).resolves.toBe(false)
 
       expect(fetch).not.toHaveBeenCalled()
       expect(log).not.toHaveBeenCalled()

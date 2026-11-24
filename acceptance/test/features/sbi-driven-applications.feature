@@ -182,6 +182,11 @@ Feature: SBI-Driven Applications
             | SD6351 8781 |
         And continues
 
+        # land-parcel-description
+        Then the user should be at URL "land-parcel-description"
+        When the user enters "Selected land parcels" for "Land parcel description"
+        And continues
+
         # summary
         Then the user should be at URL "summary"
         And should see the following answers
@@ -214,6 +219,7 @@ Feature: SBI-Driven Applications
             | Project description        | Project description                                |
             | Project budget             | £50,000                                            |
             | Select land parcels        | SD6351-8781                                        |
+            | Land parcel description    | Selected land parcels                              |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER              |
             | Item 1 | Item name | Repeat item example |
