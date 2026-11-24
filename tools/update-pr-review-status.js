@@ -4,6 +4,13 @@ import { fileURLToPath } from 'node:url'
 const STATUS_FIELD_NAME = 'Status'
 const REVIEW_STATUS_OPTIONS = ['Draft', 'Awaiting review', 'Changes requested', 'Approved']
 
+/**
+ * @param {object} pullRequest
+ * @param {boolean} pullRequest.isDraft
+ * @param {string | null} pullRequest.reviewDecision
+ * @param {{ nodes: ({ requestedReviewer: { login?: string } | null } | null)[] } | null} [pullRequest.reviewRequests]
+ * @param {{ nodes: ({ state: string, author: { login: string } | null } | null)[] } | null} [pullRequest.latestOpinionatedReviews]
+ */
 export function getReviewStatus({ isDraft, reviewDecision, reviewRequests, latestOpinionatedReviews }) {
   if (isDraft) {
     return 'Draft'
@@ -17,7 +24,7 @@ export function getReviewStatus({ isDraft, reviewDecision, reviewRequests, lates
     const reviewersWithRequestedChanges = new Set(
       latestOpinionatedReviews?.nodes
         .filter((review) => review?.state === 'CHANGES_REQUESTED')
-        .map((review) => review.author?.login)
+        .map((review) => review?.author?.login)
         .filter(Boolean)
     )
     const awaitingRereview = reviewRequests?.nodes.some((request) =>
