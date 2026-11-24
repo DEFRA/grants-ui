@@ -39,48 +39,61 @@ describe('run', () => {
     await rm(eventDirectory, { recursive: true, force: true })
   })
 
-  it('updates the project status using the current aggregate review decision', async () => {
-    const fetch = vi.fn(async (_url, { body }) => {
-      const { query } = JSON.parse(body)
-      if (query.includes('organization(login:')) {
-        return graphQlResponse({
-          organization: {
-            projectV2: {
-              id: 'project-id',
-              fields: { nodes: [statusField()] }
+  it.each([
+    { pendingReviewers: [], optionId: 'changes-requested-option-id' },
+    { pendingReviewers: ['another-reviewer'], optionId: 'changes-requested-option-id' },
+    { pendingReviewers: ['original-reviewer'], optionId: 'awaiting-review-option-id' }
+  ])(
+    'updates the Project to $optionId for pending reviewers $pendingReviewers',
+    async ({ pendingReviewers, optionId }) => {
+      const fetch = vi.fn(async (_url, { body }) => {
+        const { query } = JSON.parse(body)
+        if (query.includes('organization(login:')) {
+          return graphQlResponse({
+            organization: {
+              projectV2: {
+                id: 'project-id',
+                fields: { nodes: [statusField()] }
+              }
             }
-          }
-        })
-      }
+          })
+        }
 
-      if (query.includes('repository(owner:')) {
-        return graphQlResponse({
-          repository: {
-            pullRequest: {
-              id: 'pull-request-id',
-              isDraft: false,
-              reviewDecision: 'CHANGES_REQUESTED',
-              state: 'OPEN',
-              projectItems: { nodes: [{ id: 'project-item-id', project: { id: 'project-id' } }] }
+        if (query.includes('repository(owner:')) {
+          return graphQlResponse({
+            repository: {
+              pullRequest: {
+                id: 'pull-request-id',
+                isDraft: false,
+                reviewDecision: 'CHANGES_REQUESTED',
+                state: 'OPEN',
+                reviewRequests: {
+                  nodes: pendingReviewers.map((login) => ({ requestedReviewer: { login } }))
+                },
+                latestOpinionatedReviews: {
+                  nodes: [{ state: 'CHANGES_REQUESTED', author: { login: 'original-reviewer' } }]
+                },
+                projectItems: { nodes: [{ id: 'project-item-id', project: { id: 'project-id' } }] }
+              }
             }
-          }
-        })
-      }
+          })
+        }
 
-      return graphQlResponse({ updateProjectV2ItemFieldValue: { projectV2Item: { id: 'project-item-id' } } })
-    })
-    vi.stubGlobal('fetch', fetch)
+        return graphQlResponse({ updateProjectV2ItemFieldValue: { projectV2Item: { id: 'project-item-id' } } })
+      })
+      vi.stubGlobal('fetch', fetch)
 
-    await run()
+      await run()
 
-    const update = JSON.parse(fetch.mock.calls[2][1].body)
-    expect(update.variables).toEqual({
-      projectId: 'project-id',
-      itemId: 'project-item-id',
-      fieldId: 'status-field-id',
-      optionId: 'changes-requested-option-id'
-    })
-  })
+      const update = JSON.parse(fetch.mock.calls[2][1].body)
+      expect(update.variables).toEqual({
+        projectId: 'project-id',
+        itemId: 'project-item-id',
+        fieldId: 'status-field-id',
+        optionId
+      })
+    }
+  )
 
   it.each(['CLOSED', 'MERGED'])('skips Project mutations for a PR in state %s', async (state) => {
     const fetch = vi

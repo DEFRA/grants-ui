@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 const STATUS_FIELD_NAME = 'Status'
 const REVIEW_STATUS_OPTIONS = ['Draft', 'Awaiting review', 'Changes requested', 'Approved']
 
-export function getReviewStatus({ isDraft, reviewDecision }) {
+export function getReviewStatus({ isDraft, reviewDecision, reviewRequests, latestOpinionatedReviews }) {
   if (isDraft) {
     return 'Draft'
   }
@@ -14,6 +14,19 @@ export function getReviewStatus({ isDraft, reviewDecision }) {
   }
 
   if (reviewDecision === 'CHANGES_REQUESTED') {
+    const reviewersWithRequestedChanges = new Set(
+      latestOpinionatedReviews?.nodes
+        .filter((review) => review?.state === 'CHANGES_REQUESTED')
+        .map((review) => review.author?.login)
+        .filter(Boolean)
+    )
+    const awaitingRereview = reviewRequests?.nodes.some((request) =>
+      reviewersWithRequestedChanges.has(request?.requestedReviewer?.login)
+    )
+    if (awaitingRereview) {
+      return 'Awaiting review'
+    }
+
     return 'Changes requested'
   }
 
@@ -48,6 +61,23 @@ async function findProjectItem(token, owner, repo, number, projectId) {
         isDraft
         reviewDecision
         state
+        reviewRequests(first: 100) {
+          nodes {
+            requestedReviewer {
+              ... on User {
+                login
+              }
+            }
+          }
+        }
+        latestOpinionatedReviews(last: 100) {
+          nodes {
+            state
+            author {
+              login
+            }
+          }
+        }
         projectItems(first: 100) {
           nodes {
             id
@@ -178,7 +208,9 @@ export async function run() {
   )
 
   if (currentPullRequest.state !== 'OPEN') {
-    process.stdout.write(`Skipping pull request ${owner}/${repo}#${pullRequest.number} in state ${currentPullRequest.state}\n`)
+    process.stdout.write(
+      `Skipping pull request ${owner}/${repo}#${pullRequest.number} in state ${currentPullRequest.state}\n`
+    )
     return
   }
 

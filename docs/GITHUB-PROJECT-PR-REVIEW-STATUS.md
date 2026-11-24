@@ -6,6 +6,11 @@ requests in this repository. It uses the pull request's current aggregate
 decision by itself. If the pull request is not yet in the Project, the workflow
 adds it before setting the field.
 
+If a reviewer who requested changes has a pending re-review request, the
+Project shows `Awaiting review` while GitHub's aggregate decision can still
+show `Changes requested`. The workflow checks outstanding requests on every
+run, including after new commits and when a request is removed.
+
 ## GitHub configuration
 
 Before enabling the workflow:
