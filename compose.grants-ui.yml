@@ -80,7 +80,7 @@ services:
       ENABLE_LAND_GRANT_MAP_ACTION_COUNT: ${ENABLE_LAND_GRANT_MAP_ACTION_COUNT:-true}
       NOTIFICATION_BANNER_EXCLUDED_PATH_SUFFIXES: ${NOTIFICATION_BANNER_EXCLUDED_PATH_SUFFIXES:-/confirmation,/print-submitted-application}
       SHUTTER_ENABLED_SLUGS: '${SHUTTER_ENABLED_SLUGS:-example-grant-shuttered}'
-      SHUTTER_ENABLED_CONTENT_EXAMPLE_GRANT_SHUTTERED: '${SHUTTER_ENABLED_CONTENT_EXAMPLE_GRANT_SHUTTERED:-<p class="govuk-body">You will be able to apply again from 1 December.</p>}'
+      SHUTTER_ENABLED_CONTENT_EXAMPLE_GRANT_SHUTTERED: '${SHUTTER_ENABLED_CONTENT_EXAMPLE_GRANT_SHUTTERED:-<p class="govuk-body">Applications for this grant are paused while we update the eligibility guidance.</p><p class="govuk-body">You will be able to apply for this grant on Monday 27 November 2028.</p><p class="govuk-body">We have not saved your answers. When the service is available, you will have to start again.</p>}'
       SFD_UPDATE_URL: '${SFD_UPDATE_URL:-http://localhost:3000/sfd/mock}'
       SFD_HOME_URL: '${SFD_HOME_URL:-}'
       SFD_UPDATE_ENABLED: ${SFD_UPDATE_ENABLED:-false}
