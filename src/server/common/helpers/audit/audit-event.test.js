@@ -8,18 +8,6 @@ vi.mock('~/src/config/config.js', () => ({
   }
 }))
 
-// Reimplementation of the real getClientIp (first x-forwarded-for entry,
-// trimmed) so these tests don't pull in the rate-limit plugin's dependencies.
-vi.mock('~/src/plugins/rate-limit.js', () => ({
-  getClientIp: (xForwardedFor) => {
-    if (!xForwardedFor) {
-      return null
-    }
-    const value = Array.isArray(xForwardedFor) ? xForwardedFor[0] : xForwardedFor
-    return value.split(',')[0].trim()
-  }
-}))
-
 // Build example IPs at runtime from parts so the test holds no hardcoded IP
 // literals (keeps SonarLint S1313 quiet while the addresses stay readable).
 const ipv4 = (...octets) => octets.join('.')
@@ -171,6 +159,21 @@ describe('buildAuditEvent', () => {
         FORWARDED_IPV4
       ],
       ['falls back to remoteAddress when x-forwarded-for is absent', {}, REMOTE_IPV4],
+      [
+        'uses the first address from repeated forwarded headers',
+        { headers: { 'x-forwarded-for': [`  ${FORWARDED_IPV4}, ${PROXY_IPV4}`, SERVER_IPV4] } },
+        FORWARDED_IPV4
+      ],
+      [
+        'falls back to remoteAddress when the forwarded address is blank',
+        { headers: { 'x-forwarded-for': '  ' } },
+        REMOTE_IPV4
+      ],
+      [
+        'preserves a forwarded IPv6 address before later proxies',
+        { headers: { 'x-forwarded-for': `${LINK_LOCAL_IPV6}, ${PROXY_IPV4}` } },
+        LINK_LOCAL_IPV6
+      ],
       [
         'yields an empty string when neither x-forwarded-for nor remoteAddress is present',
         { info: { remoteAddress: undefined } },

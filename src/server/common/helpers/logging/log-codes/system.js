@@ -161,11 +161,6 @@ export const SYSTEM = {
     messageFunc: (messageOptions) =>
       `Failed to fetch saved state: sessionKey=${messageOptions.sessionKey}, error=${messageOptions.errorMessage}, path=${messageOptions.requestPath}`
   },
-  RATE_LIMIT_EXCEEDED: {
-    level: 'warn',
-    messageFunc: (messageOptions) =>
-      `Rate limit exceeded: path=${messageOptions.path}, ip=${messageOptions.ip || 'unknown'}, CRN=${maskCrn(messageOptions.userId)}, userAgent=${messageOptions.userAgent || 'unknown'}`
-  },
   STATE_SIZE_EXCEEDED: {
     level: 'warn',
     messageFunc: (messageOptions) =>

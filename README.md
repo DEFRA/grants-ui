@@ -52,7 +52,7 @@ For complete documentation of all available features, see [FEATURES.md](docs/FEA
 | [Getting Started](docs/GETTING-STARTED.md)             | Requirements, setup, environment variables, project structure, npm scripts |
 | [Architecture](docs/ARCHITECTURE.md)                   | Forms engine, state model, task lists, GAS integration, confirmation pages |
 | [Features](docs/FEATURES.md)                           | Form components, page types, guidance, conditional logic, validation       |
-| [Authentication & Security](docs/AUTH-AND-SECURITY.md) | Defra ID, allowlist, cookies, sessions, S2S auth, rate limiting            |
+| [Authentication & Security](docs/AUTH-AND-SECURITY.md) | Defra ID, allowlist, cookies, sessions, S2S auth, CDP rate limiting        |
 | [Docker](docs/DOCKER.md)                               | Development/production images, Docker Compose, HA proxy, debugging         |
 | [Testing](docs/TESTING.md)                             | Unit, integration, acceptance, and mutation testing                        |
 | [Logging & Error Handling](docs/LOGGING-AND-ERRORS.md) | Structured logging system, error classes, log codes                        |

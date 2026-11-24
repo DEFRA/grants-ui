@@ -77,70 +77,15 @@ Defra ID returns the user to `/auth/sign-out-oidc`, which verifies `state` and t
 
 ## Rate Limiting
 
-The application implements rate limiting to protect against abuse and denial-of-service attacks (CWE-400: Uncontrolled Resource Consumption). Rate limiting is implemented using [hapi-rate-limit](https://github.com/wraithgar/hapi-rate-limit).
+CDP provides platform-level rate limiting and a web application firewall (WAF) for deployed Grants UI services.
+Grants UI does not run an additional in-service rate limiter or emit its former `X-RateLimit-*` headers.
+Direct local requests do not pass through CDP's protections.
 
-### How It Works
+Authentication, permissions, CSRF protection and audit events remain application responsibilities.
+Audit events continue to use the first `X-Forwarded-For` address, falling back to the connection's remote address.
 
-- **Per-user limiting**: Limits requests per IP address within a configurable time window
-- **Per-path limiting**: Limits total requests to specific endpoints
-- **Auth endpoint protection**: Stricter limits on authentication endpoints to prevent brute-force attacks
-- **IP extraction**: Correctly extracts client IP from `X-Forwarded-For` header when behind proxies/load balancers
-- **Monitoring**: Logs rate limit violations with IP, path, user ID, and user agent for security monitoring
-
-### Configuration
-
-Rate limiting is controlled via environment variables:
-
-| Variable                              | Description                                      | Default                  |
-| ------------------------------------- | ------------------------------------------------ | ------------------------ |
-| `RATE_LIMIT_ENABLED`                  | Enable/disable rate limiting                     | `true` (production only) |
-| `RATE_LIMIT_TRUST_PROXY`              | Trust X-Forwarded-For header                     | `true`                   |
-| `RATE_LIMIT_USER_LIMIT`               | Max requests per user (IP) per period            | `100`                    |
-| `RATE_LIMIT_USER_LIMIT_PERIOD`        | Time window in milliseconds                      | `60000` (1 minute)       |
-| `RATE_LIMIT_PATH_LIMIT`               | Max requests per path per period                 | `2000`                   |
-| `RATE_LIMIT_AUTH_LIMIT`               | Max requests requiring authentication per period | `5`                      |
-| `RATE_LIMIT_AUTH_ENDPOINT_USER_LIMIT` | Max requests per user to auth endpoints          | `10`                     |
-| `RATE_LIMIT_AUTH_ENDPOINT_PATH_LIMIT` | Max requests per auth endpoint path              | `500`                    |
-
-### Protected Endpoints
-
-The following authentication endpoints have stricter rate limits (`authEndpointUserLimit` / `authEndpointPathLimit`) applied:
-
-| Endpoint              | Method | Purpose                |
-| --------------------- | ------ | ---------------------- |
-| `/auth/sign-in`       | GET    | Sign-in initiation     |
-| `/auth/sign-in-oidc`  | GET    | OIDC callback          |
-| `/auth/sign-out`      | GET    | Sign-out               |
-| `/auth/sign-out-oidc` | GET    | OIDC sign-out callback |
-
-All other endpoints use the global rate limits (`userLimit` / `pathLimit`).
-
-### Response Headers
-
-When rate limiting is enabled, responses include headers indicating limit status:
-
-- `X-RateLimit-Limit`: Maximum requests allowed
-- `X-RateLimit-Remaining`: Requests remaining in current window
-- `X-RateLimit-Reset`: Time when the limit resets (Unix timestamp)
-
-### Rate Limit Exceeded
-
-When a client exceeds the rate limit:
-
-1. A `429 Too Many Requests` response is returned
-2. The event is logged with client details for monitoring:
-   ```
-   [warn] Rate limit exceeded: path=/auth/sign-in, ip=192.168.1.100, CRN=******1234, userAgent=Mozilla/5.0...
-   ```
-3. A user-friendly error page is displayed
-
-### Development Mode
-
-Rate limiting is **disabled by default** in non-production environments to avoid friction during local development. To test rate limiting locally, set:
-
-```bash
-RATE_LIMIT_ENABLED=true
-```
+The former `RATE_LIMIT_*` environment variables are no longer read and can be removed from deployment configuration.
+Configure rate limits and WAF rules through CDP, not through Grants UI.
 
 ## Agreements System
 

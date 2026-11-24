@@ -10,7 +10,6 @@ import agreements from './agreements.js'
 import externalLinks from './external-links.js'
 import { sessionSchema } from './session.js'
 import { redisSchema } from './redis.js'
-import { rateLimitSchema } from './rate-limit.js'
 import { devToolsSchema } from './dev-tools.js'
 import { validateBackendAuthConfig } from './validate-backend-auth.js'
 import { validateConsolidatedViewAuthConfig } from './validate-consolidated-view-auth.js'
@@ -243,7 +242,6 @@ const convictConfig = {
     env: 'SESSION_TIMEOUT'
   },
   session: sessionSchema,
-  rateLimit: rateLimitSchema,
   redis: redisSchema,
   nunjucks: {
     watch: {

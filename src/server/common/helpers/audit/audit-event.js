@@ -1,5 +1,4 @@
 import { config } from '~/src/config/config.js'
-import { getClientIp } from '~/src/plugins/rate-limit.js'
 
 // The FCP Audit schema caps `ip` at 20 chars and marks it required. IPv4 (max
 // 15 chars) always fits whole, but a real IPv6 address is usually longer (a
@@ -9,6 +8,15 @@ import { getClientIp } from '~/src/plugins/rate-limit.js'
 // 20 chars preserves the network prefix (the useful part for an audit trail)
 // and lets the event publish.
 const MAX_IP_LENGTH = 20
+
+/** @param {string | string[] | undefined} xForwardedFor */
+const getClientIp = (xForwardedFor) => {
+  if (!xForwardedFor) {
+    return null
+  }
+  const headerValue = Array.isArray(xForwardedFor) ? xForwardedFor[0] : xForwardedFor
+  return headerValue.split(',')[0].trim()
+}
 
 /**
  * Normalises a raw IP to a single schema-compliant address: keeps the first
