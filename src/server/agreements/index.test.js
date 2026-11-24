@@ -37,7 +37,7 @@ describe('Agreements route permissions', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks()
-    fetchBusinessPermissions.mockResolvedValue([])
+    fetchBusinessPermissions.mockResolvedValue({ permissionGroups: [] })
 
     server = Hapi.server()
     server.auth.scheme('test-session', () => ({
@@ -66,7 +66,7 @@ describe('Agreements route permissions', () => {
 
   describe.each(routes)('$method $url', (route) => {
     it('reaches the proxy with csAgreements Submit permission', async () => {
-      fetchBusinessPermissions.mockResolvedValue([{ id: AGREEMENTS_GROUP, level: 'SUBMIT' }])
+      fetchBusinessPermissions.mockResolvedValue({ permissionGroups: [{ id: AGREEMENTS_GROUP, level: 'SUBMIT' }] })
 
       const response = await inject(route)
 
@@ -82,7 +82,7 @@ describe('Agreements route permissions', () => {
       ['missing', []],
       ['application Submit only', [{ id: APPLICATIONS_GROUP, level: 'SUBMIT' }]]
     ])('renders the standard permission page for %s permissions', async (_label, groups) => {
-      fetchBusinessPermissions.mockResolvedValue(groups)
+      fetchBusinessPermissions.mockResolvedValue({ permissionGroups: groups })
 
       const response = await inject(route)
 

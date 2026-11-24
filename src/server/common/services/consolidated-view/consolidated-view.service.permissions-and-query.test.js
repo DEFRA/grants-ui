@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
 import { mockFetch } from '~/src/__mocks__'
 import { fetchBusinessPermissions, executeConfigDrivenQuery } from './consolidated-view.service.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { can } from '~/src/server/common/helpers/permissions/can.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import {
@@ -51,6 +52,7 @@ describe('Consolidated View Service - Permissions and query', () => {
             data: {
               customer: {
                 business: {
+                  role: 'Business Owner',
                   permissionGroups: mockPermissionGroups
                 }
               }
@@ -60,7 +62,7 @@ describe('Consolidated View Service - Permissions and query', () => {
 
       const result = await fetchBusinessPermissions(mockRequest)
 
-      expect(result).toEqual(mockPermissionGroups)
+      expect(result).toEqual({ role: 'Business Owner', permissionGroups: mockPermissionGroups })
 
       expect(mockFetchInstance).toHaveBeenCalledTimes(1)
 
@@ -74,11 +76,61 @@ describe('Consolidated View Service - Permissions and query', () => {
       expect(body.query).toContain(`business(sbi: "${mockSbi}")`)
       expect(body.query).toContain(`customer(crn: "${mockCrn}")`)
       expect(body.query).toContain('query GetBusinessPermissions')
+      expect(body.query).toContain('role')
       expect(body.query).toContain('permissionGroups')
       expect(body.query).toContain('id')
       expect(body.query).toContain('level')
       expect(body.query).toContain('functions')
     })
+
+    it.each([200, 502])('preserves permissions when only role fails with HTTP %s', async (status) => {
+      mockFetchInstance.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: { customer: { business: { role: null, permissionGroups: mockPermissionGroups } } },
+            errors: [{ message: 'Role unavailable', path: ['customer', 'business', 'role'] }]
+          }),
+          { status }
+        )
+      )
+
+      await expect(fetchBusinessPermissions(mockRequest)).resolves.toEqual({
+        role: undefined,
+        permissionGroups: mockPermissionGroups
+      })
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        LogCodes.SYSTEM.CONSOLIDATED_VIEW_PARTIAL_SUCCESS,
+        { sbi: mockSbi, failedPaths: 'customer.business.role', statusCode: status },
+        mockRequest
+      )
+    })
+
+    it.each([
+      { business: null, errors: [{ message: 'Role unavailable', path: ['customer', 'business', 'role'] }] },
+      { business: { role: null }, errors: [{ message: 'Role unavailable', path: ['customer', 'business', 'role'] }] },
+      {
+        business: { permissionGroups: mockPermissionGroups },
+        errors: [
+          { message: 'Role unavailable', path: ['customer', 'business', 'role'] },
+          { message: 'Permissions unavailable', path: ['customer', 'business', 'permissionGroups'] }
+        ]
+      }
+    ])(
+      'rejects partial data without usable permissions or with permission errors: %j',
+      async ({ business, errors }) => {
+        mockFetchInstance.mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              data: { customer: { business } },
+              errors
+            }),
+            { status: 200 }
+          )
+        )
+        await expect(fetchBusinessPermissions(mockRequest)).rejects.toMatchObject({ details: { status: 502 } })
+        expect(log).not.toHaveBeenCalled()
+      }
+    )
 
     it.each(['MAKE_LEGAL_CHANGES', 'FULL_PERMISSION'])(
       'uses BUSINESS_DETAILS level %s from DAL to allow all actions',
@@ -91,10 +143,10 @@ describe('Consolidated View Service - Permissions and query', () => {
 
         const result = await fetchBusinessPermissions(mockRequest)
 
-        expect(result).toEqual(permissionGroups)
-        expect(can(result, 'view', 'businessDetails')).toBe(true)
-        expect(can(result, 'amend', 'businessDetails')).toBe(true)
-        expect(can(result, 'submit', 'businessDetails')).toBe(true)
+        expect(result).toEqual({ role: undefined, permissionGroups })
+        expect(can(result.permissionGroups, 'view', 'businessDetails')).toBe(true)
+        expect(can(result.permissionGroups, 'amend', 'businessDetails')).toBe(true)
+        expect(can(result.permissionGroups, 'submit', 'businessDetails')).toBe(true)
       }
     )
 
@@ -109,7 +161,7 @@ describe('Consolidated View Service - Permissions and query', () => {
 
       const result = await fetchBusinessPermissions(mockRequest)
 
-      expect(result).toEqual(mockPermissionGroups)
+      expect(result).toEqual({ role: undefined, permissionGroups: mockPermissionGroups })
       expect(getValidToken).not.toHaveBeenCalled()
 
       const [[url, calledOptions]] = mockFetchInstance.mock.calls
@@ -133,7 +185,7 @@ describe('Consolidated View Service - Permissions and query', () => {
 
       const result = await fetchBusinessPermissions(mockRequest)
 
-      expect(result).toEqual([])
+      expect(result).toEqual({ role: undefined, permissionGroups: [] })
     })
 
     it('should return empty array when permissionGroups are missing', async () => {
@@ -151,7 +203,7 @@ describe('Consolidated View Service - Permissions and query', () => {
 
       const result = await fetchBusinessPermissions(mockRequest)
 
-      expect(result).toEqual([])
+      expect(result).toEqual({ role: undefined, permissionGroups: [] })
     })
   })
 
