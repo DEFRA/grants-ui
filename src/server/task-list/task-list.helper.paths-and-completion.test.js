@@ -141,6 +141,25 @@ describe('task-list.helper', () => {
       expect(getCompletionStats(mockModel, formModel, state).completed).toBe(1)
     })
 
+    it('should complete a task when an optional HiddenField is blank', () => {
+      const page = {
+        section: 's1',
+        path: '/location',
+        components: [
+          { type: 'TextField', name: 'location' },
+          { type: 'HiddenField', name: 'locationDescription', options: { required: false } }
+        ]
+      }
+      const mockModel = { page: { def: { pages: [page] } } }
+      const engineFields = [
+        { type: 'TextField', name: 'location' },
+        { type: 'HiddenField', name: 'locationDescription', options: {} }
+      ]
+      const formModel = { pageMap: new Map([[page.path, { collection: { fields: engineFields } }]]) }
+      const state = { location: 'somewhere', locationDescription: null }
+      expect(getCompletionStats(mockModel, formModel, state).isComplete).toBe(true)
+    })
+
     it('should treat a page with only non-question components as not applicable', () => {
       const mockModel = {
         page: {
