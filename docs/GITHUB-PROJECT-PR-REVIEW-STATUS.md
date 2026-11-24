@@ -28,6 +28,9 @@ pull request code. The built-in Project automation for closed or merged items
 is separate; configure auto-archive in the Project if closed PRs should be
 archived.
 
+After rollout, existing open PRs are updated when they next trigger the
+workflow. Updating the existing queue immediately requires a separate backfill.
+
 This is a repository-scoped pilot. A workflow in this repository does not
 receive events from other repositories; extending it requires installing
 equivalent automation in those repositories or adopting an organization-level

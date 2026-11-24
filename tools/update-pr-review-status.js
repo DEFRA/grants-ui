@@ -177,8 +177,8 @@ export async function run() {
     project.id
   )
 
-  if (currentPullRequest.state === 'CLOSED') {
-    process.stdout.write(`Skipping closed pull request ${owner}/${repo}#${pullRequest.number}\n`)
+  if (currentPullRequest.state !== 'OPEN') {
+    process.stdout.write(`Skipping pull request ${owner}/${repo}#${pullRequest.number} in state ${currentPullRequest.state}\n`)
     return
   }
 

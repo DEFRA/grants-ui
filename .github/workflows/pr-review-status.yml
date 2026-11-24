@@ -56,7 +56,7 @@ jobs:
       - name: Update Status
         run: node tools/update-pr-review-status.js
         env:
-          GRANTS_ENABLEMENT_PROJECT_NUMBER: ${{ vars.GRANTS_ENABLEMENT_PROJECT_NUMBER || '25' }}
+          GRANTS_ENABLEMENT_PROJECT_NUMBER: ${{ vars.GRANTS_ENABLEMENT_PROJECT_NUMBER }}
           GRANTS_PROJECTS_TOKEN: ${{ steps.project-token.outputs.token }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
           GITHUB_REPOSITORY: ${{ github.repository }}

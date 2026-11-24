@@ -82,6 +82,32 @@ describe('run', () => {
     })
   })
 
+  it.each(['CLOSED', 'MERGED'])('skips Project mutations for a PR in state %s', async (state) => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        graphQlResponse({
+          organization: { projectV2: { id: 'project-id', fields: { nodes: [statusField()] } } }
+        })
+      )
+      .mockResolvedValueOnce(
+        graphQlResponse({
+          repository: { pullRequest: { id: 'pull-request-id', state, projectItems: { nodes: [] } } }
+        })
+      )
+    vi.stubGlobal('fetch', fetch)
+
+    await run()
+
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('fails when the Project number is unset', async () => {
+    vi.stubEnv('GRANTS_ENABLEMENT_PROJECT_NUMBER', '')
+
+    await expect(run()).rejects.toThrow('GRANTS_ENABLEMENT_PROJECT_NUMBER must be a positive project number')
+  })
+
   it('adds a pull request to the project before setting its review status', async () => {
     const fetch = vi.fn(async (_url, { body }) => {
       const { query } = JSON.parse(body)
