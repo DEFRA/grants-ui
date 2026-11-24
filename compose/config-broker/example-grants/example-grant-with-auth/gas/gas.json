@@ -50,7 +50,8 @@
           "projectName",
           "projectBudget",
           "repeatItems",
-          "landParcels"
+          "landParcels",
+          "landParcelDescription"
         ],
         "properties": {
           "referenceNumber": {
@@ -304,6 +305,11 @@
                 "type": ["string", "null"]
               }
             }
+          },
+          "landParcelDescription": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
           }
         }
       },
