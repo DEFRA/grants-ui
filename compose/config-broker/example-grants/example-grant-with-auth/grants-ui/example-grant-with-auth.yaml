@@ -995,6 +995,7 @@ pages:
         name: landParcelDescription
         title: Land parcel description
         shortDescription: Land parcel description
+        hint: This answer is linked to your land parcel selection. If you change the selected land parcels, this answer will be cleared and you will need to enter it again.
         id: 91861f06-3383-4636-99bc-05c1abcfbc0e
         options:
           required: true
