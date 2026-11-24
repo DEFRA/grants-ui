@@ -139,6 +139,11 @@ Feature: Application Lifecycle
             | SD6351 8781 |
         And continues
 
+        # land-parcel-description
+        Then the user should be at URL "land-parcel-description"
+        When the user enters "Selected land parcels" for "Land parcel description"
+        And continues
+
         # summary
         Then the user should be at URL "summary"
         When the user continues
