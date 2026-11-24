@@ -106,6 +106,7 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
     serviceUrl: '/',
     cdpEnvironment: config.get('cdpEnvironment'),
     gaTrackingId,
+    userRoleAnalytics: request?.auth?.isAuthenticated ? request.app.userRoleAnalytics : undefined,
     cookiePolicyUrl: cookiePolicyUrlWithReturn,
     cookieConsentName,
     cookieConsentExpiryDays,
@@ -243,7 +244,7 @@ export async function context(request) {
  */
 
 /**
- * @typedef {Request & { app: { model?: { def?: { metadata?: FormMetadata } }, stateWithDefinition?: Promise<DefinitionEnvelope | null>, routingDefinition?: Promise<DefinitionEnvelope | null>, cspNonce?: string } }} ExtendedRequest
+ * @typedef {Request & { app: { model?: { def?: { metadata?: FormMetadata } }, stateWithDefinition?: Promise<DefinitionEnvelope | null>, routingDefinition?: Promise<DefinitionEnvelope | null>, cspNonce?: string, userRoleAnalytics?: { role: string, token: string } } }} ExtendedRequest
  */
 
 /**
