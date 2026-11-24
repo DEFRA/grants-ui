@@ -47,7 +47,7 @@ describe('run', () => {
           organization: {
             projectV2: {
               id: 'project-id',
-              fields: { nodes: [reviewStatusField()] }
+              fields: { nodes: [statusField()] }
             }
           }
         })
@@ -77,7 +77,7 @@ describe('run', () => {
     expect(update.variables).toEqual({
       projectId: 'project-id',
       itemId: 'project-item-id',
-      fieldId: 'review-status-field-id',
+      fieldId: 'status-field-id',
       optionId: 'changes-requested-option-id'
     })
   })
@@ -90,7 +90,7 @@ describe('run', () => {
           organization: {
             projectV2: {
               id: 'project-id',
-              fields: { nodes: [reviewStatusField()] }
+              fields: { nodes: [statusField()] }
             }
           }
         })
@@ -132,10 +132,10 @@ function graphQlResponse(data) {
   return { ok: true, status: 200, json: async () => ({ data }) }
 }
 
-function reviewStatusField() {
+function statusField() {
   return {
-    id: 'review-status-field-id',
-    name: 'Review Status',
+    id: 'status-field-id',
+    name: 'Status',
     options: [
       { id: 'draft-option-id', name: 'Draft' },
       { id: 'awaiting-review-option-id', name: 'Awaiting review' },

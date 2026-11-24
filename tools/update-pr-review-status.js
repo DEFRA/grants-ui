@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
-const REVIEW_STATUS_FIELD_NAME = 'Review Status'
+const STATUS_FIELD_NAME = 'Status'
 const REVIEW_STATUS_OPTIONS = ['Draft', 'Awaiting review', 'Changes requested', 'Approved']
 
 export function getReviewStatus({ isDraft, reviewDecision }) {
@@ -99,15 +99,15 @@ async function getProject(token, owner, projectNumber) {
     throw new Error(`Could not find organization Project number ${projectNumber}`)
   }
 
-  const field = project.fields.nodes.find(({ name }) => name === REVIEW_STATUS_FIELD_NAME)
+  const field = project.fields.nodes.find(({ name }) => name === STATUS_FIELD_NAME)
   if (!field) {
-    throw new Error(`Project is missing the single-select field "${REVIEW_STATUS_FIELD_NAME}"`)
+    throw new Error(`Project is missing the single-select field "${STATUS_FIELD_NAME}"`)
   }
 
   const options = new Map(field.options.map(({ id, name }) => [name, id]))
   const missingOptions = REVIEW_STATUS_OPTIONS.filter((name) => !options.has(name))
   if (missingOptions.length) {
-    throw new Error(`"${REVIEW_STATUS_FIELD_NAME}" is missing options: ${missingOptions.join(', ')}`)
+    throw new Error(`"${STATUS_FIELD_NAME}" is missing options: ${missingOptions.join(', ')}`)
   }
 
   return { id: project.id, fieldId: field.id, options }
@@ -198,7 +198,7 @@ export async function run() {
   const status = getReviewStatus(currentPullRequest)
   await updateReviewStatus(token, project.id, itemId, project.fieldId, project.options.get(status))
 
-  process.stdout.write(`Set ${owner}/${repo}#${pullRequest.number} Review Status to "${status}"\n`)
+  process.stdout.write(`Set ${owner}/${repo}#${pullRequest.number} Status to "${status}"\n`)
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

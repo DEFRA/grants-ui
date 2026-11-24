@@ -53,7 +53,7 @@ jobs:
           permission-pull-requests: read
           permission-organization-projects: write
 
-      - name: Update Review Status
+      - name: Update Status
         run: node tools/update-pr-review-status.js
         env:
           GRANTS_ENABLEMENT_PROJECT_NUMBER: ${{ vars.GRANTS_ENABLEMENT_PROJECT_NUMBER || '25' }}

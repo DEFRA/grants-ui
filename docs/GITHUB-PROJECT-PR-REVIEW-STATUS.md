@@ -1,6 +1,6 @@
 # GitHub Project PR review status pilot
 
-The `pr-review-status.yml` workflow updates the `Review Status` field for pull
+The `pr-review-status.yml` workflow updates the `Status` field for pull
 requests in this repository. It uses the pull request's current aggregate
 `reviewDecision`, so a triggering review event is not treated as the final
 decision by itself. If the pull request is not yet in the Project, the workflow
@@ -10,8 +10,8 @@ adds it before setting the field.
 
 Before enabling the workflow:
 
-1. Create a single-select field named `Review Status` in the Grants Enablement
-   Project with these exact options: `Draft`, `Awaiting review`,
+1. Verify that the existing `Status` field in the Grants Enablement Project
+   includes these options: `Draft`, `Awaiting review`,
    `Changes requested`, and `Approved`.
 2. Set the repository or organization Actions variable
    `GRANTS_ENABLEMENT_PROJECT_NUMBER` to the project number shown in its URL.
