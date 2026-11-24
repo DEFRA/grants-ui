@@ -34,10 +34,18 @@ describe('grant-shuttered.njk', () => {
     expect($('#shutter-html').next().text().trim()).toBe('Getting help')
   })
 
-  test('adds no paragraph when no HTML is configured', () => {
+  test('shows the default paragraph when no HTML is configured', () => {
     const $ = renderPage()
+    const defaultParagraph = $('main h1').next()
 
-    expect($('main h1').next().text().trim()).toBe('Getting help')
+    expect(defaultParagraph.text().trim()).toBe('This grant is currently unavailable. Try again later.')
+    expect(defaultParagraph.next().text().trim()).toBe('Getting help')
+  })
+
+  test('replaces the default paragraph with the configured HTML', () => {
+    const $ = renderPage({ html: '<p class="govuk-body">Back on Monday.</p>' })
+
+    expect(normaliseText($('main'))).not.toContain('Try again later')
   })
 
   test('links to the Farm and Land Service after the contact details', () => {
