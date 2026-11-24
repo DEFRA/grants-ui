@@ -54,7 +54,7 @@ and installed npm packages, but must not import grants-ui sources or repository-
 must resolve within this module or the installed GOV.UK templates; Sass dependencies must remain within this module or
 installed packages. Isolation enables later extraction without introducing compatibility copies or re-export shims.
 
-The local ESLint rule `grants-ui/shared-component-boundaries` enforces this module's dependency direction and public `index.js`
+The local ESLint rule `grants-ui/extended-forms-engine-boundaries` enforces this module's dependency direction and public `index.js`
 interface, including tests and helpers. The rest of the LDR dependency matrix will be introduced with those modules;
 this slice has no existing violations to baseline. Use ESM imports with literal paths; grants-ui aliases,
 application/root-file imports, computed imports, CommonJS loaders, loader factories and URL imports are prohibited

@@ -1,9 +1,9 @@
 import tryCatchAllowedFunctions from './try-catch-allowed-functions.js'
-import sharedComponentBoundaries from './shared-component-boundaries.js'
+import extendedFormsEngineBoundaries from './extended-forms-engine-boundaries.js'
 
 export default {
   rules: {
     'try-catch-allowed-functions': tryCatchAllowedFunctions,
-    'shared-component-boundaries': sharedComponentBoundaries
+    'extended-forms-engine-boundaries': extendedFormsEngineBoundaries
   }
 }

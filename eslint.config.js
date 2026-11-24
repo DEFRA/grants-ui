@@ -20,7 +20,7 @@ export default [
     },
     rules: {
       'no-console': 'error',
-      'grants-ui/shared-component-boundaries': 'error',
+      'grants-ui/extended-forms-engine-boundaries': 'error',
       curly: ['error', 'all'],
       '@stylistic/space-before-function-paren': 'off',
       '@stylistic/quotes': 'off',
