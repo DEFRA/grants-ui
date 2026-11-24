@@ -3,6 +3,7 @@ name: Example Grant Shuttered
 metadata:
   id: d1fbaf45-74da-4e58-b1c3-cc3fbbcdf4a2
   surveyLabel: Example grant shuttered
+  enabledInProd: false
   referenceNumberPrefix: EGS
   grantRedirectRules: null
   permissions:
