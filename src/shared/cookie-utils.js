@@ -1,3 +1,5 @@
+import { publishUserRole } from '../client/javascripts/user-role-analytics.js'
+
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
 const DEFAULT_EXPIRY_DAYS = 365
 
@@ -59,6 +61,7 @@ export const loadGoogleAnalytics = (gtmKey) => {
     return
   }
 
+  publishUserRole()
   globalThis.dataLayer = globalThis.dataLayer || []
   globalThis.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' })
 
