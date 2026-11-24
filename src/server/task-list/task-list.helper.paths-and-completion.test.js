@@ -160,19 +160,19 @@ describe('task-list.helper', () => {
       expect(getCompletionStats(mockModel, formModel, state).isComplete).toBe(true)
     })
 
-    it('should treat a custom controller page with only optional fields as not applicable', () => {
+    it('should keep a custom controller page with only optional fields as an outstanding task', () => {
       const page = {
         section: 's1',
-        path: '/location',
-        controller: 'MapPageController',
-        components: [{ type: 'HiddenField', name: 'locationDescription', options: { required: false } }]
+        path: '/declaration',
+        controller: 'DeclarationPageController',
+        components: [{ type: 'HiddenField', name: 'declarationNote', options: { required: false } }]
       }
       const mockModel = { page: { def: { pages: [page] } } }
-      const engineFields = [{ type: 'HiddenField', name: 'locationDescription', options: {} }]
+      const engineFields = [{ type: 'HiddenField', name: 'declarationNote', options: {} }]
       const formModel = { pageMap: new Map([[page.path, { collection: { fields: engineFields } }]]) }
-      expect(getCompletionStats(mockModel, formModel, { locationDescription: null })).toMatchObject({
-        total: 0,
-        isComplete: true
+      expect(getCompletionStats(mockModel, formModel, { declarationNote: null })).toMatchObject({
+        total: 1,
+        isComplete: false
       })
     })
 
