@@ -1,29 +1,30 @@
 {% extends 'layouts/page.njk' %}
 {% from "two-thirds-column/macro.njk" import appTwoThirdsColumn %}
 
+{% set heading = "Sorry, " ~ (grantName or "this grant") ~ " is unavailable" %}
+
 {% block pageTitle %}
-  Sorry, this grant is unavailable
+  {{ heading }}
 {% endblock %}
 
 {% block content %}
   {% call appTwoThirdsColumn() %}
-    {% if grantName %}
-      <span class="govuk-caption-l">{{ grantName }}</span>
-    {% endif %}
-    <h1 class="govuk-heading-l">Sorry, this grant is unavailable</h1>
+    <h1 class="govuk-heading-l">{{ heading }}</h1>
     {% if html %}
       {{ html | safe }}
     {% endif %}
 
+    <h2 class="govuk-heading-m">Getting help</h2>
     <p class="govuk-body">Contact the Rural Payments Agency (RPA) if you need help with your application.</p>
     <p class="govuk-body">
-      Email:
+      Email:<br>
       <a href="mailto:ruralpayments@defra.gov.uk" class="govuk-link">ruralpayments@defra.gov.uk</a>
     </p>
     <p class="govuk-body">The RPA responds to email queries within 10 working days.</p>
 
     <p class="govuk-body">
-      <a href="{{ falsUrl }}" class="govuk-link">Go to the Farm and Land Service</a>
+      For other grants and schemes, visit the
+      <a href="{{ falsUrl }}" class="govuk-link">Farm and Land service</a>
     </p>
   {% endcall %}
 {% endblock %}

@@ -83,10 +83,9 @@ describe('shutter in the server', () => {
     const { statusCode, payload } = await server.inject({ method: 'GET', url: '/woodland/start', auth })
 
     expect(statusCode).toBe(503)
-    expect(payload).toContain('Woodland Management Plan')
-    expect(payload).toContain('Sorry, this grant is unavailable')
+    expect(payload).toContain('Sorry, Woodland Management Plan is unavailable')
     expect(payload).toContain('id="back-soon"')
-    expect(payload).toContain('Go to the Farm and Land Service')
+    expect(payload).toContain('Farm and Land service')
     expect(fetchBusinessPermissions).not.toHaveBeenCalled()
     expect(fetchAllowedGrants).not.toHaveBeenCalled()
     expect(handler).not.toHaveBeenCalled()
