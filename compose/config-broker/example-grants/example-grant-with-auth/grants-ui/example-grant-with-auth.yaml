@@ -933,6 +933,8 @@ pages:
         title: Select land parcels
     config:
       enableMultipleParcelSelect: true
+      invalidates:
+        - landParcelDescription
       topSection: |
         <div class="govuk-body">
           <p>
@@ -985,6 +987,22 @@ pages:
         <p>We aim to respond to emails within 10 working days</p>
     path: /select-land-parcel
     id: f9f1a33b-2fb5-4418-951b-680067efc179
+  - title: Land parcel description
+    path: /land-parcel-description
+    id: d21c6c6c-7495-4c40-ae3d-37d26778104c
+    components:
+      - type: TextField
+        name: landParcelDescription
+        title: Land parcel description
+        shortDescription: Land parcel description
+        hint: This answer is linked to your land parcel selection. If you change the selected land parcels, this answer will be cleared and you will need to enter it again.
+        id: 91861f06-3383-4636-99bc-05c1abcfbc0e
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter a description of the selected land parcels
+        schema:
+          max: 200
   - title: Check your answers
     path: /summary
     controller: CheckResponsesPageController
