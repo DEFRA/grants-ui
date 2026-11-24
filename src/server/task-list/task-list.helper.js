@@ -180,6 +180,7 @@ function emptyComponentsStatus(pageDef, formModel) {
   const isExcluded =
     configured?.excludeFromTaskCompletion === true ||
     page?.excludeFromTaskCompletion === true ||
+    (page?.collection.fields.length ?? 0) > 0 ||
     (!pageDef.controller && (pageDef.components?.length ?? 0) > 0)
   return isExcluded ? null : false
 }
@@ -207,15 +208,12 @@ function allComponentsAnswered(componentNames, state) {
  * Required repeat answers can include compound fields stored as separate keys.
  * State schemas permit null, so check required fields and their children too.
  * @param {object[]} fields - Resolved engine fields
- * @param {Set<string>} optionalNames - Components the definition marks as optional
  * @returns {string[]}
  */
-function getRequiredRepeatFieldNames(fields, optionalNames) {
+function getRequiredRepeatFieldNames(fields) {
   return fields
-    .filter((field) => field.options?.required !== false && !optionalNames.has(field.name))
-    .flatMap((field) =>
-      field.collection ? getRequiredRepeatFieldNames(field.collection.fields, optionalNames) : [field.name]
-    )
+    .filter((field) => field.options?.required !== false)
+    .flatMap((field) => (field.collection ? getRequiredRepeatFieldNames(field.collection.fields) : [field.name]))
 }
 
 /**
@@ -232,7 +230,10 @@ function isRepeatPageCompleted(pageDef, state, formModel) {
 
   const { name } = pageDef.repeat.options
   const page = formModel.pageMap.get(pageDef.path)
-  const componentNames = getRequiredRepeatFieldNames(page.collection.fields, getOptionalComponentNames(pageDef))
+  const optionalNames = getOptionalComponentNames(pageDef)
+  const componentNames = getRequiredRepeatFieldNames(
+    page.collection.fields.filter((field) => !optionalNames.has(field.name))
+  )
   const { error } = page.collection.stateSchema.validate({ [name]: state[name] })
   return (
     !error &&
