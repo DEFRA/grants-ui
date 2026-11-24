@@ -121,6 +121,12 @@
     "fieldName": "landParcels",
     "selectAll": true
   },
+  {
+    "slug": "land-parcel-description",
+    "name": "Describe the selected land parcels",
+    "type": "textFields",
+    "fields": { "landParcelDescription": "Selected land parcels" }
+  },
   { "slug": "summary", "name": "Summary (Check your answers)", "type": "submitOnly" },
   { "slug": "declaration", "name": "Declaration (Confirm and send)", "type": "submitOnly" }
 ]

@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { merge } from '@hapi/hoek'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import { fetchParcels } from '../../services/land-grants.service.js'
@@ -6,6 +7,14 @@ import { mapParcelsToViewModel } from '../../view-models/parcel.view-model.js'
 import CommonSelectLandParcelPageController from './common-select-land-parcel-page.controller.js'
 import { debug, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { ConsolidatedViewError } from '~/src/server/common/utils/errors/ConsolidatedViewError.js'
+import { StatePersistenceService } from '~/src/server/common/services/state-persistence/state-persistence.service.js'
+import { getStateWithDefinition } from '~/src/server/common/helpers/state/state-with-definition-context.js'
+
+vi.mock('~/src/server/common/helpers/state/state-with-definition-context.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  getStateWithDefinition: vi.fn(),
+  resolveVersion: vi.fn()
+}))
 
 vi.mock('../../services/land-grants.service.js', () => ({
   fetchParcels: vi.fn()
@@ -548,6 +557,46 @@ describe('CommonSelectLandParcelPageController', () => {
             hectaresUnderTenYearsOld: undefined
           })
         )
+      })
+
+      it('clears dependent state when the forms engine has already merged the new selection into context state', async () => {
+        // Regression: the persisted state is stashed once per request. The forms engine merges the submitted
+        // payload into the state it read (Hoek.merge mutates its target) before handlePost runs, so the
+        // controller's own getState must not return that same, already-updated object.
+        const controller = createController({
+          invalidates: ['hectaresTenOrOverYearsOld', 'hectaresUnderTenYearsOld']
+        })
+        const server = { log: vi.fn(), logger: {}, cache: vi.fn(() => ({ get: vi.fn(), set: vi.fn() })) }
+        const service = new StatePersistenceService({ server })
+        service._Key = () => 'session-key'
+        controller.getState = (req) => service.getState(req)
+        getStateWithDefinition.mockResolvedValue({
+          state: {
+            state: { landParcels: ['S1-P1'], hectaresTenOrOverYearsOld: 5, hectaresUnderTenYearsOld: 2 }
+          }
+        })
+
+        const request = { ...setupRequest('post'), app: {} }
+        request.payload = { landParcels: ['S1-P1', 'S2-P2'] }
+        const engineState = await controller.getState(request)
+        const context = setupContext(merge(engineState, { landParcels: ['S1-P1', 'S2-P2'] }, { mergeArrays: false }))
+        const h = setupH()
+        controller.mergeState = vi.fn()
+
+        await controller.handlePost(request, context, h)
+
+        expect(controller.mergeState).toHaveBeenCalledWith(
+          request,
+          context.state,
+          expect.objectContaining({
+            hectaresTenOrOverYearsOld: undefined,
+            hectaresUnderTenYearsOld: undefined,
+            landParcels: ['S1-P1', 'S2-P2']
+          })
+        )
+        const update = controller.mergeState.mock.calls[0][2]
+        expect(update).toHaveProperty('hectaresTenOrOverYearsOld')
+        expect(update).toHaveProperty('hectaresUnderTenYearsOld')
       })
     })
 

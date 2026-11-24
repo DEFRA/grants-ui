@@ -185,6 +185,11 @@ Feature: User Permissions
             | SD7946 0155 |
         And continues
 
+        # land-parcel-description
+        Then the user should be at URL "land-parcel-description"
+        When the user enters "Selected land parcels" for "Land parcel description"
+        And continues
+
         # summary
         Then the user should be at URL "summary"
         And should see heading "Check your answers"
