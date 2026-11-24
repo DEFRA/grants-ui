@@ -252,6 +252,11 @@ Feature: Reusable Components
             | SD6352 8774 |
         And continues
 
+        # land-parcel-description
+        Then the user should be at URL "land-parcel-description"
+        When the user enters "Selected land parcels" for "Land parcel description"
+        And continues
+
         # summary
         Then the user should be at URL "summary"
         And should see heading "Check your answers"
@@ -287,6 +292,7 @@ Feature: Reusable Components
             | Project description        | Project description                                |
             | Project budget             | £50,000.50                                         |
             | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774              |
+            | Land parcel description    | Selected land parcels                              |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER                  |
             | Item 1 | Item name | Applicant's first item  |
@@ -334,12 +340,39 @@ Feature: Reusable Components
             | Project description        | Project description                                |
             | Project budget             | £50,000.50                                         |
             | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774              |
+            | Land parcel description    | Selected land parcels                              |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER                  |
             | Item 1 | Item name | Applicant's first item  |
             |        | Amount    | £1,000.25               |
             | Item 2 | Item name | Applicant's second item |
             |        | Amount    | £2,000                  |
+
+        # Keeping the same parcels must preserve the dependent answer.
+        When the user chooses to change their summary answer to question "Select land parcels"
+        Then the user should be at URL "select-land-parcel"
+        When the user continues
+        Then the user should be at URL "summary"
+        And should see answer "Selected land parcels" for question "Land parcel description"
+
+        # Changing parcels must clear the saved description and require a new answer.
+        When the user chooses to change their summary answer to question "Select land parcels"
+        Then the user should be at URL "select-land-parcel"
+        When the user selects the following
+            | SD6351 8781 |
+        And continues
+        Then the user should be at URL "land-parcel-description"
+        And should see value "" for "Land parcel description"
+        When the user continues
+        Then the user should still be at URL "land-parcel-description"
+        And should see the following error messages
+            | Enter a description of the selected land parcels |
+        When the user enters "Selected land parcels" for "Land parcel description"
+        And continues
+        Then the user should be at URL "summary"
+        And should see answer "SD6351-8781" for question "Select land parcels"
+        And should see answer "Selected land parcels" for question "Land parcel description"
+        And should see answer "Test project" for question "Project name"
         When the user continues
 
         # declaration
@@ -399,7 +432,8 @@ Feature: Reusable Components
             | Project name               | Test project                                       |
             | Project description        | Project description                                |
             | Project budget             | £50,000.50                                         |
-            | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774              |
+            | Select land parcels        | SD6351-8781                                        |
+            | Land parcel description    | Selected land parcels                              |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER                  |
             | Item 1 | Item name | Applicant's first item  |

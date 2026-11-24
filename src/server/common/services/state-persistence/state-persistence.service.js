@@ -94,23 +94,28 @@ export class StatePersistenceService extends CacheService {
    * authored `metadata.version` can lag behind the active version, so writing
    * under it would persist to the *old* version document and the migrated read
    * would return the answer blanked. Prefer the resolved active version.
+   * Only a confirmed save refreshes the stash or scopes a new reference;
+   * handled persistence failures leave the last saved snapshot intact.
    *
    * @param {AnyRequest} request
    * @param {FormSubmissionState} state
    * @param {{failOnError?: boolean, allowMultipleApplications?: boolean, createdAt?: string}} [options] - Require a successful backend save before continuing; `createdAt` is recorded if the save creates the document.
-   * @returns {Promise<FormSubmissionState>} the persisted state
+   * @returns {Promise<FormSubmissionState>} the supplied state, including after a handled persistence failure
    */
   async setState(request, state, { allowMultipleApplications, ...options } = {}) {
     const key = this._Key(request)
     const grantVersion = await this._resolveActiveGrantVersion(request)
     const lockToken = this._buildLockToken(request, grantVersion)
-    await persistStateToApi(state, key, { lockToken, grantVersion, ...options })
-    await this._refreshStashedState(request, state)
+    const persisted = await persistStateToApi(state, key, { lockToken, grantVersion, ...options })
+    if (persisted) {
+      await this._refreshStashedState(request, state)
+    }
 
     // A brand-new application of a multi-application grant: scope the creating request to the
     // reference the forms engine just minted, so this very response's links and redirects carry it.
     const referenceNumber = /** @type {string | undefined} */ (state?.$$__referenceNumber)
     if (
+      persisted &&
       referenceNumber &&
       !getReferenceNumber(request) &&
       (allowMultipleApplications ?? (await this._allowsMultipleApplications(request)))

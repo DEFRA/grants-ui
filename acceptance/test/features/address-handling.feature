@@ -139,6 +139,11 @@ Feature: Address Handling
         When the user selects the first item
         And continues
 
+        # land-parcel-description
+        Then the user should be at URL "land-parcel-description"
+        When the user enters "Selected land parcels" for "Land parcel description"
+        And continues
+
         # summary
         Then the user should be at URL "summary"
         When the user continues
@@ -294,6 +299,11 @@ Feature: Address Handling
         # select-land-parcel
         Then the user should be at URL "select-land-parcel"
         When the user selects the first item
+        And continues
+
+        # land-parcel-description
+        Then the user should be at URL "land-parcel-description"
+        When the user enters "Selected land parcels" for "Land parcel description"
         And continues
 
         # summary

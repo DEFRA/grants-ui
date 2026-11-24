@@ -26,6 +26,10 @@ Then('no option should be selected', async function () {
   await expect(inputs).toHaveCount(0)
 })
 
+Then('(the user )should see value {string} for {string}', async function (value, label) {
+  await expect(this.page.getByLabel(label, { exact: true })).toHaveValue(value)
+})
+
 Then('the footer should contain the following links', async function (dataTable) {
   for (const row of dataTable.hashes()) {
     const linkText = row.TEXT

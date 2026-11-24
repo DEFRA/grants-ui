@@ -59,6 +59,7 @@ describe('StatePersistenceService', () => {
   beforeEach(() => {
     service = new StatePersistenceService({ server })
     vi.clearAllMocks()
+    persistModule.persistStateToApi.mockResolvedValue(true)
     getCacheKey.mockReturnValue(CACHE_KEY)
   })
 
@@ -131,6 +132,39 @@ describe('StatePersistenceService', () => {
     await service.setState(request, { foo: 'bar' })
 
     expect(envelope.state).toBeNull()
+  })
+
+  test('setState preserves saved answers and the reference scope when persistence reports failure', async () => {
+    const envelope = { state: { state: { landParcels: ['A'], nested: { value: 1 } } } }
+    const request = {
+      ...fakeRequest,
+      app: {
+        grantVersion: 1,
+        stateWithDefinition: Promise.resolve(envelope),
+        model: { def: { metadata: { allowMultipleApplications: true } } }
+      },
+      query: {}
+    }
+    contextModule.getStateWithDefinition.mockResolvedValue(envelope)
+    persistModule.persistStateToApi.mockResolvedValue(false)
+
+    await service.setState(request, { $$__referenceNumber: 'REF-NEW', landParcels: ['B'] })
+
+    expect(await service.getState(request)).toEqual({ landParcels: ['A'], nested: { value: 1 } })
+    expect(request.app.referenceNumber).toBeUndefined()
+    expect(request.app.stateWithDefinition).toBeDefined()
+  })
+
+  test('a failed second save retains the last successfully saved state within the request', async () => {
+    const envelope = { state: { state: { answer: 'original' } } }
+    const request = { ...fakeRequest, app: { grantVersion: 1, stateWithDefinition: Promise.resolve(envelope) } }
+    contextModule.getStateWithDefinition.mockResolvedValue(envelope)
+    persistModule.persistStateToApi.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+
+    await service.setState(request, { answer: 'saved' })
+    await service.setState(request, { answer: 'not saved' })
+
+    expect(await service.getState(request)).toEqual({ answer: 'saved' })
   })
 
   test('setState still persists when the stashed read failed', async () => {
