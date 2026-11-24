@@ -33,6 +33,10 @@ pull request code. The built-in Project automation for closed or merged items
 is separate; configure auto-archive in the Project if closed PRs should be
 archived.
 
+Review events can trigger the workflow before the updater reaches the default
+branch. During that period, those runs report a notice and skip the Project
+update. Live review-event validation requires the updater on the default branch.
+
 After rollout, existing open PRs are updated when they next trigger the
 workflow. Updating the existing queue immediately requires a separate backfill.
 
