@@ -15,20 +15,20 @@ const landAndActionsSummary = {
         {
           action: 'Action description (CLIG3)',
           area: '2.0000 ha',
-          yearlyPayment: '£100.00',
+          yearlyPayment: '£100',
           changeHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678'
         }
       ],
-      yearlyPayment: '£100.00',
+      yearlyPayment: '£100',
       removeHref: 'remove-parcel?parcelId=SD1234-5678',
       addActionsHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678'
     }
   ],
-  additionalYearlyPayments: [{ action: 'Assess moorland (CMOR1)', yearlyPayment: '£272.00' }],
-  applicationYearlyPayment: '£372.00',
+  additionalYearlyPayments: [{ action: 'Assess moorland (CMOR1)', yearlyPayment: '£272' }],
+  applicationYearlyPayment: '£372',
   agreementDuration: '3 years',
   agreementDurationYears: 3,
-  agreementTotalPayment: '£1,116.00'
+  agreementTotalPayment: '£1,116'
 }
 
 const model = {
@@ -88,10 +88,10 @@ describe('check-responses-page.html view', () => {
         )
         .get()
     ).toEqual([
-      'Assess moorland (CMOR1)|£272.00',
-      'Total yearly payment|£372.00',
+      'Assess moorland (CMOR1)|£272',
+      'Total yearly payment|£372',
       'Agreement duration|3 years',
-      'Estimated payment over 3 years|£1,116.00'
+      'Estimated payment over 3 years|£1,116'
     ])
   })
 })

@@ -71,7 +71,7 @@ describe('WMP claim payment request', () => {
       expect.objectContaining({
         totalEligibleArea: totalHectares,
         totalClaimAmountPence: 300000,
-        components: [{ type: 'Html', model: { content: '£3,000.00' } }]
+        components: [{ type: 'Html', model: { content: '£3,000' } }]
       })
     )
     expect(controller.setState).toHaveBeenCalledWith(

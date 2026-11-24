@@ -34,17 +34,17 @@ Feature: Task Lists Showing Questions
         And should see heading "Example Task List"
         And the page is analyzed for accessibility
         And should see the following task list with questions with 0 of 8 task pages completed
-            | Example task one                 |                  |
-            | Example multiple components      | Not started      |
-            | Optional choice                  | Cannot start yet |
-            | Single component                 | Cannot start yet |
-            | Example task two                 |                  |
-            | Compound component               | Cannot start yet |
-            | Land parcels                     | Cannot start yet |
-            | Number with guidance             | Cannot start yet |
-            | Example check and submit task    |                  |
-            | Check your answers               | Cannot start yet |
-            | Confirm and send                 | Cannot start yet |
+            | Example task one              |                  |
+            | Example multiple components   | Not started      |
+            | Optional choice               | Cannot start yet |
+            | Single component              | Cannot start yet |
+            | Example task two              |                  |
+            | Compound component            | Cannot start yet |
+            | Land parcels                  | Cannot start yet |
+            | Example with guidance         | Cannot start yet |
+            | Example check and submit task |                  |
+            | Check your answers            | Cannot start yet |
+            | Confirm and send              | Cannot start yet |
         When the user selects task "Example multiple components"
 
         # multiple-components-task-page
@@ -79,17 +79,17 @@ Feature: Task Lists Showing Questions
         Then the user should be back at URL "tasks"
         And the page is analyzed for accessibility
         And should see the following task list with questions with 3 of 8 task pages completed
-          | Example task one                 |                  |
-          | Example multiple components      | Completed        |
-          | Optional choice                  | Completed        |
-          | Single component                 | Completed        |
-          | Example task two                 |                  |
-          | Compound component               | Not started      |
-          | Land parcels                     | Cannot start yet |
-          | Number with guidance             | Cannot start yet |
-          | Example check and submit task    |                  |
-          | Check your answers               | Cannot start yet |
-          | Confirm and send                 | Cannot start yet |
+          | Example task one              |                  |
+          | Example multiple components   | Completed        |
+          | Optional choice               | Completed        |
+          | Single component              | Completed        |
+          | Example task two              |                  |
+          | Compound component            | Not started      |
+          | Land parcels                  | Cannot start yet |
+          | Example with guidance         | Cannot start yet |
+          | Example check and submit task |                  |
+          | Check your answers            | Cannot start yet |
+          | Confirm and send              | Cannot start yet |
         When the user selects task "Compound component"
 
         # compound-component-task-page
@@ -118,53 +118,57 @@ Feature: Task Lists Showing Questions
         And should see task title "Example task two"
         And should see heading "Example with guidance"
         And the page is analyzed for accessibility
-        When the user enters "150000" for "Example number field"
+        When the user enters "150000.50" for "Example number field"
+        And the user enters "150000.50" for "Capacity without number formatting (optional)"
         And continues
 
         # tasks
         Then the user should be back at URL "tasks"
         And the page is analyzed for accessibility
         And should see the following task list with questions with 6 of 8 task pages completed
-          | Example task one                 |                  |
-          | Example multiple components      | Completed        |
-          | Optional choice                  | Completed        |
-          | Single component                 | Completed        |
-          | Example task two                 |                  |
-          | Compound component               | Completed        |
-          | Land parcels                     | Completed        |
-          | Number with guidance             | Completed        |
-          | Example check and submit task    |                  |
-          | Check your answers               | Not started      |
-          | Confirm and send                 | Cannot start yet |
+          | Example task one              |                  |
+          | Example multiple components   | Completed        |
+          | Optional choice               | Completed        |
+          | Single component              | Completed        |
+          | Example task two              |                  |
+          | Compound component            | Completed        |
+          | Land parcels                  | Completed        |
+          | Example with guidance         | Completed        |
+          | Example check and submit task |                  |
+          | Check your answers            | Not started      |
+          | Confirm and send              | Cannot start yet |
 
         # revisit a task
-        When the user selects task "Number with guidance"
+        When the user selects task "Example with guidance"
 
         # example-task-with-guidance
         Then the user should be at URL "example-task-with-guidance"
-        When the user enters "200000" for "Example number field"
+        When the user enters "200000.50" for "Example number field"
+        And the user enters "200000.50" for "Capacity without number formatting (optional)"
         And continues
 
         # tasks
         Then the user should be back at URL "tasks"
         And the page is analyzed for accessibility
         And should see the following task list with questions with 6 of 8 task pages completed
-        | Example task one                 |                  |
-        | Example multiple components      | Completed        |
-        | Optional choice                  | Completed        |
-        | Single component                 | Completed        |
-        | Example task two                 |                  |
-        | Compound component               | Completed        |
-        | Land parcels                     | Completed        |
-        | Number with guidance             | Completed        |
-        | Example check and submit task    |                  |
-        | Check your answers               | Not started      |
-        | Confirm and send                 | Cannot start yet |
+        | Example task one              |                  |
+        | Example multiple components   | Completed        |
+        | Optional choice               | Completed        |
+        | Single component              | Completed        |
+        | Example task two              |                  |
+        | Compound component            | Completed        |
+        | Land parcels                  | Completed        |
+        | Example with guidance         | Completed        |
+        | Example check and submit task |                  |
+        | Check your answers            | Not started      |
+        | Confirm and send              | Cannot start yet |
         When the user selects task "Check your answers"
 
         # summary
         Then the user should be at URL "summary"
         And should see heading "Check your answers"
+        And the user should see answer "200,000.50m³" for question "Number with guidance"
+        And the user should see answer "200000.50m³" for question "Capacity without number formatting (optional)"
         And the page is analyzed for accessibility
         When the user continues
 
@@ -179,3 +183,16 @@ Feature: Task Lists Showing Questions
         And should see heading "Details submitted"
         And the page is analyzed for accessibility
         And should see an "EGWT" reference number for their application
+        When the user clicks on "View / Print submitted application (opens in new tab)"
+        Then a new tab should be opened at URL "print-submitted-application" and closed by the user
+
+        # print-submitted-application
+        Given the user navigates to "/example-grant-with-task-list/print-submitted-application"
+        Then the user should see heading "Example grant with task list application"
+        And the page is analyzed for accessibility
+        Then the user should see the following submitted application details
+            | Application number                 | {REFERENCE NUMBER} |
+            | Submitted answers                  |                    |
+            | Number with guidance               | 200,000.50m³       |
+            | Capacity without number formatting | 200000.50m³        |
+        And should see button "Print this page"

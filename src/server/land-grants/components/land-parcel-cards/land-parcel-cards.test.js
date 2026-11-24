@@ -5,8 +5,8 @@ const render = createComponentRenderer(import.meta.url, 'landParcelCards')
 const parcels = [
   {
     reference: 'SD1234 5678',
-    actions: [{ action: 'CLIG3', area: '2.0000 ha', yearlyPayment: '£10.00' }],
-    yearlyPayment: '£10.00'
+    actions: [{ action: 'CLIG3', area: '2.0000 ha', yearlyPayment: '£10' }],
+    yearlyPayment: '£10'
   },
   {
     reference: 'CD9999 1111',
@@ -14,12 +14,12 @@ const parcels = [
       {
         action: 'A longer action description (CSAM3)',
         area: '1234.0000 ha',
-        yearlyPayment: '£123,456.00',
+        yearlyPayment: '£123,456',
         requirementText: 'SSSI consent and HEFER required'
       },
-      { action: 'Another action (SCR2)', area: '', yearlyPayment: '£3.00' }
+      { action: 'Another action (SCR2)', area: '', yearlyPayment: '£3' }
     ],
-    yearlyPayment: '£123,459.00'
+    yearlyPayment: '£123,459'
   }
 ]
 

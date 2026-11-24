@@ -62,7 +62,7 @@ const payment = {
   }
 }
 
-const paymentResult = { payment, paymentTotal: '£1,234.00', errorMessage: undefined }
+const paymentResult = { payment, paymentTotal: '£1,234', errorMessage: undefined }
 
 // The shared test mock has no `path` or `getHref`, so define them here instead of
 // changing the global test setup. `getHref` copies `PageController.getHref`:
@@ -139,13 +139,13 @@ describe('ConfirmLandAndActionsPageController', () => {
       const model = mockH.view.mock.calls[0][1]
       expect(mockH.view.mock.calls[0][0]).toBe('confirm-land-and-actions')
       expect(model.hasCalculationError).toBe(false)
-      expect(model.parcels[0].actions.map((a) => a.yearlyPayment)).toEqual(['£100.00', '£200.00'])
-      expect(model.parcels[1].actions.map((a) => a.yearlyPayment)).toEqual(['£3.00'])
-      expect(model.parcels[0].yearlyPayment).toBe('£300.00')
-      expect(model.parcels[1].yearlyPayment).toBe('£3.00')
-      expect(model.applicationYearlyPayment).toBe('£1,234.00')
+      expect(model.parcels[0].actions.map((a) => a.yearlyPayment)).toEqual(['£100', '£200'])
+      expect(model.parcels[1].actions.map((a) => a.yearlyPayment)).toEqual(['£3'])
+      expect(model.parcels[0].yearlyPayment).toBe('£300')
+      expect(model.parcels[1].yearlyPayment).toBe('£3')
+      expect(model.applicationYearlyPayment).toBe('£1,234')
       expect(model.agreementDuration).toBe('3 years')
-      expect(model.agreementTotalPayment).toBe('£3,702.00')
+      expect(model.agreementTotalPayment).toBe('£3,702')
       expect(result).toBe('rendered view')
     })
 
@@ -202,7 +202,7 @@ describe('ConfirmLandAndActionsPageController', () => {
         landParcels,
         payment,
         totalPence: 123400,
-        totalPayment: '£1,234.00',
+        totalPayment: '£1,234',
         agreementStartDate: '2026-02-01',
         agreementEndDate: '2029-02-01',
         agreementTotalPence: 370200
@@ -214,14 +214,14 @@ describe('ConfirmLandAndActionsPageController', () => {
         ...payment,
         agreementLevelItems: { 1: { code: 'CMOR1', description: 'Assess moorland', annualPaymentPence: 27200 } }
       }
-      calculateLandActionsPayment.mockResolvedValueOnce({ payment: withAgreementLevel, paymentTotal: '£1,234.00' })
+      calculateLandActionsPayment.mockResolvedValueOnce({ payment: withAgreementLevel, paymentTotal: '£1,234' })
       const controller = buildController()
 
       await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
       const model = mockH.view.mock.calls[0][1]
       expect(model.hasCalculationError).toBe(false)
-      expect(model.additionalYearlyPayments).toEqual([{ action: 'Assess moorland (CMOR1)', yearlyPayment: '£272.00' }])
+      expect(model.additionalYearlyPayments).toEqual([{ action: 'Assess moorland (CMOR1)', yearlyPayment: '£272' }])
     })
 
     test('clears prior payment data and renders error when service fails', async () => {
@@ -268,7 +268,7 @@ describe('ConfirmLandAndActionsPageController', () => {
     test('does not report a malformed response as an upstream API outage', async () => {
       calculateLandActionsPayment.mockResolvedValueOnce({
         payment: { annualTotalPence: -1, parcelItems: {} },
-        paymentTotal: '£0.00'
+        paymentTotal: '£0'
       })
       const controller = buildController()
       mockContext.state = {

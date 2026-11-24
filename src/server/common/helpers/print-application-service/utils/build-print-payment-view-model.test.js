@@ -6,11 +6,6 @@ import {
 
 import { MOCK_PAYMENT } from '~/src/__test-fixtures__/mock-payment.js'
 
-vi.mock('~/src/config/nunjucks/filters/filters.js', async () => {
-  const { mockFilters } = await import('~/src/__mocks__')
-  return mockFilters()
-})
-
 describe('buildPrintPaymentViewModel', () => {
   test('returns null when payment is falsy', () => {
     expect(buildPrintPaymentViewModel(null)).toBeNull()
@@ -21,7 +16,7 @@ describe('buildPrintPaymentViewModel', () => {
     const result = buildPrintPaymentViewModel(MOCK_PAYMENT)
 
     expect(result).not.toBeNull()
-    expect(result.totalAnnualPayment).toBe('£1500.00')
+    expect(result.totalAnnualPayment).toBe('£1,500')
     expect(result.parcelItems).toHaveLength(2)
     expect(result.additionalPayments).toHaveLength(1)
   })
@@ -47,7 +42,7 @@ describe('buildPrintParcelItems', () => {
     expect(firstRow).toHaveLength(3)
     expect(firstRow[0]).toEqual({ text: 'Assess and record soil organic matter: SAM1' })
     expect(firstRow[1]).toEqual({ text: '10.50', format: 'numeric' })
-    expect(firstRow[2]).toEqual({ text: '£1000.00', format: 'numeric' })
+    expect(firstRow[2]).toEqual({ text: '£1,000', format: 'numeric' })
   })
 })
 
@@ -58,7 +53,7 @@ describe('buildPrintAdditionalPayments', () => {
     expect(result).toHaveLength(1)
     expect(result[0]).toHaveLength(2)
     expect(result[0][0].text).toBe('Additional payment per agreement per year for Agreement level action: AGR1')
-    expect(result[0][1]).toEqual({ text: '£500.00', format: 'numeric' })
+    expect(result[0][1]).toEqual({ text: '£500', format: 'numeric' })
   })
 })
 

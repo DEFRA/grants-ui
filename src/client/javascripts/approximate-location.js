@@ -9,7 +9,7 @@ const LOOKUP_TIMEOUT_MS = 3000
  * Add a live location label below a map and return its selected-point updater.
  * @param {HTMLDivElement} container
  * @param {string} [prefix]
- * @param {(text: string) => void} [onChange]
+ * @param {(text: string, description: string) => void} [onChange]
  * @returns {(point?: { lat: number, long: number }) => void}
  */
 export function createApproximateLocation(container, prefix = DEFAULT_LOCATION_HINT_PREFIX, onChange = () => {}) {
@@ -38,7 +38,7 @@ export function createApproximateLocation(container, prefix = DEFAULT_LOCATION_H
   return (point) => {
     cancel()
     label.textContent = ''
-    onChange('')
+    onChange('', '')
     if (!point) {
       return
     }
@@ -71,7 +71,7 @@ export function createApproximateLocation(container, prefix = DEFAULT_LOCATION_H
           const strong = document.createElement('strong')
           strong.textContent = prefixText
           label.replaceChildren(strong, ` ${data.label}`)
-          onChange(label.textContent)
+          onChange(label.textContent, data.label)
         }
       } catch {
         // The optional label must not interrupt the map. The endpoint logs lookup failures.

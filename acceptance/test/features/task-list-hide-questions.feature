@@ -107,9 +107,9 @@ Feature: Task Lists Hiding Questions
         Then the user should be back at URL "tasks"
         And the page is analyzed for accessibility
         And should see the following task list without questions with 4 of 9 task pages completed
-          | Example task one                 | Completed        |
-          | Example task two                 | Not started      |
-          | Example check and submit task    | Cannot start yet |
+          | Example task one              | Completed        |
+          | Example task two              | Not started      |
+          | Example check and submit task | Cannot start yet |
         When the user selects task "Example task two"
 
         # compound-component-task-page
@@ -231,6 +231,28 @@ Feature: Task Lists Hiding Questions
         And should see task title "Example check and submit task"
         And should see heading "Check your answers"
         And the page is analyzed for accessibility
+        And should see the following answers
+            | QUESTION                                  | ANSWER                                             |
+            | First name                                | James                                              |
+            | Middle name (optional)                    | Joseph                                             |
+            | Last name                                 | Test-Farmer                                        |
+            | Optional choice                           | Yes                                                |
+            | Conditional question                      | No                                                 |
+            | Single component                          | cl-defra-gae-test-applicant-email@equalexperts.com |
+            | Compound component                        | Test Farm                                          |
+            |                                           | Cogenhoe                                           |
+            |                                           | Northampton                                        |
+            |                                           | Northamptonshire                                   |
+            |                                           | NN7 1NN                                            |
+            | Land parcels                              | SD6351-8781                                        |
+            | Number with guidance                      | 150,000.00                                         |
+            | Are you eligible to apply for this grant? | Yes                                                |
+            | First item amount                         | £12,000                                            |
+            | Example number field                      | 150,000                                            |
+        And should see the following summary cards
+            | CARD          | QUESTION  | ANSWER              |
+            | Repeat Item 1 | Item name | Repeat item example |
+            |               | Amount    | £12,000             |
         When the user continues
 
         # declaration
@@ -245,3 +267,15 @@ Feature: Task Lists Hiding Questions
         And should see heading "Details submitted"
         And the page is analyzed for accessibility
         And should see an "EGWTHQ" reference number for their application
+        When the user clicks on "View / Print submitted application (opens in new tab)"
+        Then a new tab should be opened at URL "print-submitted-application" and closed by the user
+
+        # print-submitted-application
+        Given the user navigates to "/example-grant-with-task-list-hide-questions/print-submitted-application"
+        Then the page is analyzed for accessibility
+        And the user should see the following submitted application details
+            | Application number   | {REFERENCE NUMBER} |
+            | Submitted answers    |                    |
+            | Number with guidance | 150,000.00         |
+            | First item amount    | £12,000            |
+            | Example number field | 150,000            |

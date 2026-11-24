@@ -68,6 +68,12 @@ describe('select-actions.view-model', () => {
       expect(mapActionsToViewModel(filterEnabledLandActions([wbd1], ['WBD1']), [])).toHaveLength(1)
     })
 
+    it('formats both payment rates with grouping and keeps pence where needed', () => {
+      const result = mapActionToViewModel({ ...wbd1, ratePerUnitGbp: 1234.5, ratePerAgreementPerYearGbp: 2700 }, [])
+
+      expect(result.html).toContain('Payment rate per year: £1,234.50/pond and <strong>£2,700</strong> per agreement')
+    })
+
     it('hides WBD1 when the backend marks it unavailable despite an unrestricted quantity', () => {
       expect(mapActionsToViewModel([{ ...wbd1, isAvailable: false }], [])).toEqual([])
     })

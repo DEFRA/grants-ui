@@ -52,7 +52,7 @@ Then('the page is analyzed for accessibility', async function () {
   await analyzeAccessibility(this.page)
 })
 
-Then('(the user )should see heading {string}', async function (text) {
+Then('(the user )should see (configurable )heading {string}', async function (text) {
   const truncated = text.indexOf("'") > -1 ? text.substring(0, text.indexOf("'")) : text
   await expect(this.page.locator(`//h1[contains(normalize-space(.),'${truncated}')]`)).toBeVisible()
 })
@@ -110,6 +110,12 @@ Then('(the user )should see the following applications', async function (dataTab
     })
   )
   expect(actual).toEqual(expected)
+})
+
+Then('(the user )should see answer {string} for question {string}', async function (answer, question) {
+  const summaryPage = new SummaryPage(this.page)
+  const actualAnswers = await summaryPage.answers()
+  expect(actualAnswers).toContainEqual({ question, answers: [answer] })
 })
 
 Then('(the user )should see the following answers', async function (dataTable) {
@@ -232,6 +238,12 @@ Then('(the user )should see the following configurable content', async function 
   for (const [text] of dataTable.rows()) {
     const hasContent = await printPage.hasConfigurableContent(text)
     expect(hasContent).toBe(true)
+  }
+})
+
+Then('(the user )should see the following configurable copy', async function (dataTable) {
+  for (const [text] of dataTable.raw()) {
+    await expect(this.page.getByText(text, { exact: false }).first()).toBeVisible()
   }
 })
 

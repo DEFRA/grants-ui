@@ -4,6 +4,7 @@
  */
 
 import { escapeHtml } from '@hapi/hoek'
+import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 
 const SSSI_CONSENT_LINK =
   './fptt-information#sec-10-get-all-necessary-regulatory-consents-permissions-and-licences-in-place'
@@ -61,17 +62,18 @@ function getGroupConsentHint(consents, actionCount) {
 export function mapActionToViewModel(action, addedActions) {
   const existingActions = addedActions.map((a) => a.code)
   const rateUnit = action.displayUnit ? ` per ${escapeHtml(action.displayUnit)}` : ''
+  const rates = []
+  if (action.ratePerUnitGbp != null) {
+    rates.push(`<strong>${formatCurrency(action.ratePerUnitGbp)}${rateUnit}</strong>`)
+  }
+  if (action.ratePerAgreementPerYearGbp) {
+    rates.push(`<strong>${formatCurrency(action.ratePerAgreementPerYearGbp)}</strong> per agreement`)
+  }
   return {
     value: action.code,
     text: action.description,
     checked: existingActions.includes(action.code),
-    hint: {
-      html:
-        `Payment rate per year: <strong>£${action.ratePerUnitGbp?.toFixed(2)}${rateUnit}</strong>` +
-        (action.ratePerAgreementPerYearGbp
-          ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
-          : '')
-    }
+    ...(rates.length && { hint: { html: `Payment rate per year: ${rates.join(' and ')}` } })
   }
 }
 

@@ -132,6 +132,9 @@
           "eastingNorthingField__northing": {
             "type": "number"
           },
+          "eastingNorthingFieldDescription": {
+            "type": ["string", "null"]
+          },
           "osGridRefField": {
             "type": "string"
           },
