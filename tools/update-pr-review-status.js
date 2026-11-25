@@ -221,18 +221,7 @@ export async function run() {
     return
   }
 
-  let itemId = item?.id
-  if (!itemId) {
-    try {
-      itemId = await addProjectItem(token, project.id, currentPullRequest.id)
-    } catch (error) {
-      const { item: existingItem } = await findProjectItem(token, owner, repo, pullRequest.number, project.id)
-      if (!existingItem) {
-        throw error
-      }
-      itemId = existingItem.id
-    }
-  }
+  const itemId = item?.id ?? (await addProjectItem(token, project.id, currentPullRequest.id))
 
   const status = getReviewStatus(currentPullRequest)
   await updateReviewStatus(token, project.id, itemId, project.fieldId, project.options.get(status))
