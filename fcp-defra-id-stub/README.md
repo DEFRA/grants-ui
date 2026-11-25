@@ -19,7 +19,9 @@ CRNs `9000000006` to `9000000033` (SBIs `800000004` to `800000024`) are the acce
 personas; `acceptance/test/features` names which one each scenario signs in as. Scenarios on
 different grants may share a persona, because application state, locks and audit events are
 keyed per grant. Scenarios on the same grant never share an SBI: each wipes its SBI's state for
-that grant at the start, and the suite runs scenarios in parallel.
+that grant at the start, and the suite runs scenarios in parallel. CRNs `9000000041` (SBI
+`800000032`) and `9000000043` (SBI `800000033`, for the shutter page) are also acceptance-suite
+personas.
 
 The journey tests in the grant config repos use these personas:
 

@@ -441,6 +441,18 @@
           "name": "Test Hawthorn Gill Farm"
         }
       ]
+    },
+    {
+      "crn": 9000000043,
+      "firstName": "Ignatius",
+      "lastName": "Test-Kenworthy",
+      "organisations": [
+        {
+          "organisationId": "7410033",
+          "sbi": 800000033,
+          "name": "Test Meadowsweet Farm"
+        }
+      ]
     }
   ]
 }
