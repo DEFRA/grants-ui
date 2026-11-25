@@ -29,9 +29,9 @@ Before enabling the workflow:
 
 The workflow uses `pull_request_target` for pull request lifecycle events and
 checks out only the repository's default branch. It does not check out or run
-pull request code. The built-in Project automation for closed or merged items
-is separate; configure auto-archive in the Project if closed PRs should be
-archived.
+pull request code. The Project's built-in `Item closed` and
+`Pull request merged` workflows handle those events. The updater checks that
+the PR is still open before writing to the Project.
 
 Review events can trigger the workflow before the updater reaches the default
 branch. During that period, those runs report a notice and skip the Project
