@@ -27,7 +27,9 @@ concurrency:
 jobs:
   update-review-status:
     name: Update Grants Enablement Project
-    if: github.event.action != 'closed'
+    if: >-
+      github.event.action != 'closed' &&
+      (github.event_name != 'pull_request_review' || github.event.pull_request.head.repo.fork == false)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
