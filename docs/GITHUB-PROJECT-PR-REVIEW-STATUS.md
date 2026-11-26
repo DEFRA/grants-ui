@@ -37,10 +37,6 @@ pull request code. The Project's built-in `Item closed` and
 `Pull request merged` workflows handle those events. The updater checks that
 the PR is still open before writing to the Project.
 
-Review events can trigger the workflow before the updater reaches the default
-branch. During that period, those runs report a notice and skip the Project
-update. Live review-event validation requires the updater on the default branch.
-
 The Project update job skips review events for fork PRs because GitHub
 withholds the App private key on those events. Fork PRs can still appear on
 the board. When a fork PR is, say, approved, the Project's built-in
