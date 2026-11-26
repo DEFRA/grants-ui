@@ -1,0 +1,12 @@
+{% extends "govuk/template.njk" %}
+{% set htmlLang = context.translator.language if context.translator else 'en-GB' %}
+{% block pageTitle %}{{ pageTitle }} - Forms engine v5 spike{% endblock %}
+{% block head %}
+  <link rel="stylesheet" href="/assets/govuk-frontend.min.css" />
+{% endblock %}
+{% block beforeContent %}
+  <nav aria-label="Language">
+    <a class="govuk-link" href="?language=en-GB" lang="en-GB">English</a>
+    <a class="govuk-link" href="?language=cy" lang="cy">Cymraeg</a>
+  </nav>
+{% endblock %}
