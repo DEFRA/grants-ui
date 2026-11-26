@@ -50,6 +50,12 @@
                 "minValue": 0.5,
                 "maxValue": null
               },
+              "originalTotalHectares": {
+                "value": 89.2613,
+                "decimalPlaces": 4,
+                "minValue": null,
+                "maxValue": null
+              },
               "actionCode": {
                 "value": "PA3"
               },
