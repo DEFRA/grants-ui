@@ -1,16 +1,7 @@
 import { config } from '~/src/config/config.js'
 import { fetchAllowedGrantDetails } from '~/src/server/auth/services/allowlist.client.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-
-const HTTP_PROTOCOLS = new Set(['http:', 'https:'])
-
-/** @param {unknown} value */
-function validHttpUrl(value) {
-  if (typeof value !== 'string' || !URL.canParse(value)) {
-    return false
-  }
-  return HTTP_PROTOCOLS.has(new URL(value).protocol)
-}
+import { sfdUrlForOrganisation } from '~/src/server/common/helpers/sfd-url.js'
 
 /** @param {import('../auth/services/allowlist.client.js').AllowedGrant} grant */
 function toLandingPageGrant(grant) {
@@ -26,16 +17,12 @@ export const homeController = {
   async handler(request, h) {
     if (config.get('externalLinks.sfd.enabled')) {
       const configuredHomeUrl = config.get('externalLinks.sfd.homeUrl')
-      const homeUrl = typeof configuredHomeUrl === 'string' ? configuredHomeUrl.trim() : ''
-      if (validHttpUrl(homeUrl)) {
-        const url = new URL(homeUrl)
-        const { currentRelationshipId } = /** @type {LandingPageCredentials} */ (request.auth.credentials)
-        if (currentRelationshipId) {
-          url.searchParams.set('ssoOrgId', currentRelationshipId)
-        }
-        return h.redirect(url.toString())
+      const sfdHomeUrl = sfdUrlForOrganisation(configuredHomeUrl, request)
+      if (sfdHomeUrl) {
+        return h.redirect(sfdHomeUrl)
       }
-      log(LogCodes.SYSTEM.SFD_HOME_URL_MISSING_ON_REDIRECT, { homeUrl: homeUrl ?? '' }, request)
+      const homeUrl = typeof configuredHomeUrl === 'string' ? configuredHomeUrl.trim() : ''
+      log(LogCodes.SYSTEM.SFD_HOME_URL_MISSING_ON_REDIRECT, { homeUrl }, request)
     }
 
     const { crn, sbi, organisationName } = /** @type {LandingPageCredentials} */ (request.auth.credentials)

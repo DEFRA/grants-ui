@@ -292,6 +292,14 @@ const convictConfig = {
       env: 'COOKIE_CONSENT_EXPIRY_DAYS'
     }
   },
+  shutter: {
+    enabledSlugs: {
+      doc: 'Comma-separated list of grant slugs that are shuttered. The optional shutter page content for a grant is read from SHUTTER_ENABLED_CONTENT_{SLUG}',
+      format: Array,
+      default: [],
+      env: 'SHUTTER_ENABLED_SLUGS'
+    }
+  },
   notificationBanner: {
     excludedPathSuffixes: {
       doc: 'Comma-separated list of path suffixes on which the per-grant notification banner is never shown (e.g. the confirmation and print pages)',

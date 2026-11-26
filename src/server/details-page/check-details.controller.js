@@ -7,6 +7,7 @@ import { logHandledError } from '../common/helpers/logging/handled-error.js'
 import { mergeAdditionalAnswers } from '../common/helpers/state/additional-answers-helper.js'
 import { ComponentType, ControllerType } from '@defra/forms-model'
 import { config } from '~/src/config/config.js'
+import { sfdUrlForOrganisation } from '../common/helpers/sfd-url.js'
 import { withTaskContext } from '../task-list/task-list.helper.js'
 
 const ERROR_TITLE = 'There is a problem'
@@ -48,21 +49,12 @@ export class UpdateDetailsPageController extends TerminalPageController {
     }
 
     const updateUrl = getConfiguredSfdUpdateUrl(this)
+    const sfdUpdateUrl = sfdUrlForOrganisation(updateUrl, request)
 
-    if (!updateUrl || !URL.canParse(updateUrl)) {
+    if (!sfdUpdateUrl) {
       log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl: updateUrl ?? '' }, request)
-      return null
     }
-
-    const url = new URL(updateUrl)
-
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-      log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl }, request)
-      return null
-    }
-
-    url.searchParams.set('ssoOrgId', request.auth.credentials.currentRelationshipId)
-    return url.toString()
+    return sfdUpdateUrl
   }
 
   makeGetRouteHandler() {
@@ -363,18 +355,15 @@ export default class CheckDetailsController extends withTaskContext(QuestionPage
    * @returns {Promise<ResponseObject | undefined>}
    */
   async redirectToSfdForDetailsUpdate(request, state, h) {
-    const updateUrl = getConfiguredSfdUpdateUrl(this)
-    if (!updateUrl || !URL.canParse(updateUrl)) {
+    const sfdUpdateUrl = sfdUrlForOrganisation(getConfiguredSfdUpdateUrl(this), request)
+    if (!sfdUpdateUrl) {
       return undefined
     }
 
-    const currentRelationshipId = /** @type {string} */ (request.auth.credentials.currentRelationshipId)
-    const url = new URL(updateUrl)
-    url.searchParams.set('ssoOrgId', currentRelationshipId)
     const stateWithoutConfirmation = { ...state }
     delete stateWithoutConfirmation[this.confirmationFieldName]
     await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
-    return h.redirect(url.toString())
+    return h.redirect(sfdUpdateUrl)
   }
 
   /**

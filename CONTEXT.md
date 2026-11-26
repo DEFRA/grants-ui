@@ -124,6 +124,10 @@ _Avoid_: Error page, Confirmation, Dead end, Failure page
 The period in which a grant accepts new applications, closed per grant by an optional ISO 8601 `closesAt` datetime in the form definition's `metadata.applicationWindow`. A grant with no `closesAt` is open. From `closesAt` onwards, new and draft applicants are redirected to the application-window-closed page; submitted applications and their claims are unaffected. An unparseable `closesAt` is treated as closed and logged.
 _Avoid_: Feature flag, Environment variable
 
+**Shutter**
+Making one grant unavailable, by listing its slug in the `SHUTTER_ENABLED_SLUGS` environment variable. After sign-in, every route of a shuttered grant, and its agreement pages, shows the shutter page instead, and nothing further is saved or submitted; other grants are unaffected. Shuttering the whole platform is done in CDP, in front of Grants UI, and takes precedence.
+_Avoid_: Maintenance mode, Closed, Feature flag
+
 **Landing page**
 An off-journey interstitial page reached by redirect rule or direct link to explain an application state before sending the user onward.
 _Avoid_: Start page, Terminal page, Marketing page, Summary page

@@ -2,6 +2,7 @@ import { config } from '~/src/config/config.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 import { getReferenceNumber } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
+import { agreementGrantCode } from '~/src/server/common/helpers/agreement/agreement-grant-code.js'
 import { listApplicationsFromApi } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
 import Jwt from '@hapi/jwt'
 import { notFound } from '@hapi/boom'
@@ -66,7 +67,7 @@ async function resolveGrantApplicationContext(request, authenticatedSbi) {
     request.yar?.get(YarKeys.GRANT_APPLICATION_CONTEXT)
   )
 
-  const urlContext = await resolveUrlContext(request, storedContext?.grantCode)
+  const urlContext = await resolveUrlContext(request)
   if (urlContext) {
     return urlContext
   }
@@ -93,14 +94,15 @@ async function resolveGrantApplicationContext(request, authenticatedSbi) {
  * only when it is one of this business's own applications, and is then stored as the session
  * context so the agreements requests that follow (which carry no query) act on the same one.
  * @param {AnyRequest} request
- * @param {string | undefined} storedGrantCode
  * @returns {Promise<{ grantCode: string, clientRef: string, sbi: unknown, applicationRef: string, grantVersion: string } | null>}
  */
-async function resolveUrlContext(request, storedGrantCode) {
+async function resolveUrlContext(request) {
   const ref = getReferenceNumber(request)
-  const grant = request.query?.grant
-  const grantCode = typeof grant === 'string' && GRANT_CODE_PATTERN.test(grant) ? grant : storedGrantCode
-  if (!ref || !grantCode) {
+  if (!ref) {
+    return null
+  }
+  const grantCode = agreementGrantCode(request)
+  if (!grantCode) {
     return null
   }
 
@@ -127,8 +129,6 @@ async function resolveUrlContext(request, storedGrantCode) {
   request.yar?.set(YarKeys.GRANT_APPLICATION_CONTEXT, context)
   return context
 }
-
-const GRANT_CODE_PATTERN = /^[a-z0-9-]+$/i
 
 /**
  * Builds proxy headers for the request

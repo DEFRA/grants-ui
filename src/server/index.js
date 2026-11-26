@@ -54,6 +54,7 @@ import { pageHideBackLink, pageRpaDetails } from '../config/nunjucks/page-config
 import { componentMapOptions } from '../config/nunjucks/component-map-options.js'
 import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
 import { router } from './router.js'
+import { shutter } from '~/src/server/shutter/index.js'
 import allowlist from '~/src/server/common/helpers/allowlist/allowlist.js'
 import { allowlistCachePlugin } from '~/src/server/auth/services/allowlist.client.js'
 import { jwksCachePlugin } from '~/src/server/auth/verify-token.js'
@@ -233,6 +234,8 @@ const registerPlugins = async (server) => {
     parcelCachePlugin,
     nunjucksConfig,
     sso,
+    // shutter runs before the plugins that call Consolidated View and Grants UI Backend for the grant.
+    shutter,
     permissions,
     contentSecurityPolicy,
     allowlist,

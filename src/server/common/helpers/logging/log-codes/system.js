@@ -196,6 +196,21 @@ export const SYSTEM = {
     messageFunc: (messageOptions) =>
       `home: SFD is enabled but externalLinks.sfd.homeUrl is missing or invalid (value=${messageOptions.homeUrl}); falling through to the tactical grants landing page instead of redirecting to SFD`
   },
+  GRANTS_SHUTTERED: {
+    level: 'info',
+    messageFunc: (messageOptions) =>
+      `shutter: grants shuttered by SHUTTER_ENABLED_SLUGS: ${messageOptions.slugs.join(', ')}`
+  },
+  SHUTTER_GRANT_NAME_UNAVAILABLE: {
+    level: 'warn',
+    messageFunc: (messageOptions) =>
+      `shutter: unable to load the grant name; showing the shutter page without it: grantCode=${messageOptions.grantCode}, error=${messageOptions.errorMessage}`
+  },
+  SFD_HOME_URL_MISSING_ON_SHUTTER: {
+    level: 'warn',
+    messageFunc: (messageOptions) =>
+      `shutter: SFD is enabled but externalLinks.sfd.homeUrl is missing or invalid (value=${messageOptions.homeUrl}); linking the shutter page to the Grants UI home page instead of SFD`
+  },
   LAND_MAPS_API_KEY_MISSING: {
     level: 'error',
     messageFunc: () =>

@@ -36,6 +36,7 @@ export const viewPaths = (() => {
     path.join(serverDir, 'common/map/views'),
     path.join(serverDir, 'schemes/grasslands/views'),
     path.join(serverDir, 'application-deleted/views'),
-    path.join(serverDir, 'application-window-closed/views')
+    path.join(serverDir, 'application-window-closed/views'),
+    path.join(serverDir, 'shutter/views')
   ]
 })()
