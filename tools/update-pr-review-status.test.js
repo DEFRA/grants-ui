@@ -90,8 +90,9 @@ describe('run', () => {
         projectId: 'project-id',
         itemId: 'project-item-id',
         fieldId: 'status-field-id',
-        optionId
+        value: { singleSelectOptionId: optionId }
       })
+      expect(fetch).toHaveBeenCalledTimes(3)
     }
   )
 
@@ -121,7 +122,7 @@ describe('run', () => {
     await expect(run()).rejects.toThrow('GRANTS_ENABLEMENT_PROJECT_NUMBER must be a positive project number')
   })
 
-  it('adds a pull request to the project before setting its review status', async () => {
+  it('adds a pull request to the project before setting its status and author', async () => {
     const fetch = vi.fn(async (_url, { body }) => {
       const { query } = JSON.parse(body)
       if (query.includes('organization(login:')) {
@@ -129,7 +130,7 @@ describe('run', () => {
           organization: {
             projectV2: {
               id: 'project-id',
-              fields: { nodes: [statusField()] }
+              fields: { nodes: [statusField(), { id: 'author-field-id', name: 'PR Author', dataType: 'TEXT' }] }
             }
           }
         })
@@ -140,6 +141,7 @@ describe('run', () => {
           repository: {
             pullRequest: {
               id: 'pull-request-id',
+              author: { login: 'example-author' },
               isDraft: false,
               reviewDecision: 'APPROVED',
               state: 'OPEN',
@@ -162,7 +164,13 @@ describe('run', () => {
     expect(JSON.parse(fetch.mock.calls[2][1].body).query).toContain('addProjectV2ItemById')
     expect(JSON.parse(fetch.mock.calls[3][1].body).variables).toMatchObject({
       itemId: 'new-project-item-id',
-      optionId: 'approved-option-id'
+      value: { singleSelectOptionId: 'approved-option-id' }
+    })
+    expect(JSON.parse(fetch.mock.calls[4][1].body).variables).toEqual({
+      projectId: 'project-id',
+      itemId: 'new-project-item-id',
+      fieldId: 'author-field-id',
+      value: { text: 'example-author' }
     })
   })
 })

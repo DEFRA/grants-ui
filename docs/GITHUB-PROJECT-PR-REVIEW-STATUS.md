@@ -6,6 +6,10 @@ requests in this repository. It uses the pull request's current aggregate
 decision by itself. If the pull request is not yet in the Project, the workflow
 adds it before setting the field.
 
+To show who opened each PR, add a text field named `PR Author` to the
+configured Project and show it in the table view. The workflow fills it with
+the PR author's GitHub username on the next eligible run.
+
 If a reviewer who requested changes has a pending re-review request, the
 Project shows `Awaiting review` while GitHub's aggregate decision can still
 show `Changes requested`. The workflow checks outstanding requests on every

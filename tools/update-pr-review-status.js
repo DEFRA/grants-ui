@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 const STATUS_FIELD_NAME = 'Status'
+const PR_AUTHOR_FIELD_NAME = 'PR Author'
 const REVIEW_STATUS_OPTIONS = ['Draft', 'Awaiting review', 'Changes requested', 'Approved']
 
 /**
@@ -65,6 +66,9 @@ async function findProjectItem(token, owner, repo, number, projectId) {
     repository(owner: $owner, name: $repo) {
       pullRequest(number: $number) {
         id
+        author {
+          login
+        }
         isDraft
         reviewDecision
         state
@@ -116,6 +120,11 @@ async function getProject(token, owner, projectNumber) {
         id
         fields(first: 100) {
           nodes {
+            ... on ProjectV2Field {
+              id
+              name
+              dataType
+            }
             ... on ProjectV2SingleSelectField {
               id
               name
@@ -147,7 +156,11 @@ async function getProject(token, owner, projectNumber) {
     throw new Error(`"${STATUS_FIELD_NAME}" is missing options: ${missingOptions.join(', ')}`)
   }
 
-  return { id: project.id, fieldId: field.id, options }
+  const authorField = project.fields.nodes.find(
+    ({ name, dataType }) => name === PR_AUTHOR_FIELD_NAME && dataType === 'TEXT'
+  )
+
+  return { id: project.id, fieldId: field.id, authorFieldId: authorField?.id, options }
 }
 
 async function addProjectItem(token, projectId, pullRequestId) {
@@ -163,14 +176,14 @@ async function addProjectItem(token, projectId, pullRequestId) {
   return data.addProjectV2ItemById.item.id
 }
 
-async function updateReviewStatus(token, projectId, itemId, fieldId, optionId) {
-  const mutation = `mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+async function updateProjectField(token, projectId, itemId, fieldId, value) {
+  const mutation = `mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: ProjectV2FieldValue!) {
     updateProjectV2ItemFieldValue(
       input: {
         projectId: $projectId
         itemId: $itemId
         fieldId: $fieldId
-        value: { singleSelectOptionId: $optionId }
+        value: $value
       }
     ) {
       projectV2Item {
@@ -179,7 +192,7 @@ async function updateReviewStatus(token, projectId, itemId, fieldId, optionId) {
     }
   }`
 
-  await graphql(token, mutation, { projectId, itemId, fieldId, optionId })
+  await graphql(token, mutation, { projectId, itemId, fieldId, value })
 }
 
 export async function run() {
@@ -224,9 +237,16 @@ export async function run() {
   const itemId = item?.id ?? (await addProjectItem(token, project.id, currentPullRequest.id))
 
   const status = getReviewStatus(currentPullRequest)
-  await updateReviewStatus(token, project.id, itemId, project.fieldId, project.options.get(status))
+  await updateProjectField(token, project.id, itemId, project.fieldId, {
+    singleSelectOptionId: project.options.get(status)
+  })
 
   process.stdout.write(`Set ${owner}/${repo}#${pullRequest.number} Status to "${status}"\n`)
+
+  const authorLogin = currentPullRequest.author?.login
+  if (project.authorFieldId && authorLogin) {
+    await updateProjectField(token, project.id, itemId, project.authorFieldId, { text: authorLogin })
+  }
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
