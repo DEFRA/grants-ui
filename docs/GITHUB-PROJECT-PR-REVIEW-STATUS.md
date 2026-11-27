@@ -39,7 +39,7 @@ the PR is still open before writing to the Project.
 
 The Project update job skips review events for fork PRs because GitHub
 withholds the App private key on those events. Fork PRs can still appear on
-the board. When a fork PR is approved, the Project's built-in
+the board. When a fork PR is, approved, the Project's built-in
 `Code review approved` workflow can update its status if that rule applies
 to the PR.
 
