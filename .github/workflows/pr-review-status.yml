@@ -1,6 +1,7 @@
 name: Update PR review status
 
 on:
+  workflow_dispatch:
   pull_request_target:
     types:
       - opened
@@ -20,7 +21,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pr-review-status-${{ github.event.pull_request.number }}
+  group: pr-review-status-${{ github.event.pull_request.number || 'backfill' }}
   cancel-in-progress: true
 
 jobs:

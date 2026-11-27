@@ -43,8 +43,14 @@ the board. When a fork PR is, say, approved, the Project's built-in
 `Code review approved` workflow can update its status if that rule applies
 to the PR.
 
-After rollout, existing open PRs are updated when they next trigger the
-workflow. Updating the existing queue immediately requires a separate backfill.
+## Backfill existing PRs
+
+In the repository's **Actions** tab, select **Update PR review status** and
+choose **Run workflow**. The manual run refreshes all open `grants-ui` PRs in
+the configured Project, adding any missing items. It sets `Status` and fills
+`PR Author` when that text field is configured. Closed and merged PRs are
+skipped. The manual trigger is available once the workflow is on the default
+branch.
 
 This is a repository-scoped pilot. A workflow in this repository does not
 receive events from other repositories; extending it requires installing
