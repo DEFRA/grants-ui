@@ -2,9 +2,6 @@ import { getAgreementController } from '~/src/server/agreements/controller.js'
 import { config } from '~/src/config/config.js'
 import { enforceAgreementPermission } from './permissions.js'
 
-const AUTH_ENDPOINT_USER_LIMIT = config.get('rateLimit.authEndpointUserLimit')
-const AUTH_ENDPOINT_PATH_LIMIT = config.get('rateLimit.authEndpointPathLimit')
-
 /**
  * Sets up the routes used to proxy the Agreements journey.
  * @satisfies {ServerRegisterPluginObject<void>}
@@ -36,11 +33,7 @@ export const agreements = {
             },
             pre: [enforceAgreementPermission],
             plugins: {
-              crumb: false, // Disable CSRF protection for this route
-              'hapi-rate-limit': {
-                userLimit: AUTH_ENDPOINT_USER_LIMIT,
-                pathLimit: AUTH_ENDPOINT_PATH_LIMIT
-              }
+              crumb: false // Disable CSRF protection for this route
             },
             payload: {
               output: 'stream',

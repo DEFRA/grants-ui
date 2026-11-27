@@ -19,8 +19,6 @@ vi.mock('~/src/config/config.js', async () => {
   const { mockConfigWithState } = await import('~/src/__mocks__/config-mocks.js')
   return mockConfigWithState({
     defaults: {
-      'rateLimit.authEndpointUserLimit': 1000,
-      'rateLimit.authEndpointPathLimit': 1000,
       'defraId.wellKnownUrl':
         'https://your-account.cpdev.cui.defra.gov.uk/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration'
     }

@@ -3,7 +3,6 @@ import {
   testLogCodes,
   getValidatedLogCode,
   TEST_USER_IDS,
-  TEST_PATHS,
   TEST_ERRORS,
   TEST_GRANT_TYPES,
   TEST_SBI,
@@ -280,23 +279,6 @@ describe('LogCodes', () => {
         'info',
         { sbi: TEST_SBI.DEFAULT },
         `Address format for sbi=${TEST_SBI.DEFAULT} is unstructured, uprn=not set`
-      ],
-      [
-        'RATE_LIMIT_EXCEEDED',
-        'warn',
-        {
-          path: TEST_PATHS.EXAMPLE_GRANT,
-          ip: '127.0.0.1',
-          userId: TEST_USER_IDS.DEFAULT,
-          userAgent: 'Mozilla/5.0'
-        },
-        `Rate limit exceeded: path=${TEST_PATHS.EXAMPLE_GRANT}, ip=127.0.0.1, CRN=${TEST_USER_IDS.MASKED}, userAgent=Mozilla/5.0`
-      ],
-      [
-        'RATE_LIMIT_EXCEEDED with fallbacks',
-        'warn',
-        { path: TEST_PATHS.EXAMPLE_GRANT },
-        `Rate limit exceeded: path=${TEST_PATHS.EXAMPLE_GRANT}, ip=unknown, CRN=unknown, userAgent=unknown`
       ],
       [
         'CHECK_DETAILS_TERMINAL_PAGE_INJECTED',

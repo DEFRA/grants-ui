@@ -1,5 +1,5 @@
 import { config } from '~/src/config/config.js'
-import { getClientIp } from '~/src/plugins/rate-limit.js'
+import { getClientIp } from '../request/get-client-ip.js'
 
 // The FCP Audit schema caps `ip` at 20 chars and marks it required. IPv4 (max
 // 15 chars) always fits whole, but a real IPv6 address is usually longer (a
