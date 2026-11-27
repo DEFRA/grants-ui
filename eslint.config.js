@@ -20,6 +20,7 @@ export default [
     },
     rules: {
       'no-console': 'error',
+      'grants-ui/extended-forms-engine-boundaries': 'error',
       curly: ['error', 'all'],
       '@stylistic/space-before-function-paren': 'off',
       '@stylistic/quotes': 'off',
@@ -80,6 +81,22 @@ export default [
       'vitest/no-mocks-import': 'off',
       'vitest/no-conditional-expect': 'off',
       'vitest/no-unneeded-async-expect-function': 'off'
+    }
+  },
+  {
+    files: ['src/extended-forms-engine/**/*.{js,mjs,cjs}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        { selector: 'ImportExpression[source.type!="Literal"]', message: 'Use literal module imports.' },
+        { selector: 'Identifier[name="require"]', message: 'Use ES module imports.' },
+        { selector: 'MemberExpression[computed=true][property.value="require"]', message: 'Use ES module imports.' },
+        {
+          selector:
+            ':matches(ImportDeclaration,ExportNamedDeclaration,ExportAllDeclaration,ImportExpression)[source.value=/^(file|data|https?):/]',
+          message: 'Use relative module imports or npm packages.'
+        }
+      ]
     }
   }
 ]

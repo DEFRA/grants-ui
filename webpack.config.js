@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'path'
 import TerserPlugin from 'terser-webpack-plugin'
 import { WebpackAssetsManifest } from 'webpack-assets-manifest'
+import { sassPaths } from './src/extended-forms-engine/index.js'
 
 const { NODE_ENV = 'development' } = process.env
 
@@ -114,6 +115,7 @@ export default {
               sassOptions: {
                 loadPaths: [
                   path.join(dirname, 'src/client/stylesheets'),
+                  ...sassPaths,
                   path.join(dirname, 'src/server/common/components'),
                   path.join(dirname, 'src/server/common/templates/partials'),
                   path.join(dirname, 'node_modules')
