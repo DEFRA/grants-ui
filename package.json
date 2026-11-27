@@ -93,7 +93,7 @@
     "websocket-extensions": "0.2.0"
   },
   "dependencies": {
-    "@aws-sdk/client-sns": "3.1168.0",
+    "@aws-sdk/client-sns": "3.1169.0",
     "@babel/runtime": "8.1.2",
     "@defra/fcp-audit-publisher": "1.0.15",
     "@defra/forms-engine-plugin": "4.23.1",
