@@ -168,6 +168,19 @@ describe('run', () => {
     await expect(run()).rejects.toThrow('GRANTS_ENABLEMENT_PROJECT_NUMBER must be a positive project number')
   })
 
+  it('fails before making any Project writes when the Status field is missing', async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(
+      graphQlResponse({
+        organization: { projectV2: { id: 'project-id', fields: { nodes: [] } } }
+      })
+    )
+    vi.stubGlobal('fetch', fetch)
+
+    await expect(run()).rejects.toThrow('Project is missing the single-select field "Status"')
+
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
   it('adds a pull request to the project before setting its status and author', async () => {
     const fetch = vi.fn(async (_url, { body }) => {
       const { query } = JSON.parse(body)
