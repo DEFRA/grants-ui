@@ -195,11 +195,42 @@ async function updateProjectField(token, projectId, itemId, fieldId, value) {
   await graphql(token, mutation, { projectId, itemId, fieldId, value })
 }
 
+async function listOpenPullRequestNumbers(token, owner, repo) {
+  const query = `query($owner: String!, $repo: String!, $cursor: String) {
+    repository(owner: $owner, name: $repo) {
+      pullRequests(first: 100, states: [OPEN], after: $cursor) {
+        nodes {
+          number
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
+    }
+  }`
+
+  const numbers = []
+  let cursor = null
+  do {
+    const data = await graphql(token, query, { owner, repo, cursor })
+    const pullRequests = data.repository?.pullRequests
+    if (!pullRequests) {
+      throw new Error(`Could not list open pull requests for ${owner}/${repo}`)
+    }
+    numbers.push(...pullRequests.nodes.map(({ number }) => number))
+    cursor = pullRequests.pageInfo.hasNextPage ? pullRequests.pageInfo.endCursor : null
+  } while (cursor)
+
+  return numbers
+}
+
 export async function run() {
   const token = process.env.GRANTS_PROJECTS_TOKEN
   const projectNumber = Number(process.env.GRANTS_ENABLEMENT_PROJECT_NUMBER)
   const eventPath = process.env.GITHUB_EVENT_PATH
   const repository = process.env.GITHUB_REPOSITORY
+  const isBackfill = process.env.GITHUB_EVENT_NAME === 'workflow_dispatch'
 
   if (!token) {
     throw new Error('Missing GRANTS_PROJECTS_TOKEN secret')
@@ -207,30 +238,34 @@ export async function run() {
   if (!Number.isInteger(projectNumber) || projectNumber < 1) {
     throw new Error('GRANTS_ENABLEMENT_PROJECT_NUMBER must be a positive project number')
   }
-  if (!eventPath || !repository) {
+  if (!repository || (!isBackfill && !eventPath)) {
     throw new Error('Missing GitHub event or repository context')
   }
 
+  const [owner, repo] = repository.split('/')
+  const numbers = isBackfill
+    ? await listOpenPullRequestNumbers(token, owner, repo)
+    : [await readPullRequestNumber(eventPath)]
+  const project = await getProject(token, owner, projectNumber)
+  for (const number of numbers) {
+    await updatePullRequest(token, owner, repo, number, project)
+  }
+}
+
+async function readPullRequestNumber(eventPath) {
   const event = JSON.parse(await readFile(eventPath, 'utf8'))
-  const pullRequest = event.pull_request
-  if (!pullRequest?.number) {
+  const number = event.pull_request?.number
+  if (!number) {
     throw new Error('The GitHub event does not contain a pull request')
   }
+  return number
+}
 
-  const [owner, repo] = repository.split('/')
-  const project = await getProject(token, owner, projectNumber)
-  const { pullRequest: currentPullRequest, item } = await findProjectItem(
-    token,
-    owner,
-    repo,
-    pullRequest.number,
-    project.id
-  )
+async function updatePullRequest(token, owner, repo, number, project) {
+  const { pullRequest: currentPullRequest, item } = await findProjectItem(token, owner, repo, number, project.id)
 
   if (currentPullRequest.state !== 'OPEN') {
-    process.stdout.write(
-      `Skipping pull request ${owner}/${repo}#${pullRequest.number} in state ${currentPullRequest.state}\n`
-    )
+    process.stdout.write(`Skipping pull request ${owner}/${repo}#${number} in state ${currentPullRequest.state}\n`)
     return
   }
 
@@ -241,7 +276,7 @@ export async function run() {
     singleSelectOptionId: project.options.get(status)
   })
 
-  process.stdout.write(`Set ${owner}/${repo}#${pullRequest.number} Status to "${status}"\n`)
+  process.stdout.write(`Set ${owner}/${repo}#${number} Status to "${status}"\n`)
 
   const authorLogin = currentPullRequest.author?.login
   if (project.authorFieldId && authorLogin) {

@@ -29,6 +29,7 @@ describe('run', () => {
     vi.stubEnv('GRANTS_PROJECTS_TOKEN', 'test-token')
     vi.stubEnv('GRANTS_ENABLEMENT_PROJECT_NUMBER', '7')
     vi.stubEnv('GITHUB_EVENT_PATH', join(eventDirectory, 'event.json'))
+    vi.stubEnv('GITHUB_EVENT_NAME', 'pull_request_target')
     vi.stubEnv('GITHUB_REPOSITORY', 'DEFRA/grants-ui')
     vi.stubEnv('GITHUB_API_URL', 'https://api.github.com')
   })
@@ -114,6 +115,51 @@ describe('run', () => {
     await run()
 
     expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('backfills open PRs across pages and skips a PR merged during the run', async () => {
+    vi.stubEnv('GITHUB_EVENT_NAME', 'workflow_dispatch')
+    vi.stubEnv('GITHUB_EVENT_PATH', undefined)
+    const openPage = (number, hasNextPage, endCursor) =>
+      graphQlResponse({
+        repository: { pullRequests: { nodes: [{ number }], pageInfo: { hasNextPage, endCursor } } }
+      })
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(openPage(42, true, 'next-page'))
+      .mockResolvedValueOnce(openPage(43, false, null))
+      .mockResolvedValueOnce(
+        graphQlResponse({
+          organization: { projectV2: { id: 'project-id', fields: { nodes: [statusField()] } } }
+        })
+      )
+      .mockResolvedValueOnce(
+        graphQlResponse({
+          repository: {
+            pullRequest: {
+              state: 'OPEN',
+              isDraft: true,
+              projectItems: { nodes: [{ id: 'item-42', project: { id: 'project-id' } }] }
+            }
+          }
+        })
+      )
+      .mockResolvedValueOnce(graphQlResponse({}))
+      .mockResolvedValueOnce(
+        graphQlResponse({ repository: { pullRequest: { state: 'MERGED', projectItems: { nodes: [] } } } })
+      )
+    vi.stubGlobal('fetch', fetch)
+
+    await run()
+
+    const calls = fetch.mock.calls.map(([, { body }]) => JSON.parse(body))
+    expect(calls[0].query).toContain('states: [OPEN]')
+    expect(calls[0].variables).toEqual({ owner: 'DEFRA', repo: 'grants-ui', cursor: null })
+    expect(calls[1].variables.cursor).toBe('next-page')
+    expect(calls[3].variables.number).toBe(42)
+    expect(calls[4].variables).toMatchObject({ itemId: 'item-42', value: { singleSelectOptionId: 'draft-option-id' } })
+    expect(calls[5].variables.number).toBe(43)
+    expect(fetch).toHaveBeenCalledTimes(6)
   })
 
   it('fails when the Project number is unset', async () => {
